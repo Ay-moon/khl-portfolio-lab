@@ -43,7 +43,7 @@ htmlcov/
 *.parquet
 *.xlsx
 *.xls
-*.xlsm
+# *.xlsm  # CommandoQuant.xlsm versionné intentionnellement
 *.db
 *.sqlite
 
