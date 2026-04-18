@@ -1,0 +1,70 @@
+/// AI-generated daily portfolio briefings
+table AI_DailyBriefing
+	lineageTag: b8a8f44c-94b9-4b92-8ff7-50111c46e673
+
+	column BriefingId
+		dataType: int64
+		isHidden
+		lineageTag: de2484e0-1287-41e3-ae0e-d354d4f1cb9a
+		summarizeBy: none
+		sourceColumn: BriefingId
+
+	column DateKey
+		dataType: int64
+		isHidden
+		lineageTag: a5360dc9-79ff-4c68-b5bc-723b9ecd4925
+		summarizeBy: none
+		sourceColumn: DateKey
+
+	column PortfolioKey
+		dataType: int64
+		isHidden
+		lineageTag: 26b1e612-620a-440a-9a7b-adb18aaa6202
+		summarizeBy: none
+		sourceColumn: PortfolioKey
+
+	column ModelName
+		dataType: string
+		lineageTag: f7946b38-fa4e-4db3-82a4-2a5ff083ca71
+		summarizeBy: none
+		sourceColumn: ModelName
+
+	column PromptVersion
+		dataType: string
+		lineageTag: b69d22e5-b154-4dc1-92b5-96d6b826fc36
+		summarizeBy: none
+		sourceColumn: PromptVersion
+
+	column Summary
+		dataType: string
+		lineageTag: 734ac5e8-769d-4b2c-adc4-654b1703f8ca
+		summarizeBy: none
+		sourceColumn: Summary
+
+	column Assumptions
+		dataType: string
+		lineageTag: b3f2e412-74ac-4db3-9b06-90eed6452129
+		summarizeBy: none
+		sourceColumn: Assumptions
+
+	column CreatedAt
+		dataType: dateTime
+		lineageTag: 2b113d12-baae-4bf2-badf-74cd773969ee
+		summarizeBy: none
+		sourceColumn: CreatedAt
+
+	column CreatedBy
+		dataType: string
+		isHidden
+		lineageTag: ca411ec7-238f-48b7-8529-0ea8ab83a99a
+		summarizeBy: none
+		sourceColumn: CreatedBy
+
+	partition AI_Briefing_Import = m
+		mode: directQuery
+		source =
+				let
+				    Source = Sql.Database("PERSO-AJE-DELL\BFASERVER01", "SmartAssetAdvicedb"),
+				    result = Value.NativeQuery(Source, "SELECT * FROM [dbo].[AI_DailyBriefing]", null, [EnableFolding=true])
+				in  result
+

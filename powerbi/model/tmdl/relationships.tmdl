@@ -1,0 +1,65 @@
+relationship FactPrice_Date
+	fromColumn: FactPrice.DateKey
+	toColumn: DimDate.DateKey
+
+relationship FactTrades_TradeDate
+	fromColumn: FactTrades.TradeDateKey
+	toColumn: DimDate.DateKey
+
+relationship FactTrades_SettleDate
+	isActive: false
+	fromColumn: FactTrades.SettleDateKey
+	toColumn: DimDate.DateKey
+
+relationship FactTrades_Portfolio
+	fromColumn: FactTrades.PortfolioKey
+	toColumn: DimPortfolio.PortfolioKey
+
+relationship Positions_Date
+	fromColumn: PortfolioPositionsDaily.DateKey
+	toColumn: DimDate.DateKey
+
+relationship Positions_Portfolio
+	fromColumn: PortfolioPositionsDaily.PortfolioKey
+	toColumn: DimPortfolio.PortfolioKey
+
+relationship PnL_Date
+	fromColumn: PortfolioPnLDaily.DateKey
+	toColumn: DimDate.DateKey
+
+relationship PnL_Portfolio
+	fromColumn: PortfolioPnLDaily.PortfolioKey
+	toColumn: DimPortfolio.PortfolioKey
+
+relationship Risk_Date
+	fromColumn: RiskMetricsDaily.DateKey
+	toColumn: DimDate.DateKey
+
+relationship Risk_Portfolio
+	fromColumn: RiskMetricsDaily.PortfolioKey
+	toColumn: DimPortfolio.PortfolioKey
+
+relationship AIBriefing_Date
+	fromColumn: AI_DailyBriefing.DateKey
+	toColumn: DimDate.DateKey
+
+relationship AIBriefing_Portfolio
+	fromColumn: AI_DailyBriefing.PortfolioKey
+	toColumn: DimPortfolio.PortfolioKey
+
+relationship AIReco_Date
+	fromColumn: AI_Recommendations.DateKey
+	toColumn: DimDate.DateKey
+
+relationship AIReco_Portfolio
+	fromColumn: AI_Recommendations.PortfolioKey
+	toColumn: DimPortfolio.PortfolioKey
+
+relationship AIWhatIf_Date
+	fromColumn: AI_WhatIf.DateKey
+	toColumn: DimDate.DateKey
+
+relationship AIWhatIf_Portfolio
+	fromColumn: AI_WhatIf.PortfolioKey
+	toColumn: DimPortfolio.PortfolioKey
+

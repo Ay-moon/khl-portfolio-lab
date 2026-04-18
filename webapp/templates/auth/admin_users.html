@@ -1,0 +1,94 @@
+{% extends "base.html" %}
+{% block title %}Gestion Utilisateurs{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-icon" style="background:#2c2c2c;"><i class="bi bi-people"></i></div>
+  <div class="flex-grow-1">
+    <h1>Gestion des Utilisateurs</h1>
+    <nav aria-label="breadcrumb"><ol class="breadcrumb mb-0">
+      <li class="breadcrumb-item"><a href="{{ url_for('home') }}">Accueil</a></li>
+      <li class="breadcrumb-item active">Admin — Utilisateurs</li>
+    </ol></nav>
+  </div>
+  <a href="{{ url_for('auth.register') }}" class="btn btn-sm btn-outline-light">
+    <i class="bi bi-person-plus me-1"></i>Créer un compte
+  </a>
+</div>
+
+<div class="khl-card">
+  <table class="table table-sm khl-table mb-0">
+    <thead>
+      <tr>
+        <th>Utilisateur</th>
+        <th>Email</th>
+        <th>Rôle</th>
+        <th>Département</th>
+        <th>Dernier login</th>
+        <th>Statut</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for u in users %}
+      <tr class="{{ '' if u.is_active else 'text-muted' }}">
+        <td>
+          <strong>{{ u.username }}</strong>
+          {% if u.full_name %}<br><small class="text-muted">{{ u.full_name }}</small>{% endif %}
+        </td>
+        <td style="font-size:0.8rem;">{{ u.email }}</td>
+
+        {# Changement de rôle inline #}
+        <td>
+          <form method="POST" action="{{ url_for('auth.admin_change_role', user_id=u.user_id) }}">
+            <select name="new_role" class="form-select form-select-sm"
+                    style="font-size:0.75rem;min-width:130px;"
+                    onchange="this.form.submit()">
+              {% for role_id, role_data in roles.items() %}
+              <option value="{{ role_id }}" {{ 'selected' if u.role == role_id else '' }}>
+                {{ role_data.label }}
+              </option>
+              {% endfor %}
+            </select>
+          </form>
+        </td>
+
+        <td style="font-size:0.8rem;">{{ u.dept or '—' }}</td>
+        <td style="font-size:0.75rem;" class="mono">{{ u.last_login }}</td>
+
+        <td>
+          {% if u.is_active %}
+          <span class="badge badge-ok">Actif</span>
+          {% else %}
+          <span class="badge bg-secondary">Inactif</span>
+          {% endif %}
+        </td>
+
+        <td>
+          <div class="d-flex gap-1">
+            {# Activer / Désactiver #}
+            <form method="POST" action="{{ url_for('auth.admin_toggle_user', user_id=u.user_id) }}">
+              <button type="submit" class="btn btn-sm {{ 'btn-outline-danger' if u.is_active else 'btn-outline-success' }}"
+                      style="font-size:0.72rem;"
+                      title="{{ 'Désactiver' if u.is_active else 'Activer' }}"
+                      onclick="return confirm('{{ 'Désactiver' if u.is_active else 'Activer' }} {{ u.username }} ?')">
+                <i class="bi bi-{{ 'person-dash' if u.is_active else 'person-check' }}"></i>
+              </button>
+            </form>
+
+            {# Reset mot de passe #}
+            <form method="POST" action="{{ url_for('auth.admin_reset_pwd', user_id=u.user_id) }}">
+              <button type="submit" class="btn btn-sm btn-outline-secondary"
+                      style="font-size:0.72rem;" title="Générer un token de reset"
+                      onclick="return confirm('Générer un token de reset pour {{ u.username }} ?')">
+                <i class="bi bi-key"></i>
+              </button>
+            </form>
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

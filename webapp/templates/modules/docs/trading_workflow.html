@@ -1,0 +1,246 @@
+{% extends "base.html" %}
+{% block title %}Workflow Achat / Vente{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="page-icon" style="background:#0d6e3b;"><i class="bi bi-graph-up-arrow"></i></div>
+  <div class="flex-grow-1">
+    <h1>Workflow — Achat / Vente dans un Portefeuille</h1>
+    <nav aria-label="breadcrumb"><ol class="breadcrumb mb-0">
+      <li class="breadcrumb-item"><a href="{{ url_for('home') }}">Accueil</a></li>
+      <li class="breadcrumb-item"><a href="{{ url_for('docs.index') }}">Documentation</a></li>
+      <li class="breadcrumb-item active">Workflow Trading</li>
+    </ol></nav>
+  </div>
+</div>
+
+<div class="story-block mb-4">
+  <div class="story-title"><i class="bi bi-person-workspace me-2"></i>Rôles concernés</div>
+  <p>
+    <strong>TRADER</strong> exécute les ordres.
+    <strong>ASSET_MANAGER</strong> prend les décisions d'allocation.
+    <strong>RISK_ANALYST</strong> surveille les limites avant et après exécution.
+    <strong>QUANT</strong> lance les simulations automatisées.
+  </p>
+</div>
+
+<!-- Comment passer un ordre -->
+<div class="khl-card mb-3">
+  <div class="card-title"><i class="bi bi-question-circle me-1"></i>Comment passe-t-on un ordre sur cette plateforme ?</div>
+
+  <div class="alert alert-info" style="font-size:0.85rem;">
+    <i class="bi bi-info-circle me-2"></i>
+    <strong>Mode actuel :</strong> Les ordres sont générés automatiquement par le moteur de simulation
+    (<code>run_mvp.py</code> via le bouton <strong>Simulation Trading (60j)</strong> dans le Monitoring).
+    Il n'y a pas (encore) de saisie manuelle d'ordre dans l'interface.
+  </div>
+
+  <div class="row g-3">
+    <div class="col-md-4">
+      <div class="p-3 border rounded h-100">
+        <div style="font-weight:700;color:#1a3a5c;margin-bottom:0.5rem;">
+          <i class="bi bi-1-circle-fill me-2"></i>Décision (Asset Manager)
+        </div>
+        <p style="font-size:0.82rem;color:#495057;margin:0;">
+          L'Asset Manager décide d'acheter ou vendre un titre selon l'analyse de performance
+          et les signaux du module Quant (backtesting, momentum).
+        </p>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="p-3 border rounded h-100">
+        <div style="font-weight:700;color:#0d6e3b;margin-bottom:0.5rem;">
+          <i class="bi bi-2-circle-fill me-2"></i>Exécution (Trader)
+        </div>
+        <p style="font-size:0.82rem;color:#495057;margin:0;">
+          Le Trader lance la simulation depuis <strong>Monitoring → Simulation Trading (60j)</strong>.
+          Le moteur calcule automatiquement les ordres selon la stratégie de rotation configurée.
+        </p>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="p-3 border rounded h-100">
+        <div style="font-weight:700;color:#8b1a1a;margin-bottom:0.5rem;">
+          <i class="bi bi-3-circle-fill me-2"></i>Contrôle (Risk Analyst)
+        </div>
+        <p style="font-size:0.82rem;color:#495057;margin:0;">
+          Le Risk Analyst vérifie que la VaR, le drawdown et les limites de concentration
+          sont respectés après exécution dans le module <strong>Risk Management</strong>.
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Ce qui se passe en base -->
+<div class="khl-card mb-3">
+  <div class="card-title"><i class="bi bi-database me-1"></i>Ce qui est enregistré en base SQL</div>
+  <table class="table khl-table">
+    <thead>
+      <tr><th>Table</th><th>Données enregistrées</th><th>Moment</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>dbo.FactTrades</code></td>
+        <td>
+          <code>Side</code> (BUY/SELL), <code>Quantity</code>, <code>Price</code> (prix d'exécution),
+          <code>FeeAmount</code>, <code>SlippageAmount</code>, <code>TradeDateKey</code>, <code>StrategyCode</code>
+        </td>
+        <td>À chaque ordre exécuté par le moteur</td>
+      </tr>
+      <tr>
+        <td><code>dbo.DimSecurity</code></td>
+        <td>Ticker, nom, classe d'actif, devise — créé si absent</td>
+        <td>Avant l'insertion du premier trade sur ce titre</td>
+      </tr>
+      <tr>
+        <td><code>dbo.DimDate</code></td>
+        <td>DateKey (YYYYMMDD), FullDate, CalendarYear, Month, Day — créé si absent</td>
+        <td>Avant l'insertion du premier trade à cette date</td>
+      </tr>
+      <tr>
+        <td><code>dbo.PortfolioPositionsDaily</code></td>
+        <td>Position nette (Quantity), AvgCost, MarketValue, UnrealizedPnL, WeightPct par actif et par jour</td>
+        <td>En fin de journée simulée (snapshot EOD)</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- Calcul des coûts -->
+<div class="khl-card mb-3">
+  <div class="card-title"><i class="bi bi-calculator me-1"></i>Calcul des frais et du slippage</div>
+  <div class="row g-3">
+    <div class="col-md-6">
+      <div class="p-3 bg-light rounded">
+        <div style="font-weight:700;margin-bottom:0.5rem;">Formule d'exécution BUY</div>
+        <div class="log-terminal" style="font-size:0.75rem;">
+execution_price = market_price × (1 + slippage_bps/10000)
+gross_amount    = quantity × execution_price
+fee_amount      = gross_amount × fee_bps/10000
+net_cash_flow   = -(gross_amount + fee_amount)
+
+# Paramètres par défaut
+fee_bps      = 5   → 0.05%
+slippage_bps = 3   → 0.03%
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="p-3 bg-light rounded">
+        <div style="font-weight:700;margin-bottom:0.5rem;">Formule d'exécution SELL</div>
+        <div class="log-terminal" style="font-size:0.75rem;">
+execution_price = market_price × (1 - slippage_bps/10000)
+gross_amount    = quantity × execution_price
+fee_amount      = gross_amount × fee_bps/10000
+net_cash_flow   = gross_amount - fee_amount
+
+# Le slippage vient en déduction du prix de vente
+# (impact de marché négatif = moins bon prix obtenu)
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="mt-3" style="font-size:0.82rem;color:#6c757d;">
+    Source : <code>trading-sim/engine/simulator.py</code> — méthode <code>TradingSimulator.execute_market_order()</code>
+  </div>
+</div>
+
+<!-- Stratégie de rotation -->
+<div class="khl-card mb-3">
+  <div class="card-title"><i class="bi bi-arrow-repeat me-1"></i>Stratégie de Rotation (SIM_MVP)</div>
+  <div class="story-block">
+    <div class="story-title"><i class="bi bi-cpu me-2"></i>Algorithme</div>
+    <p>
+      La stratégie <code>RotationStrategy</code> (<code>trading-sim/strategies/rotation_strategy.py</code>)
+      tourne sur 3 actifs : <strong>AAPL, MSFT, SPY</strong>.
+      Toutes les 10 sessions, elle fait une rotation : vend le plus performant et achète le moins performant.
+      C'est un momentum inversé simple pour générer des données de test réalistes.
+    </p>
+  </div>
+</div>
+
+<!-- CommandoQuant -->
+<div class="khl-card mb-3">
+  <div class="card-title"><i class="bi bi-lightning-charge-fill me-1" style="color:#9b59b6;"></i>CommandoQuant — Pricing &amp; VaR Dérivés (TRADER / QUANT / ADMIN)</div>
+  <div class="story-block">
+    <div class="story-title"><i class="bi bi-file-earmark-excel me-2"></i>Macro Excel VBA connectée à SQL Server</div>
+    <p>
+      <strong>CommandoQuant.xlsm</strong> est une salle des marchés VBA pour le pricing d'options et le calcul de VaR dérivés.
+      Elle se lance depuis <strong>Trading Desk → Ouvrir dans Excel</strong> (les rôles TRADER, QUANT et ADMIN y ont accès).
+    </p>
+  </div>
+  <table class="table khl-table mt-2">
+    <thead><tr><th>Bouton</th><th>Action</th><th>Table SQL Server</th></tr></thead>
+    <tbody>
+      <tr>
+        <td><code>⚡ PRICER</code></td>
+        <td>Calcule Black-Scholes + Greeks, <strong>écrit</strong> la position en base</td>
+        <td><code>CommandoQuant.tbl_Greeks</code></td>
+      </tr>
+      <tr>
+        <td><code>📋 BLOTTER</code></td>
+        <td>Rafraîchit la feuille Blotter avec toutes les positions</td>
+        <td><code>CommandoQuant.tbl_Greeks</code> (lecture)</td>
+      </tr>
+      <tr>
+        <td><code>📊 GREEKS</code></td>
+        <td>Dashboard agrégé Delta/Gamma/Vega/Theta + alertes portefeuille</td>
+        <td><code>CommandoQuant.tbl_Greeks</code> (lecture)</td>
+      </tr>
+      <tr>
+        <td><code>📉 P&amp;L SIM</code></td>
+        <td>Simule le P&amp;L pour un choc de spot (Taylor ordre 2)</td>
+        <td><code>CommandoQuant.tbl_Greeks</code> (lecture)</td>
+      </tr>
+      <tr>
+        <td><code>⚡ VAR</code></td>
+        <td>Lance <code>var_engine.py</code> → VaR Paramétrique + Monte Carlo + Historique</td>
+        <td><code>CommandoQuant.tbl_Greeks</code> via pyodbc</td>
+      </tr>
+    </tbody>
+  </table>
+  <div class="mt-2" style="font-size:0.82rem;color:#6c757d;">
+    Connexion : <strong>SQLOLEDB</strong> — Serveur <code>PERSO-AJE-DELL\BFASERVER01</code> — Windows Auth.<br>
+    Emplacement : <code>khl-portfolio-lab/commando-quant/</code>
+    — Le job VaR est aussi lanceable via <a href="{{ url_for('monitoring.index') }}">Monitoring</a>.
+  </div>
+</div>
+
+<!-- Consultation des trades -->
+<div class="khl-card">
+  <div class="card-title"><i class="bi bi-eye me-1"></i>Où consulter les trades ?</div>
+  <div class="row g-3">
+    <div class="col-md-4">
+      <div class="p-3 border rounded">
+        <i class="bi bi-graph-up-arrow text-success" style="font-size:1.3rem;"></i>
+        <div style="font-weight:600;margin-top:0.5rem;">Trading Desk</div>
+        <p style="font-size:0.78rem;color:#6c757d;margin:0.3rem 0 0.5rem;">
+          Carnet des 100 derniers trades avec prix, frais, notional.
+        </p>
+        <a href="{{ url_for('trading.index') }}" class="btn btn-sm btn-outline-success">Accéder</a>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="p-3 border rounded">
+        <i class="bi bi-pie-chart text-primary" style="font-size:1.3rem;"></i>
+        <div style="font-weight:600;margin-top:0.5rem;">Portefeuille → Vue détail</div>
+        <p style="font-size:0.78rem;color:#6c757d;margin:0.3rem 0 0.5rem;">
+          Positions actuelles, PnL latent, historique NAV.
+        </p>
+        <a href="{{ url_for('portfolio.index') }}" class="btn btn-sm btn-outline-primary">Accéder</a>
+      </div>
+    </div>
+    <div class="col-md-4">
+      <div class="p-3 border rounded">
+        <i class="bi bi-shield-exclamation text-danger" style="font-size:1.3rem;"></i>
+        <div style="font-weight:600;margin-top:0.5rem;">Risk Management</div>
+        <p style="font-size:0.78rem;color:#6c757d;margin:0.3rem 0 0.5rem;">
+          VaR, drawdown, alertes de dépassement de limites.
+        </p>
+        <a href="{{ url_for('risk.index') }}" class="btn btn-sm btn-outline-danger">Accéder</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

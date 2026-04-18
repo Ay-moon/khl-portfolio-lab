@@ -1,0 +1,281 @@
+{% extends "base.html" %}
+{% block title %}Quant / Data Lab{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="page-icon" style="background:#4a1a7a;"><i class="bi bi-cpu"></i></div>
+  <div><h1>Quant / Data Lab</h1></div>
+</div>
+
+<div class="story-block mb-4">
+  <div class="story-title"><i class="bi bi-person-workspace me-2"></i>Contexte métier — Quant / Data Engineer</div>
+  <p>
+    Le <strong>Quant</strong> développe des modèles mathématiques pour la gestion des risques,
+    le pricing des produits dérivés et la génération d'alpha (signaux d'achat/vente).
+    Le <strong>Data Engineer</strong> construit les pipelines de données qui alimentent
+    tous les autres métiers. Ici, explorez <strong>60 000+ instruments</strong> historiques
+    depuis la base STOOQ.
+  </p>
+</div>
+
+<!-- Stats staging -->
+<div class="row g-3 mb-4">
+  {% for ptype, info in stg_stats.items() %}
+  {% if ptype != 'error' %}
+  <div class="col-6 col-md-3">
+    <div class="metric-card"
+         data-bs-toggle="tooltip" data-bs-html="true" data-bs-placement="bottom"
+         data-bs-title="<b>Source : {{ ptype }}</b><br><strong>{{ '{:,}'.format(info.rows) }} lignes</strong> de cotations historiques.<br><strong>{{ '{:,}'.format(info.tickers) }} tickers</strong> = instruments uniques (actions, indices, forex, matières premières).<br>Ces données transitent par la table <code>stg_bourso_price_history</code> avant d'être chargées dans <code>FactPrice</code> (Gold).">
+      <div class="metric-label">{{ ptype }}</div>
+      <div class="metric-value" style="font-size:1.3rem;">{{ "{:,}".format(info.rows) }}</div>
+      <div class="metric-delta text-muted">{{ "{:,}".format(info.tickers) }} tickers</div>
+    </div>
+  </div>
+  {% endif %}
+  {% endfor %}
+</div>
+
+<div class="row g-3">
+  <!-- Explorateur de prix -->
+  <div class="col-lg-8">
+    <div class="khl-card">
+      <div class="card-title"><i class="bi bi-search me-1"></i>Explorateur de prix — Base STOOQ</div>
+
+      <div class="row g-2 mb-3">
+        <div class="col-md-5">
+          <div class="input-group">
+            <span class="input-group-text"><i class="bi bi-search"></i></span>
+            <input type="text" id="ticker-input" class="form-control"
+                   placeholder="Ex: AAPL.US, ^SPX, XAUUSD, IBM.US"
+                   style="font-family:monospace;">
+          </div>
+        </div>
+        <div class="col-md-3">
+          <select id="period-select" class="form-select">
+            <option value="60">60 jours</option>
+            <option value="252" selected>1 an (252j)</option>
+            <option value="756">3 ans</option>
+            <option value="1260">5 ans</option>
+            <option value="2000">Max</option>
+          </select>
+        </div>
+        <div class="col-md-2">
+          <button class="btn btn-primary w-100" style="background:#4a1a7a;border-color:#4a1a7a;"
+                  onclick="loadPrices()">
+            <i class="bi bi-play"></i> Analyser
+          </button>
+        </div>
+        <div class="col-md-2">
+          <button class="btn btn-outline-secondary w-100" onclick="loadComparison()">
+            <i class="bi bi-layers"></i> Comparer
+          </button>
+        </div>
+      </div>
+
+      <!-- Suggestions rapides -->
+      <div class="d-flex flex-wrap gap-2 mb-1">
+        {% for ticker, tip in [
+          ('^SPX',   'S&amp;P 500 — indice des 500 plus grandes capitalisations US'),
+          ('^CAC',   'CAC 40 — indice des 40 plus grandes capitalisations de la Bourse de Paris'),
+          ('^DJI',   'Dow Jones Industrial Average — 30 valeurs industrielles US emblématiques'),
+          ('AAPL.US','Apple Inc. — action cotée sur le NASDAQ (suffixe .US = bourse américaine)'),
+          ('IBM.US',  'IBM Corp. — action NYSE'),
+          ('JPM.US',  'JPMorgan Chase — grande banque US'),
+          ('XAUUSD',  'Or spot en USD — XAU = code ISO de l\'or, USD = dollar'),
+          ('GBPUSD',  'Paire Forex Livre sterling / Dollar — 1 GBP = x USD'),
+          ('^DAX',    'DAX 40 — indice des 40 plus grandes capitalisations allemandes'),
+          ('KO.US',   'Coca-Cola Co. — action NYSE'),
+        ] %}
+        <button class="btn btn-sm btn-outline-secondary"
+                style="font-family:monospace;font-size:0.72rem;"
+                onclick="quickLoad('{{ ticker }}')"
+                data-bs-toggle="tooltip" data-bs-placement="bottom"
+                data-bs-title="{{ tip }}">{{ ticker }}</button>
+        {% endfor %}
+      </div>
+      <div class="mb-3" style="font-size:0.72rem;color:#6c757d;">
+        <i class="bi bi-info-circle me-1"></i>
+        <strong>Convention STOOQ :</strong>
+        <span data-bs-toggle="tooltip" data-bs-html="true"
+              data-bs-title="<b>Préfixe ^</b><br>Désigne un <em>indice boursier</em> (pas une action).<br>^SPX = S&amp;P500, ^CAC = CAC40, ^DAX = DAX40.<br>Les indices n'ont pas de volume d'échange direct.">
+          <code>^</code> = indice
+        </span> ·
+        <span data-bs-toggle="tooltip" data-bs-html="true"
+              data-bs-title="<b>Suffixe .US</b><br>Désigne une action cotée sur une bourse américaine (NYSE ou NASDAQ).<br>Ex : AAPL.US, IBM.US, JPM.US.<br>Sans suffixe = Europe ou autre marché.">
+          <code>.US</code> = action américaine
+        </span> ·
+        <span data-bs-toggle="tooltip" data-bs-html="true"
+              data-bs-title="<b>Paires Forex (ex: XAUUSD, GBPUSD)</b><br>Format : DEVISE_BASE + DEVISE_COTATION.<br>XAU = or, GBP = livre sterling, USD = dollar.<br>XAUUSD = prix de 1 oz d'or en dollars.">
+          6 lettres sans point = Forex/matière première
+        </span>
+      </div>
+
+      <div id="price-chart-container">
+        <canvas id="priceChart" height="220"></canvas>
+      </div>
+
+      <!-- Stats descriptives -->
+      <div id="stats-panel" class="mt-3" style="display:none;">
+        <div class="row g-2" id="stats-grid"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Comparateur + infos -->
+  <div class="col-lg-4">
+    <div class="khl-card">
+      <div class="card-title"><i class="bi bi-layers me-1"></i>Comparateur (normalisé à 100)</div>
+      <div id="compare-inputs" class="mb-2">
+        <div class="input-group input-group-sm mb-1">
+          <span class="input-group-text" style="background:#1a3a5c;color:white;">T1</span>
+          <input type="text" id="cmp1" class="form-control mono" placeholder="^SPX" value="^SPX">
+        </div>
+        <div class="input-group input-group-sm mb-1">
+          <span class="input-group-text" style="background:#e8a020;color:#0d1b2a;">T2</span>
+          <input type="text" id="cmp2" class="form-control mono" placeholder="^CAC">
+        </div>
+        <div class="input-group input-group-sm mb-1">
+          <span class="input-group-text" style="background:#0d6e3b;color:white;">T3</span>
+          <input type="text" id="cmp3" class="form-control mono" placeholder="^DAX">
+        </div>
+        <button class="btn btn-sm btn-primary w-100 mt-1"
+                style="background:#4a1a7a;border-color:#4a1a7a;"
+                onclick="loadComparison()">
+          <i class="bi bi-layers me-1"></i>Comparer
+        </button>
+      </div>
+      <canvas id="compareChart" height="200"></canvas>
+    </div>
+
+    <div class="khl-card">
+      <div class="card-title"><i class="bi bi-lightbulb me-1"></i>Notions clés — Data Pipeline</div>
+      <div style="font-size:0.78rem;">
+        <p><strong>STOOQ</strong> : source de données financières historiques.
+        104M+ lignes dans <code>stg_bourso_price_history</code>.</p>
+        <p><strong>Colonne <code>libelle</code></strong> = ticker (ex: AAPL.US).<br>
+        <code>dernier</code> = cours de clôture.<br>
+        <code>date_extraction</code> = date de la cotation.</p>
+        <p><strong>Pipeline</strong> : stg → <code>load_factprice_from_stg.py</code> → Gold (<code>FactPrice</code>).</p>
+        <a href="{{ url_for('monitoring.index') }}" class="btn btn-sm btn-outline-secondary w-100">
+          <i class="bi bi-activity me-1"></i>Voir le Monitoring
+        </a>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let priceChart   = null;
+let compareChart = null;
+
+function quickLoad(ticker) {
+  document.getElementById('ticker-input').value = ticker;
+  loadPrices();
+}
+
+function loadPrices() {
+  const ticker = document.getElementById('ticker-input').value.trim();
+  const limit  = document.getElementById('period-select').value;
+  if (!ticker) return;
+
+  fetch(`/quant/api/price-history?ticker=${encodeURIComponent(ticker)}&limit=${limit}`)
+    .then(r => r.json())
+    .then(data => {
+      if (data.error) { alert(data.error); return; }
+
+      const closes = data.data.map(d => d.close).filter(v => v != null);
+      const dates  = data.data.filter(d => d.close != null).map(d => d.date);
+
+      if (priceChart) priceChart.destroy();
+      priceChart = new Chart(document.getElementById('priceChart'), {
+        type: 'line',
+        data: {
+          labels: dates,
+          datasets: [{
+            label: ticker,
+            data: closes,
+            borderColor: '#4a1a7a', backgroundColor: 'rgba(74,26,122,0.06)',
+            fill: true, tension: 0.2, pointRadius: 0
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { labels: { font: { size:11 } } } },
+          scales: {
+            y: { grid: { color:'#f0f2f5' } },
+            x: { grid: { display:false }, ticks: { maxTicksLimit: 8 } }
+          }
+        }
+      });
+
+      // Stats
+      if (data.stats) {
+        const s = data.stats;
+        const statsGrid = document.getElementById('stats-grid');
+        const items = [
+          ['Points', s.nb_points],
+          ['Période', `${s.first_date} → ${s.last_date}`],
+          ['Min', s.min],
+          ['Max', s.max],
+          ['Dernier', s.last],
+          ['Perf totale', `${s.perf_total != null ? (s.perf_total > 0 ? '+' : '') + s.perf_total : '—'}%`],
+          ['Vol annualisée', `${s.vol_annualized != null ? s.vol_annualized : '—'}%`],
+        ];
+        statsGrid.innerHTML = items.map(([l, v]) =>
+          `<div class="col-6 col-md-4">
+            <div class="p-2 bg-light rounded text-center">
+              <div style="font-size:0.65rem;color:#6c757d;text-transform:uppercase;">${l}</div>
+              <div style="font-size:0.85rem;font-weight:600;font-family:monospace;">${v}</div>
+            </div>
+          </div>`
+        ).join('');
+        document.getElementById('stats-panel').style.display = 'block';
+      }
+    })
+    .catch(e => alert('Erreur : ' + e));
+}
+
+function loadComparison() {
+  const t1 = document.getElementById('cmp1').value.trim();
+  const t2 = document.getElementById('cmp2').value.trim();
+  const t3 = document.getElementById('cmp3').value.trim();
+  const tickers = [t1,t2,t3].filter(Boolean).join(',');
+  if (!tickers) return;
+
+  fetch(`/quant/api/compare?tickers=${encodeURIComponent(tickers)}`)
+    .then(r => r.json())
+    .then(data => {
+      if (data.error) { alert(data.error); return; }
+      const colors = ['#1a3a5c','#e8a020','#0d6e3b'];
+      const datasets = Object.entries(data).map(([ticker, vals], i) => ({
+        label: ticker,
+        data: vals.map(v => v.val),
+        borderColor: colors[i],
+        backgroundColor: 'transparent',
+        tension: 0.2, pointRadius: 0
+      }));
+      const labels = Object.values(data)[0]?.map(v => v.date) || [];
+
+      if (compareChart) compareChart.destroy();
+      compareChart = new Chart(document.getElementById('compareChart'), {
+        type: 'line',
+        data: { labels, datasets },
+        options: {
+          responsive: true,
+          plugins: { legend: { labels: { font: { size:10 } } } },
+          scales: {
+            y: { grid: { color:'#f0f2f5' }, title: { display:true, text:'Indexé 100' } },
+            x: { grid: { display:false }, ticks: { maxTicksLimit: 6 } }
+          }
+        }
+      });
+    })
+    .catch(e => alert('Erreur : ' + e));
+}
+
+// Charger ^SPX au démarrage
+quickLoad('^SPX');
+loadComparison();
+</script>
+{% endblock %}

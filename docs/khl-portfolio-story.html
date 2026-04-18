@@ -1,0 +1,2709 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KHL Portfolio Lab — Storytelling</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+:root {
+  --gold: #F5A623;
+  --gold-light: #FFD580;
+  --dark: #0A0E1A;
+  --dark2: #111827;
+  --dark3: #1E2A3A;
+  --dark4: #243040;
+  --blue: #1E90FF;
+  --blue-light: #60B0FF;
+  --green: #00C853;
+  --red: #FF3B3B;
+  --purple: #9B59B6;
+  --text: #E8EDF5;
+  --text-muted: #8899AA;
+  --border: rgba(245,166,35,0.2);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'Segoe UI', system-ui, sans-serif;
+  background: var(--dark);
+  color: var(--text);
+  display: flex;
+  overflow-x: hidden;
+}
+
+/* ===== SIDEBAR NAV ===== */
+#sidebar {
+  position: fixed;
+  left: 0; top: 0;
+  width: 240px;
+  height: 100vh;
+  background: var(--dark2);
+  border-right: 1px solid var(--border);
+  overflow-y: auto;
+  z-index: 100;
+  padding: 24px 0;
+}
+
+#sidebar .logo {
+  padding: 0 20px 24px;
+  border-bottom: 1px solid var(--border);
+}
+
+#sidebar .logo .badge {
+  display: inline-block;
+  background: var(--gold);
+  color: var(--dark);
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 10px;
+  letter-spacing: 1px;
+  margin-bottom: 6px;
+}
+
+#sidebar .logo h2 {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--gold);
+  line-height: 1.3;
+}
+
+#sidebar .logo p {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+#sidebar nav {
+  padding: 16px 0;
+}
+
+#sidebar nav a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 20px;
+  color: var(--text-muted);
+  text-decoration: none;
+  font-size: 13px;
+  border-left: 3px solid transparent;
+  transition: all 0.2s;
+}
+
+#sidebar nav a:hover,
+#sidebar nav a.active {
+  color: var(--gold);
+  background: rgba(245,166,35,0.08);
+  border-left-color: var(--gold);
+}
+
+#sidebar nav a .icon { font-size: 16px; min-width: 20px; }
+#sidebar nav .section-label {
+  padding: 16px 20px 6px;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+}
+
+/* ===== MAIN CONTENT ===== */
+#main {
+  margin-left: 240px;
+  flex: 1;
+  min-height: 100vh;
+}
+
+section {
+  min-height: 100vh;
+  padding: 80px 60px;
+  border-bottom: 1px solid var(--border);
+  position: relative;
+}
+
+section:nth-child(even) { background: var(--dark2); }
+
+.section-tag {
+  display: inline-block;
+  background: rgba(245,166,35,0.15);
+  border: 1px solid var(--gold);
+  color: var(--gold);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  padding: 4px 14px;
+  border-radius: 20px;
+  margin-bottom: 16px;
+  text-transform: uppercase;
+}
+
+h1.section-title {
+  font-size: 42px;
+  font-weight: 800;
+  line-height: 1.15;
+  margin-bottom: 16px;
+}
+
+h2.section-title {
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 1.2;
+  margin-bottom: 16px;
+}
+
+.section-subtitle {
+  font-size: 16px;
+  color: var(--text-muted);
+  max-width: 700px;
+  line-height: 1.7;
+  margin-bottom: 48px;
+}
+
+/* ===== EXPERT COMMENT BOX ===== */
+.expert-box {
+  background: linear-gradient(135deg, rgba(245,166,35,0.08), rgba(30,144,255,0.05));
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--gold);
+  border-radius: 12px;
+  padding: 20px 24px;
+  margin: 32px 0;
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.expert-box .avatar {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--gold), var(--blue));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.expert-box .content .label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--gold);
+  letter-spacing: 1px;
+  margin-bottom: 6px;
+}
+
+.expert-box .content p {
+  font-size: 14px;
+  color: var(--text);
+  line-height: 1.7;
+}
+
+.expert-box .content p strong { color: var(--gold-light); }
+.expert-box .content p code {
+  background: rgba(0,0,0,0.4);
+  padding: 1px 6px;
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--blue-light);
+}
+
+/* ===== CARDS ===== */
+.cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 20px;
+  margin: 32px 0;
+}
+
+.card {
+  background: var(--dark3);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 24px;
+  transition: transform 0.2s, border-color 0.2s;
+}
+
+.card:hover {
+  transform: translateY(-4px);
+  border-color: var(--gold);
+}
+
+.card .card-icon {
+  font-size: 32px;
+  margin-bottom: 12px;
+}
+
+.card h3 {
+  font-size: 16px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  color: var(--text);
+}
+
+.card p {
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+
+.card .card-tag {
+  display: inline-block;
+  margin-top: 12px;
+  font-size: 11px;
+  padding: 3px 10px;
+  border-radius: 10px;
+  font-weight: 600;
+}
+
+.tag-sql { background: rgba(30,144,255,0.15); color: var(--blue-light); }
+.tag-python { background: rgba(0,200,83,0.15); color: var(--green); }
+.tag-ai { background: rgba(155,89,182,0.15); color: #C39BD3; }
+.tag-bi { background: rgba(245,166,35,0.15); color: var(--gold); }
+
+/* ===== CHARTS ===== */
+.chart-container {
+  background: var(--dark3);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 24px;
+  margin: 24px 0;
+}
+
+.chart-container h3 {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin-bottom: 16px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.chart-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+}
+
+@media (max-width: 900px) { .chart-row { grid-template-columns: 1fr; } }
+
+/* ===== PIPELINE ===== */
+.pipeline {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  margin: 32px 0;
+  flex-wrap: wrap;
+}
+
+.pipe-step {
+  background: var(--dark3);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px 20px;
+  text-align: center;
+  min-width: 120px;
+  flex: 1;
+  transition: all 0.2s;
+  cursor: default;
+}
+
+.pipe-step:hover { border-color: var(--gold); background: var(--dark4); }
+
+.pipe-step .pipe-icon { font-size: 28px; margin-bottom: 8px; }
+.pipe-step .pipe-label { font-size: 11px; font-weight: 700; color: var(--gold); letter-spacing: 1px; }
+.pipe-step .pipe-desc { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+
+.pipe-arrow {
+  font-size: 24px;
+  color: var(--gold);
+  padding: 0 8px;
+  flex-shrink: 0;
+}
+
+/* ===== DATA MODEL TABLE ===== */
+.model-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 24px 0;
+  font-size: 13px;
+}
+
+.model-table th {
+  background: rgba(245,166,35,0.1);
+  color: var(--gold);
+  padding: 12px 16px;
+  text-align: left;
+  font-size: 11px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  border-bottom: 1px solid var(--border);
+}
+
+.model-table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  color: var(--text-muted);
+  vertical-align: top;
+}
+
+.model-table td:first-child { color: var(--text); font-weight: 600; }
+.model-table tr:hover td { background: rgba(245,166,35,0.03); }
+
+/* ===== METRICS ===== */
+.metrics-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+  margin: 32px 0;
+}
+
+.metric-card {
+  background: var(--dark3);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 20px;
+  text-align: center;
+}
+
+.metric-card .metric-value {
+  font-size: 32px;
+  font-weight: 800;
+  color: var(--gold);
+  margin-bottom: 4px;
+}
+
+.metric-card .metric-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+
+.metric-card .metric-delta {
+  font-size: 13px;
+  margin-top: 8px;
+  font-weight: 600;
+}
+
+.delta-up { color: var(--green); }
+.delta-down { color: var(--red); }
+
+/* ===== ARCHITECTURE DIAGRAM ===== */
+.arch-diagram {
+  background: var(--dark3);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 32px;
+  margin: 32px 0;
+  overflow-x: auto;
+}
+
+.arch-layer {
+  display: flex;
+  gap: 12px;
+  align-items: stretch;
+  margin: 8px 0;
+  flex-wrap: nowrap;
+}
+
+.arch-box {
+  flex: 1;
+  min-width: 140px;
+  background: var(--dark4);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px;
+  text-align: center;
+  cursor: default;
+  transition: all 0.2s;
+}
+
+.arch-box:hover { border-color: var(--gold); transform: scale(1.02); }
+.arch-box .arch-icon { font-size: 24px; margin-bottom: 6px; }
+.arch-box .arch-name { font-size: 12px; font-weight: 700; color: var(--text); }
+.arch-box .arch-tech { font-size: 10px; color: var(--text-muted); margin-top: 4px; }
+
+.arch-layer-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  writing-mode: horizontal-tb;
+  margin-bottom: 4px;
+}
+
+.arch-connector {
+  text-align: center;
+  padding: 6px 0;
+  color: var(--text-muted);
+  font-size: 20px;
+}
+
+.layer-gold { border-color: rgba(245,166,35,0.4) !important; }
+.layer-blue { border-color: rgba(30,144,255,0.4) !important; }
+.layer-green { border-color: rgba(0,200,83,0.4) !important; }
+.layer-purple { border-color: rgba(155,89,182,0.4) !important; }
+
+/* ===== HERO ===== */
+#hero {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: 100vh;
+  background: radial-gradient(ellipse at top left, rgba(245,166,35,0.08) 0%, transparent 60%),
+              radial-gradient(ellipse at bottom right, rgba(30,144,255,0.06) 0%, transparent 60%);
+}
+
+.hero-kpi-row {
+  display: flex;
+  gap: 16px;
+  margin-top: 48px;
+  flex-wrap: wrap;
+}
+
+.hero-kpi {
+  background: var(--dark3);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 16px 24px;
+  min-width: 150px;
+}
+
+.hero-kpi .kpi-val { font-size: 28px; font-weight: 800; color: var(--gold); }
+.hero-kpi .kpi-lbl { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+
+/* ===== GUARDRAIL BOX ===== */
+.guardrail {
+  background: rgba(255,59,59,0.06);
+  border: 1px solid rgba(255,59,59,0.3);
+  border-radius: 12px;
+  padding: 16px 20px;
+  margin: 16px 0;
+  font-size: 13px;
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.guardrail-icon { font-size: 20px; flex-shrink: 0; }
+.guardrail p { color: var(--text); line-height: 1.6; }
+.guardrail strong { color: #FF8080; }
+
+/* ===== CODE SNIPPET ===== */
+.code-block {
+  background: #0D1117;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 10px;
+  padding: 20px 24px;
+  margin: 16px 0;
+  overflow-x: auto;
+  font-family: 'Cascadia Code', 'Fira Code', monospace;
+  font-size: 13px;
+  line-height: 1.8;
+}
+
+.code-block .kw { color: #FF7B72; }
+.code-block .fn { color: #D2A8FF; }
+.code-block .st { color: #A5D6FF; }
+.code-block .cm { color: #6E7681; font-style: italic; }
+.code-block .nm { color: #79C0FF; }
+.code-block .op { color: var(--gold); }
+
+/* ===== ROADMAP ===== */
+.timeline {
+  position: relative;
+  padding-left: 32px;
+  margin: 32px 0;
+}
+
+.timeline::before {
+  content: '';
+  position: absolute;
+  left: 8px;
+  top: 0; bottom: 0;
+  width: 2px;
+  background: linear-gradient(to bottom, var(--gold), var(--blue));
+}
+
+.timeline-item {
+  position: relative;
+  margin-bottom: 32px;
+}
+
+.timeline-item::before {
+  content: '';
+  position: absolute;
+  left: -28px;
+  top: 4px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  border: 2px solid var(--gold);
+  background: var(--dark);
+}
+
+.timeline-item.done::before { background: var(--green); border-color: var(--green); }
+.timeline-item.wip::before { background: var(--gold); border-color: var(--gold); animation: pulse 1.5s infinite; }
+
+@keyframes pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(245,166,35,0.4); }
+  50% { box-shadow: 0 0 0 8px rgba(245,166,35,0); }
+}
+
+.timeline-item h4 { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+.timeline-item p { font-size: 13px; color: var(--text-muted); line-height: 1.6; }
+.timeline-item .tl-tag {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 8px;
+  margin-right: 8px;
+}
+.tl-done { background: rgba(0,200,83,0.15); color: var(--green); }
+.tl-wip { background: rgba(245,166,35,0.15); color: var(--gold); }
+.tl-todo { background: rgba(255,255,255,0.06); color: var(--text-muted); }
+
+/* ===== FOOTER ===== */
+#footer {
+  background: var(--dark2);
+  padding: 48px 60px;
+  border-top: 1px solid var(--border);
+  text-align: center;
+}
+
+#footer .footer-logo { font-size: 24px; font-weight: 800; color: var(--gold); margin-bottom: 8px; }
+#footer p { font-size: 13px; color: var(--text-muted); }
+
+/* ===== SCROLLBAR ===== */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--dark2); }
+::-webkit-scrollbar-thumb { background: rgba(245,166,35,0.3); border-radius: 3px; }
+
+/* ===== HIGHLIGHT ===== */
+.hl { color: var(--gold); font-weight: 700; }
+.hl-blue { color: var(--blue-light); font-weight: 700; }
+.hl-green { color: var(--green); font-weight: 700; }
+
+.two-col {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 32px;
+  margin: 32px 0;
+}
+@media (max-width: 900px) { .two-col { grid-template-columns: 1fr; } }
+
+.tech-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--dark4);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 4px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  margin: 4px;
+}
+
+.persona-card {
+  background: var(--dark3);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 24px;
+  position: relative;
+  overflow: hidden;
+}
+
+.persona-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+}
+
+.persona-pm::before { background: var(--gold); }
+.persona-da::before { background: var(--blue); }
+.persona-de::before { background: var(--green); }
+
+.persona-card .role {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.role-pm { color: var(--gold); }
+.role-da { color: var(--blue-light); }
+.role-de { color: var(--green); }
+
+.persona-card h3 { font-size: 18px; font-weight: 700; margin-bottom: 12px; }
+.persona-card ul { list-style: none; }
+.persona-card ul li {
+  font-size: 13px;
+  color: var(--text-muted);
+  padding: 6px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.04);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.risk-indicator {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--dark3);
+  border-radius: 10px;
+  margin: 8px 0;
+}
+
+.risk-bar-outer {
+  flex: 1;
+  height: 8px;
+  background: rgba(255,255,255,0.06);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.risk-bar-inner {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 1s ease;
+}
+
+/* ===== FINANCE TOOLTIPS ===== */
+.fin-term {
+  font-weight: 700;
+  color: var(--gold-light);
+  border-bottom: 1px dashed rgba(245,166,35,0.5);
+  cursor: help;
+  position: relative;
+  white-space: nowrap;
+}
+
+#fin-tooltip {
+  position: fixed;
+  z-index: 9999;
+  max-width: 360px;
+  background: #0A0E1A;
+  border: 1px solid var(--gold);
+  border-radius: 14px;
+  padding: 16px 18px;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.7), 0 0 0 1px rgba(245,166,35,0.15);
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(6px) scale(0.97);
+  transition: opacity 0.18s ease, transform 0.18s ease;
+}
+
+#fin-tooltip.visible {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+}
+
+#fin-tooltip .tt-term {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--gold);
+  letter-spacing: 0.5px;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+#fin-tooltip .tt-term::before {
+  content: '📚';
+  font-size: 14px;
+}
+
+#fin-tooltip .tt-category {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: 8px;
+  margin-bottom: 10px;
+  display: inline-block;
+}
+
+.cat-perf { background: rgba(0,200,83,0.15); color: #00C853; }
+.cat-risk { background: rgba(255,59,59,0.15); color: #FF8080; }
+.cat-struct { background: rgba(30,144,255,0.15); color: #60B0FF; }
+.cat-regl { background: rgba(155,89,182,0.15); color: #C39BD3; }
+.cat-exec { background: rgba(245,166,35,0.15); color: #F5A623; }
+.cat-data { background: rgba(0,200,83,0.12); color: #80FFB2; }
+.cat-marche { background: rgba(255,165,0,0.15); color: #FFB347; }
+
+#fin-tooltip .tt-def {
+  font-size: 13px;
+  color: #C8D8E8;
+  line-height: 1.7;
+}
+
+#fin-tooltip .tt-def strong { color: var(--gold-light); }
+#fin-tooltip .tt-def em { color: #8899AA; font-style: italic; }
+
+#fin-tooltip .tt-formula {
+  margin-top: 10px;
+  background: rgba(0,0,0,0.5);
+  border-left: 3px solid var(--gold);
+  border-radius: 4px;
+  padding: 8px 12px;
+  font-family: 'Cascadia Code', 'Fira Code', monospace;
+  font-size: 12px;
+  color: #A5D6FF;
+}
+
+#fin-tooltip .tt-example {
+  margin-top: 8px;
+  font-size: 11px;
+  color: var(--text-muted);
+  background: rgba(255,255,255,0.03);
+  border-radius: 6px;
+  padding: 6px 10px;
+}
+</style>
+</head>
+<body>
+
+<!-- ===== FINANCE TOOLTIP POPUP ===== -->
+<div id="fin-tooltip">
+  <div class="tt-term" id="tt-term-text"></div>
+  <div id="tt-cat" class="tt-category"></div>
+  <div class="tt-def" id="tt-def-text"></div>
+  <div class="tt-formula" id="tt-formula" style="display:none"></div>
+  <div class="tt-example" id="tt-example" style="display:none"></div>
+</div>
+
+<!-- ===== SIDEBAR ===== -->
+<nav id="sidebar">
+  <div class="logo">
+    <div class="badge">v0.1.0 · MVP</div>
+    <h2>KHL Portfolio Lab</h2>
+    <p>Investment Analytics Platform</p>
+  </div>
+  <nav>
+    <div class="section-label">Le Projet</div>
+    <a href="#hero" class="active"><span class="icon">🏠</span> Accueil</a>
+    <a href="#metier"><span class="icon">💼</span> Le Métier</a>
+    <a href="#architecture"><span class="icon">🏗️</span> Architecture</a>
+
+    <div class="section-label">Les Couches</div>
+    <a href="#datamodel"><span class="icon">🗄️</span> Modèle de Données</a>
+    <a href="#trading"><span class="icon">📈</span> Simulation Trading</a>
+    <a href="#analytics"><span class="icon">📊</span> Analytics & Risque</a>
+    <a href="#ai"><span class="icon">🤖</span> Assistant IA</a>
+    <a href="#powerbi"><span class="icon">📋</span> Power BI</a>
+
+    <div class="section-label">Qualité & Vision</div>
+    <a href="#cicd"><span class="icon">⚙️</span> CI/CD</a>
+    <a href="#roadmap"><span class="icon">🚀</span> Roadmap</a>
+  </nav>
+</nav>
+
+<!-- ===== MAIN ===== -->
+<main id="main">
+
+<!-- ============================================================ -->
+<!-- SECTION 1: HERO -->
+<!-- ============================================================ -->
+<section id="hero">
+  <div class="section-tag">Portfolio Management · FinTech · Data Engineering</div>
+  <h1 class="section-title">
+    KHL <span class="hl">Portfolio Lab</span><br>
+    Une plateforme de gestion<br>de portefeuille boursier
+  </h1>
+  <p class="section-subtitle">
+    De la simulation de trades aux recommandations IA, en passant par le calcul du risque —
+    un pipeline de données bout-en-bout pour les professionnels de la finance et de la data.
+  </p>
+
+  <div class="hero-kpi-row">
+    <div class="hero-kpi">
+      <div class="kpi-val">5</div>
+      <div class="kpi-lbl">Modules intégrés</div>
+    </div>
+    <div class="hero-kpi">
+      <div class="kpi-val">15+</div>
+      <div class="kpi-lbl">Tables SQL Gold</div>
+    </div>
+    <div class="hero-kpi">
+      <div class="kpi-val">4</div>
+      <div class="kpi-lbl">Métriques de risque</div>
+    </div>
+    <div class="hero-kpi">
+      <div class="kpi-val">100%</div>
+      <div class="kpi-lbl">Auditable & Traçable</div>
+    </div>
+    <div class="hero-kpi">
+      <div class="kpi-val">IA</div>
+      <div class="kpi-lbl">Recommandations mock→prod</div>
+    </div>
+  </div>
+
+  <div class="expert-box" style="margin-top: 48px;">
+    <div class="avatar">👨‍💼</div>
+    <div class="content">
+      <div class="label">Senior Data Architect · Intro</div>
+      <p>
+        Ce projet simule ce qu'une vraie banque ou société de gestion doit construire
+        pour piloter un portefeuille d'investissement. <strong>Le problème métier est simple :</strong>
+        comment savoir en temps réel combien tu as gagné, quel risque tu prends,
+        et quelle décision prendre demain — le tout de façon traçable et auditable ?
+        KHL Portfolio Lab répond à cette question, couche par couche.
+      </p>
+    </div>
+  </div>
+
+  <div class="chart-container" style="margin-top: 32px;">
+    <h3>📈 Simulation NAV — Portefeuille MAIN (100 jours)</h3>
+    <canvas id="navChart" height="120"></canvas>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- SECTION 2: LE MÉTIER -->
+<!-- ============================================================ -->
+<section id="metier">
+  <div class="section-tag">Business · Métier · Cas d'Usage</div>
+  <h2 class="section-title">Qui a besoin de ça, et pourquoi ?</h2>
+  <p class="section-subtitle">
+    Avant de parler de SQL ou de Python, comprenons le problème business.
+    Un gestionnaire de portefeuille vit avec ces questions toute la journée.
+  </p>
+
+  <div class="expert-box">
+    <div class="avatar">👨‍💼</div>
+    <div class="content">
+      <div class="label">Senior · Le contexte métier</div>
+      <p>
+        Imagine que tu gères 10 millions d'euros pour des clients. Chaque matin,
+        tu dois savoir : <strong>combien ça vaut ?</strong> Chaque soir : <strong>qu'est-ce que j'ai perdu ou gagné ?</strong>
+        Et chaque semaine : <strong>est-ce que je prends trop de risque ?</strong>
+        Sans infrastructure data, tu fais ça dans Excel. C'est exactement pourquoi ce projet existe.
+      </p>
+    </div>
+  </div>
+
+  <div class="cards-grid">
+    <div class="persona-card persona-pm">
+      <div class="role role-pm">💼 Portfolio Manager</div>
+      <h3>Gestionnaire de Portefeuille</h3>
+      <ul>
+        <li>📊 Suivre la NAV et la performance quotidienne</li>
+        <li>⚖️ Contrôler le risque (VaR, volatilité)</li>
+        <li>🤖 Recevoir des recommandations IA</li>
+        <li>📋 Produire des reportings réglementaires</li>
+        <li>🔍 Justifier chaque décision (audit trail)</li>
+      </ul>
+    </div>
+    <div class="persona-card persona-da">
+      <div class="role role-da">📊 Data Analyst</div>
+      <h3>Analyste de Données</h3>
+      <ul>
+        <li>🔗 Connecter Power BI au gold layer SQL</li>
+        <li>📈 Créer des dashboards de performance</li>
+        <li>🧮 Valider les calculs de métriques</li>
+        <li>📉 Analyser les drawdowns historiques</li>
+        <li>🎯 Construire des vues métier claires</li>
+      </ul>
+    </div>
+    <div class="persona-card persona-de">
+      <div class="role role-de">⚙️ Data Engineer</div>
+      <h3>Ingénieur de Données</h3>
+      <ul>
+        <li>🏗️ Construire le pipeline ETL/ELT</li>
+        <li>🗄️ Concevoir le schéma gold SQL Server</li>
+        <li>🔄 Ingérer les prix depuis Boursorama</li>
+        <li>🧪 Écrire des tests unitaires Python</li>
+        <li>🚀 Configurer le CI/CD GitHub Actions</li>
+      </ul>
+    </div>
+  </div>
+
+  <h3 style="font-size: 20px; font-weight: 700; margin: 40px 0 20px;">
+    🏢 Les entreprises qui ont besoin de ça
+  </h3>
+
+  <div class="cards-grid">
+    <div class="card">
+      <div class="card-icon">🏦</div>
+      <h3>Banques & Asset Managers</h3>
+      <p>Sociétés de gestion, banques privées, family offices — piloter des portefeuilles avec discipline et traçabilité réglementaire (MiFID II, AIFMD).</p>
+      <span class="card-tag tag-bi">Marché principal</span>
+    </div>
+    <div class="card">
+      <div class="card-icon">📡</div>
+      <h3>Fintechs & Néobrokers</h3>
+      <p>Plateformes d'investissement comme Trade Republic ou Boursorama qui doivent calculer la performance client en temps quasi-réel.</p>
+      <span class="card-tag tag-python">Croissance rapide</span>
+    </div>
+    <div class="card">
+      <div class="card-icon">🎓</div>
+      <h3>Formations & Labs Quantitatifs</h3>
+      <p>Écoles de finance, laboratoires de recherche qui simulent des stratégies de trading pour former les futurs gestionnaires.</p>
+      <span class="card-tag tag-ai">R&D</span>
+    </div>
+    <div class="card">
+      <div class="card-icon">⚙️</div>
+      <h3>DSI Entreprises Industrielles</h3>
+      <p>Les groupes industriels avec trésorerie active ont besoin de piloter leurs placements financiers avec les mêmes outils qu'un asset manager.</p>
+      <span class="card-tag tag-sql">Opportunité</span>
+    </div>
+  </div>
+
+  <div class="expert-box">
+    <div class="avatar">👨‍💼</div>
+    <div class="content">
+      <div class="label">Senior · Junior, retiens ça !</div>
+      <p>
+        Le marché de l'asset management gérait <strong>115 000 milliards $</strong> en 2023 (PWC).
+        Chaque gestionnaire a besoin d'une stack data. Les profils qui maîtrisent
+        à la fois la <strong>finance</strong> ET la <strong>data engineering</strong>
+        sont extrêmement rares et très recherchés. Ce projet est exactement ce qu'on te
+        demande de savoir construire en entretien chez un asset manager ou une fintech.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- SECTION 3: ARCHITECTURE -->
+<!-- ============================================================ -->
+<section id="architecture">
+  <div class="section-tag">Architecture · Infrastructure · Système</div>
+  <h2 class="section-title">L'Architecture Globale</h2>
+  <p class="section-subtitle">
+    5 modules, 1 base de données gold, 1 pipeline de bout-en-bout.
+    Chaque couche a une responsabilité claire et un contrat de données.
+  </p>
+
+  <div class="arch-diagram">
+    <div class="arch-layer-label">SOURCES</div>
+    <div class="arch-layer">
+      <div class="arch-box layer-blue">
+        <div class="arch-icon">📡</div>
+        <div class="arch-name">Boursorama Staging</div>
+        <div class="arch-tech">SQL Server · KHLWorldInvest</div>
+      </div>
+      <div class="arch-box layer-blue">
+        <div class="arch-icon">🎲</div>
+        <div class="arch-name">Price Generator</div>
+        <div class="arch-tech">Python · Random Walk</div>
+      </div>
+      <div class="arch-box layer-blue">
+        <div class="arch-icon">📋</div>
+        <div class="arch-name">Stratégie Rotation</div>
+        <div class="arch-tech">Python Rules Engine</div>
+      </div>
+    </div>
+
+    <div class="arch-connector">⬇️ ETL / Ingestion</div>
+
+    <div class="arch-layer-label">GOLD LAYER (SQL Server)</div>
+    <div class="arch-layer">
+      <div class="arch-box layer-gold">
+        <div class="arch-icon">📦</div>
+        <div class="arch-name">DimDate</div>
+        <div class="arch-tech">Calendrier</div>
+      </div>
+      <div class="arch-box layer-gold">
+        <div class="arch-icon">🔑</div>
+        <div class="arch-name">DimSecurity</div>
+        <div class="arch-tech">Instruments</div>
+      </div>
+      <div class="arch-box layer-gold">
+        <div class="arch-icon">🏦</div>
+        <div class="arch-name">DimPortfolio</div>
+        <div class="arch-tech">Portefeuilles</div>
+      </div>
+      <div class="arch-box layer-gold">
+        <div class="arch-icon">💰</div>
+        <div class="arch-name">FactTrades</div>
+        <div class="arch-tech">Transactions</div>
+      </div>
+      <div class="arch-box layer-gold">
+        <div class="arch-icon">📈</div>
+        <div class="arch-name">FactPrice</div>
+        <div class="arch-tech">Prix journaliers</div>
+      </div>
+    </div>
+
+    <div class="arch-connector">⬇️ Calculs Analytics</div>
+
+    <div class="arch-layer">
+      <div class="arch-box layer-green">
+        <div class="arch-icon">📊</div>
+        <div class="arch-name">PortfolioPnLDaily</div>
+        <div class="arch-tech">NAV · P&L · Returns</div>
+      </div>
+      <div class="arch-box layer-green">
+        <div class="arch-icon">⚠️</div>
+        <div class="arch-name">RiskMetricsDaily</div>
+        <div class="arch-tech">VaR · Vol · Sharpe</div>
+      </div>
+      <div class="arch-box layer-purple">
+        <div class="arch-icon">🤖</div>
+        <div class="arch-name">AI_DailyBriefing</div>
+        <div class="arch-tech">Régime · Contexte</div>
+      </div>
+      <div class="arch-box layer-purple">
+        <div class="arch-icon">💡</div>
+        <div class="arch-name">AI_Recommendations</div>
+        <div class="arch-tech">BUY·SELL·HOLD</div>
+      </div>
+    </div>
+
+    <div class="arch-connector">⬇️ Consommation</div>
+
+    <div class="arch-layer">
+      <div class="arch-box layer-gold">
+        <div class="arch-icon">📋</div>
+        <div class="arch-name">Power BI</div>
+        <div class="arch-tech">Dashboards · Reports</div>
+      </div>
+      <div class="arch-box layer-blue">
+        <div class="arch-icon">🖥️</div>
+        <div class="arch-name">CLI Python</div>
+        <div class="arch-tech">Scripts · Ops</div>
+      </div>
+      <div class="arch-box layer-green">
+        <div class="arch-icon">📧</div>
+        <div class="arch-name">Audit Log</div>
+        <div class="arch-tech">Compliance · Traçabilité</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="expert-box">
+    <div class="avatar">👨‍💼</div>
+    <div class="content">
+      <div class="label">Senior · Pourquoi ce schéma en étoile ?</div>
+      <p>
+        On utilise un <strong>schéma en étoile</strong> (Dimensional Modeling) parce que c'est
+        le standard de l'industrie BI depuis Kimball dans les années 90. Les <strong>dimensions</strong>
+        (DimDate, DimSecurity) sont stables et peu volumineuses — tu les charges une fois.
+        Les <strong>faits</strong> (FactTrades, FactPrice) grossissent chaque jour.
+        Power BI fait des jointures sur les dimensions en mémoire pour les filtres et les slicers —
+        c'est ultra-rapide. Si tu vois un schema différent en entretien, demande toujours :
+        <strong>"Pourquoi vous n'utilisez pas le star schema ?"</strong> — ça impressionne.
+      </p>
+    </div>
+  </div>
+
+  <div class="two-col">
+    <div>
+      <h3 style="font-size: 16px; font-weight: 700; margin-bottom: 16px;">🔧 Stack Technologique</h3>
+      <div>
+        <span class="tech-badge">🐍 Python 3.11+</span>
+        <span class="tech-badge">🗄️ SQL Server</span>
+        <span class="tech-badge">📊 Power BI</span>
+        <span class="tech-badge">🔗 pyodbc</span>
+        <span class="tech-badge">🧪 unittest</span>
+        <span class="tech-badge">⚙️ GitHub Actions</span>
+        <span class="tech-badge">🐳 Docker (WIP)</span>
+        <span class="tech-badge">🤖 OpenAI API (ready)</span>
+        <span class="tech-badge">📦 dataclasses</span>
+        <span class="tech-badge">🌿 dotenv</span>
+      </div>
+    </div>
+    <div>
+      <h3 style="font-size: 16px; font-weight: 700; margin-bottom: 16px;">📁 Structure du Projet</h3>
+      <div class="code-block">
+<span class="nm">khl-portfolio-lab/</span>
+├── <span class="st">trading-sim/</span>      <span class="cm"># Moteur de simulation</span>
+├── <span class="st">analytics/</span>        <span class="cm"># Performance & Risque</span>
+├── <span class="st">ai-assistant/</span>     <span class="cm"># Recommandations IA</span>
+├── <span class="st">data-platform/</span>    <span class="cm"># DDL SQL Gold Layer</span>
+├── <span class="st">powerbi/</span>          <span class="cm"># Thèmes & Modèles</span>
+├── <span class="st">scripts/</span>          <span class="cm"># Seed & Ingestion</span>
+├── <span class="st">docs/</span>             <span class="cm"># Documentation</span>
+└── <span class="st">.github/</span>          <span class="cm"># CI/CD Workflows</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- SECTION 4: DATA MODEL -->
+<!-- ============================================================ -->
+<section id="datamodel">
+  <div class="section-tag">SQL · Modèle de Données · Gold Layer</div>
+  <h2 class="section-title">Le Modèle de Données Gold</h2>
+  <p class="section-subtitle">
+    Toutes les données consolidées dans un schéma SQL structuré, optimisé pour la
+    performance analytique et la traçabilité réglementaire.
+  </p>
+
+  <div class="expert-box">
+    <div class="avatar">👨‍💼</div>
+    <div class="content">
+      <div class="label">Senior · C'est quoi le "Gold Layer" ?</div>
+      <p>
+        Dans l'architecture <strong>Medallion (Bronze → Silver → Gold)</strong>,
+        le Gold Layer c'est la donnée <strong>propre, validée, enrichie</strong> —
+        prête à être consommée par les dashboards et les applications métier.
+        On ne touche pas au Gold depuis le code applicatif en écriture directe —
+        uniquement via les scripts contrôlés. Pense au Gold comme à la <strong>source de vérité unique</strong>
+        qui alimente tout le reste.
+      </p>
+    </div>
+  </div>
+
+  <table class="model-table">
+    <tr>
+      <th>Table</th>
+      <th>Type</th>
+      <th>Rôle Métier</th>
+      <th>Colonnes Clés</th>
+    </tr>
+    <tr>
+      <td>DimDate</td>
+      <td><span class="card-tag tag-sql" style="display:inline">Dimension</span></td>
+      <td>Calendrier de trading avec années, mois, trimestres, semaines</td>
+      <td>DateKey, CalendarYear, MonthName, Quarter, WeekNum</td>
+    </tr>
+    <tr>
+      <td>DimSecurity</td>
+      <td><span class="card-tag tag-sql" style="display:inline">Dimension</span></td>
+      <td>Référentiel des instruments financiers (actions, ETF)</td>
+      <td>Ticker, SecurityName, AssetClass, Currency</td>
+    </tr>
+    <tr>
+      <td>DimPortfolio</td>
+      <td><span class="card-tag tag-sql" style="display:inline">Dimension</span></td>
+      <td>Identité des portefeuilles avec profil de risque</td>
+      <td>PortfolioCode, RiskProfile, InceptionDate</td>
+    </tr>
+    <tr>
+      <td>FactPrice</td>
+      <td><span class="card-tag tag-python" style="display:inline">Fait</span></td>
+      <td>Prix de clôture journaliers par instrument</td>
+      <td>DateKey, SecurityKey, ClosePrice, Volume</td>
+    </tr>
+    <tr>
+      <td>FactTrades</td>
+      <td><span class="card-tag tag-python" style="display:inline">Fait</span></td>
+      <td>Exécution des ordres d'achat/vente avec coûts réels</td>
+      <td>TradeDate, Side, Qty, Price, Fees, Slippage</td>
+    </tr>
+    <tr>
+      <td>PortfolioPositionsDaily</td>
+      <td><span class="card-tag tag-python" style="display:inline">Fait</span></td>
+      <td>Snapshot quotidien des positions (valeur marché, P&L latent)</td>
+      <td>MarketValue, UnrealizedPnL, AvgCost, Weight</td>
+    </tr>
+    <tr>
+      <td>PortfolioPnLDaily</td>
+      <td><span class="card-tag tag-python" style="display:inline">Fait</span></td>
+      <td>Performance quotidienne du portefeuille (NAV, rendement)</td>
+      <td>Nav, DailyPnL, CumPnL, ReturnPct</td>
+    </tr>
+    <tr>
+      <td>RiskMetricsDaily</td>
+      <td><span class="card-tag tag-python" style="display:inline">Fait</span></td>
+      <td>Métriques de risque calculées (volatilité, VaR, Sharpe, Beta)</td>
+      <td>Volatility20d, MaxDrawdown, VaR95, SharpeRatio</td>
+    </tr>
+    <tr>
+      <td>AI_DailyBriefing</td>
+      <td><span class="card-tag tag-ai" style="display:inline">IA</span></td>
+      <td>Analyse du régime de marché avec score de confiance</td>
+      <td>MarketRegime, Confidence, Summary, FocusTickers</td>
+    </tr>
+    <tr>
+      <td>AI_Recommendations</td>
+      <td><span class="card-tag tag-ai" style="display:inline">IA</span></td>
+      <td>Recommandations d'action par titre avec justification</td>
+      <td>Action, Confidence, Reasoning, TargetWeight</td>
+    </tr>
+    <tr>
+      <td>AI_AuditLog</td>
+      <td><span class="card-tag tag-ai" style="display:inline">IA</span></td>
+      <td>Journal complet de toutes les décisions IA pour compliance</td>
+      <td>Timestamp, User, Assumptions, Version</td>
+    </tr>
+  </table>
+
+  <div class="expert-box">
+    <div class="avatar">👨‍💼</div>
+    <div class="content">
+      <div class="label">Senior · Les vues SQL, pourquoi ?</div>
+      <p>
+        Les <strong>vues SQL</strong> comme <code>vw_PortfolioDashboardDaily</code> ou
+        <code>vw_AI_LatestRecommendations</code> sont la couche de présentation du SQL.
+        Elles joingnent plusieurs tables et exposent exactement ce dont Power BI a besoin —
+        <strong>sans dupliquer les données</strong>. Règle d'or : ne jamais laisser Power BI faire
+        les jointures lui-même sur des millions de lignes. Fais-les dans SQL via des vues,
+        et Power BI se contente de lire. Performance x10.
+      </p>
+    </div>
+  </div>
+
+  <div class="chart-row">
+    <div class="chart-container">
+      <h3>📊 Répartition des tables par type</h3>
+      <canvas id="tableTypeChart" height="200"></canvas>
+    </div>
+    <div class="chart-container">
+      <h3>📦 Flux de données entre couches</h3>
+      <canvas id="dataFlowChart" height="200"></canvas>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- SECTION 5: TRADING SIM -->
+<!-- ============================================================ -->
+<section id="trading">
+  <div class="section-tag">Trading · Simulation · Moteur d'Exécution</div>
+  <h2 class="section-title">La Simulation de Trading</h2>
+  <p class="section-subtitle">
+    Un moteur Python qui simule l'exécution d'ordres boursiers avec frais réels,
+    slippage, et tracking des positions — comme un vrai desk de trading.
+  </p>
+
+  <div class="pipeline">
+    <div class="pipe-step">
+      <div class="pipe-icon">🎲</div>
+      <div class="pipe-label">Prix Synthétiques</div>
+      <div class="pipe-desc">Random Walk<br>AAPL / MSFT / SPY</div>
+    </div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-step">
+      <div class="pipe-icon">🧠</div>
+      <div class="pipe-label">Stratégie</div>
+      <div class="pipe-desc">Rotation tactique<br>basée sur règles</div>
+    </div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-step">
+      <div class="pipe-icon">⚡</div>
+      <div class="pipe-label">Exécution</div>
+      <div class="pipe-desc">Fees + Slippage<br>appliqués</div>
+    </div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-step">
+      <div class="pipe-icon">📦</div>
+      <div class="pipe-label">Position Update</div>
+      <div class="pipe-desc">AvgCost · Qty<br>Market Value</div>
+    </div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-step">
+      <div class="pipe-icon">🗄️</div>
+      <div class="pipe-label">SQL Gold</div>
+      <div class="pipe-desc">FactTrades<br>Positions</div>
+    </div>
+  </div>
+
+  <div class="two-col">
+    <div>
+      <div class="expert-box">
+        <div class="avatar">👨‍💼</div>
+        <div class="content">
+          <div class="label">Senior · Fees & Slippage, expliqués simplement</div>
+          <p>
+            Les <strong>fees (5 bps = 0.05%)</strong> c'est ce que ton courtier prend sur chaque trade.
+            Le <strong>slippage (3 bps)</strong>, c'est la différence entre le prix demandé et le prix réel d'exécution —
+            sur les marchés liquides, le carnet d'ordres bouge pendant que ton ordre arrive.
+            Si tu ne modélises pas ça, tes backtests sont <strong>irréalistes et optimistes</strong>.
+            C'est l'erreur classique des débutants en quantitative finance.
+          </p>
+        </div>
+      </div>
+
+      <div class="metrics-grid">
+        <div class="metric-card">
+          <div class="metric-value">5bps</div>
+          <div class="metric-label">Frais courtage</div>
+          <div class="metric-delta delta-down">Cost per trade</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-value">3bps</div>
+          <div class="metric-label">Slippage</div>
+          <div class="metric-delta delta-down">Market impact</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-value">3</div>
+          <div class="metric-label">Tickers</div>
+          <div class="metric-delta" style="color:var(--text-muted)">AAPL · MSFT · SPY</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-value">40%</div>
+          <div class="metric-label">Max concentration</div>
+          <div class="metric-delta delta-down">Guardrail</div>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <h3 style="font-size: 16px; font-weight: 700; margin-bottom: 16px;">🐍 Le code d'exécution</h3>
+      <div class="code-block">
+<span class="cm"># trading-sim/engine/simulator.py</span>
+<span class="kw">def</span> <span class="fn">execute_order</span>(order: MarketOrder,
+                    price: <span class="nm">float</span>,
+                    state: PositionState) -> ExecutedTrade:
+
+    <span class="cm"># Calcul du coût réel avec frais</span>
+    gross = order.quantity * price
+    fees  = gross * <span class="nm">0.0005</span>   <span class="cm"># 5 bps</span>
+    slip  = gross * <span class="nm">0.0003</span>   <span class="cm"># 3 bps</span>
+    net   = gross + fees + slip
+
+    <span class="cm"># Mise à jour de la position</span>
+    <span class="kw">if</span> order.side == <span class="st">"BUY"</span>:
+        state.update_avg_cost(price, qty)
+    <span class="kw">elif</span> order.side == <span class="st">"SELL"</span>:
+        <span class="kw">if</span> qty > state.quantity:
+            <span class="kw">raise</span> <span class="fn">ValueError</span>(<span class="st">"Insufficient position"</span>)
+
+    <span class="kw">return</span> ExecutedTrade(
+        net_amount=net, fees=fees, slippage=slip
+    )
+      </div>
+    </div>
+  </div>
+
+  <div class="chart-container">
+    <h3>📊 Simulation — Allocation par titre sur 60 jours (rotation tactique)</h3>
+    <canvas id="allocationChart" height="100"></canvas>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- SECTION 6: ANALYTICS & RISK -->
+<!-- ============================================================ -->
+<section id="analytics">
+  <div class="section-tag">Analytics · Risk Management · KPI Finance</div>
+  <h2 class="section-title">Analytics & Métriques de Risque</h2>
+  <p class="section-subtitle">
+    Le moteur de calcul Python qui transforme les transactions brutes en indicateurs
+    de performance et de risque exploitables par les gérants.
+  </p>
+
+  <div class="expert-box">
+    <div class="avatar">👨‍💼</div>
+    <div class="content">
+      <div class="label">Senior · La vraie valeur ajoutée de ce module</div>
+      <p>
+        N'importe qui peut calculer un P&L. La vraie question c'est :
+        <strong>"est-ce que je gagne assez d'argent par rapport au risque que je prends ?"</strong>
+        C'est ce que le Sharpe ratio mesure. Un fonds avec 10% de rendement et 5% de volatilité
+        est <strong>bien meilleur</strong> qu'un fonds avec 15% de rendement et 20% de volatilité.
+        Les régulateurs (AMF, ESMA) exigent ces métriques pour les fonds en distribution publique.
+      </p>
+    </div>
+  </div>
+
+  <div class="cards-grid">
+    <div class="card">
+      <div class="card-icon">💰</div>
+      <h3>NAV (Net Asset Value)</h3>
+      <p>La valeur totale du portefeuille = Cash disponible + Valeur de marché de toutes les positions.</p>
+      <div class="code-block" style="margin-top:12px; font-size:11px;">NAV = Cash + Σ(Qty_i × Price_i)</div>
+    </div>
+    <div class="card">
+      <div class="card-icon">📈</div>
+      <h3>P&L Journalier & Cumulé</h3>
+      <p>Le gain ou la perte du jour (DailyPnL) et depuis le début (CumPnL). Base de tout reporting financier.</p>
+      <div class="code-block" style="margin-top:12px; font-size:11px;">DailyPnL = NAV_t - NAV_(t-1)<br>CumPnL = NAV_t - NAV_0</div>
+    </div>
+    <div class="card">
+      <div class="card-icon">📉</div>
+      <h3>Volatilité 20j Annualisée</h3>
+      <p>L'écart-type des rendements sur 20 jours, annualisé × √252. Mesure l'amplitude des fluctuations.</p>
+      <div class="code-block" style="margin-top:12px; font-size:11px;">Vol = std(returns_20d) × √252</div>
+    </div>
+    <div class="card">
+      <div class="card-icon">🌊</div>
+      <h3>Max Drawdown</h3>
+      <p>La pire chute depuis un sommet. Un drawdown de -15% signifie qu'on a perdu 15% depuis le pic historique.</p>
+      <div class="code-block" style="margin-top:12px; font-size:11px;">DD = (NAV_t - Peak_t) / Peak_t</div>
+    </div>
+    <div class="card">
+      <div class="card-icon">⚠️</div>
+      <h3>VaR 95% (Value at Risk)</h3>
+      <p>Le pire rendement journalier que tu subiras dans 95% des cas. Si VaR = -2%, tu perds moins de 2% 19 jours sur 20.</p>
+      <div class="code-block" style="margin-top:12px; font-size:11px;">VaR_95 = percentile(returns, 5)</div>
+    </div>
+    <div class="card">
+      <div class="card-icon">⭐</div>
+      <h3>Sharpe Ratio</h3>
+      <p>Le rendement par unité de risque. > 1 = excellent, > 0 = positif. Le standard de comparaison entre fonds.</p>
+      <div class="code-block" style="margin-top:12px; font-size:11px;">Sharpe = Return / Volatility<br>(risk-free = 0)</div>
+    </div>
+  </div>
+
+  <div class="chart-row">
+    <div class="chart-container">
+      <h3>📊 Performance vs Benchmark (NAV simulée)</h3>
+      <canvas id="perfChart" height="220"></canvas>
+    </div>
+    <div class="chart-container">
+      <h3>⚠️ Indicateurs de Risque en Temps Réel</h3>
+      <div id="riskIndicators" style="margin-top: 16px;">
+        <div class="risk-indicator">
+          <span style="font-size:12px; min-width:80px; color:var(--text-muted)">Volatilité</span>
+          <div class="risk-bar-outer"><div class="risk-bar-inner" id="volBar" style="width:35%; background: var(--gold);"></div></div>
+          <span style="font-size:14px; font-weight:700; color:var(--gold); min-width:48px">8.4%</span>
+        </div>
+        <div class="risk-indicator">
+          <span style="font-size:12px; min-width:80px; color:var(--text-muted)">Max Drawdown</span>
+          <div class="risk-bar-outer"><div class="risk-bar-inner" id="ddBar" style="width:22%; background: var(--red);"></div></div>
+          <span style="font-size:14px; font-weight:700; color:var(--red); min-width:48px">-5.3%</span>
+        </div>
+        <div class="risk-indicator">
+          <span style="font-size:12px; min-width:80px; color:var(--text-muted)">VaR 95%</span>
+          <div class="risk-bar-outer"><div class="risk-bar-inner" id="varBar" style="width:18%; background: #FF7B72;"></div></div>
+          <span style="font-size:14px; font-weight:700; color:#FF8080; min-width:48px">-1.8%</span>
+        </div>
+        <div class="risk-indicator">
+          <span style="font-size:12px; min-width:80px; color:var(--text-muted)">Sharpe Ratio</span>
+          <div class="risk-bar-outer"><div class="risk-bar-inner" id="sharpeBar" style="width:65%; background: var(--green);"></div></div>
+          <span style="font-size:14px; font-weight:700; color:var(--green); min-width:48px">1.32</span>
+        </div>
+        <div class="risk-indicator">
+          <span style="font-size:12px; min-width:80px; color:var(--text-muted)">Beta (vs SPY)</span>
+          <div class="risk-bar-outer"><div class="risk-bar-inner" id="betaBar" style="width:55%; background: var(--blue-light);"></div></div>
+          <span style="font-size:14px; font-weight:700; color:var(--blue-light); min-width:48px">0.87</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="expert-box">
+    <div class="avatar">👨‍💼</div>
+    <div class="content">
+      <div class="label">Senior · L'idempotence, c'est crucial !</div>
+      <p>
+        Le pipeline analytics est <strong>idempotent</strong> : si tu le relances sur la même période,
+        il <strong>purge et réinsère</strong> — jamais de doublons. C'est non-négociable en production.
+        Les réglementations financières exigent que les chiffres soient <strong>reproductibles à l'identique</strong>.
+        Un pipeline qui crée des doublons en cas de re-run est un bug critique, pas une feature manquante.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- SECTION 7: AI ASSISTANT -->
+<!-- ============================================================ -->
+<section id="ai">
+  <div class="section-tag">Intelligence Artificielle · Decision Support · LLM</div>
+  <h2 class="section-title">L'Assistant IA — Décision Augmentée</h2>
+  <p class="section-subtitle">
+    Un copilote d'investissement qui analyse le contexte du portefeuille
+    et génère des recommandations structurées — avec guardrails stricts pour la compliance.
+  </p>
+
+  <div class="expert-box">
+    <div class="avatar">👨‍💼</div>
+    <div class="content">
+      <div class="label">Senior · L'IA ne remplace pas le gérant, elle l'assiste !</div>
+      <p>
+        Ce point est fondamental en finance. L'IA ici est un <strong>outil d'aide à la décision</strong>,
+        pas un robot de trading autonome. MiFID II exige que <strong>toute décision soit tracée et justifiée</strong>.
+        C'est pourquoi l'<code>AI_AuditLog</code> stocke chaque recommandation avec timestamp,
+        score de confiance, et raisonnement. Les phrases comme <em>"execute immediately"</em> sont
+        <strong>interdites par les guardrails</strong> — c'est une protection réglementaire.
+      </p>
+    </div>
+  </div>
+
+  <div class="pipeline">
+    <div class="pipe-step">
+      <div class="pipe-icon">📊</div>
+      <div class="pipe-label">Context Pack</div>
+      <div class="pipe-desc">NAV · Positions<br>Risk Metrics</div>
+    </div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-step">
+      <div class="pipe-icon">🧠</div>
+      <div class="pipe-label">LLM Generate</div>
+      <div class="pipe-desc">Mock → OpenAI<br>Prompt templates</div>
+    </div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-step">
+      <div class="pipe-icon">✅</div>
+      <div class="pipe-label">Validation</div>
+      <div class="pipe-desc">Schema checks<br>Confidence ≤ 0.95</div>
+    </div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-step">
+      <div class="pipe-icon">🛡️</div>
+      <div class="pipe-label">Guardrails</div>
+      <div class="pipe-desc">Concentration<br>Banned phrases</div>
+    </div>
+    <div class="pipe-arrow">→</div>
+    <div class="pipe-step">
+      <div class="pipe-icon">💾</div>
+      <div class="pipe-label">SQL Write</div>
+      <div class="pipe-desc">AI tables<br>+ AuditLog</div>
+    </div>
+  </div>
+
+  <div class="two-col">
+    <div>
+      <h3 style="font-size: 16px; font-weight: 700; margin-bottom: 16px;">🤖 3 Fonctionnalités IA</h3>
+      <div class="card" style="margin-bottom: 12px;">
+        <div class="card-icon">📰</div>
+        <h3>Daily Briefing</h3>
+        <p>Analyse du régime de marché (constructif / défensif / neutre) basée sur la performance récente. Résumé narratif avec score de confiance.</p>
+        <div class="code-block" style="margin-top:12px; font-size:11px;">
+python main.py daily-briefing --portfolio-code MAIN
+        </div>
+      </div>
+      <div class="card" style="margin-bottom: 12px;">
+        <div class="card-icon">💡</div>
+        <h3>Recommandations</h3>
+        <p>BUY / SELL / HOLD / REDUCE / INCREASE par titre avec raisonnement, score de confiance, et poids cible.</p>
+        <div class="code-block" style="margin-top:12px; font-size:11px;">
+python main.py recommendations --portfolio-code MAIN
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-icon">🔭</div>
+        <h3>Analyse What-If</h3>
+        <p>Simulation de scénarios : "Que se passe-t-il si je réduis AAPL de 5% ?" Calcul du delta volatilité et rendement attendu.</p>
+        <div class="code-block" style="margin-top:12px; font-size:11px;">
+python main.py what-if --scenario "Réduire AAPL 3%"
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <h3 style="font-size: 16px; font-weight: 700; margin-bottom: 16px;">🛡️ Les Guardrails (Compliance)</h3>
+
+      <div class="guardrail">
+        <span class="guardrail-icon">🚫</span>
+        <p><strong>Phrases interdites :</strong> "execute immediately", "auto trade", "place order now". Si l'IA génère une de ces phrases, la recommandation est <strong>rejetée avant insertion SQL</strong>.</p>
+      </div>
+      <div class="guardrail">
+        <span class="guardrail-icon">📏</span>
+        <p><strong>Concentration max 40% :</strong> Aucune recommandation ne peut cibler un poids > 40% d'un titre dans le portefeuille. Règle de diversification réglementaire.</p>
+      </div>
+      <div class="guardrail">
+        <span class="guardrail-icon">🎯</span>
+        <p><strong>Confidence ≤ 0.95 :</strong> L'IA ne peut pas avoir plus de 95% de confiance — c'est un signal humain fort que la certitude absolue n'existe pas en finance.</p>
+      </div>
+      <div class="guardrail">
+        <span class="guardrail-icon">🔟</span>
+        <p><strong>Max 10 recommandations par briefing :</strong> Limite opérationnelle pour éviter le bruit et garder un signal clair pour le gérant.</p>
+      </div>
+
+      <div class="expert-box" style="margin-top: 16px;">
+        <div class="avatar">👨‍💼</div>
+        <div class="content">
+          <div class="label">Senior · Architecture prête pour OpenAI</div>
+          <p>
+            Le mock provider est un <strong>stub</strong> — même interface qu'OpenAI.
+            Pour passer en production, tu remplaces le mock par l'appel API réel.
+            Le reste du pipeline (validation, guardrails, écriture SQL) ne change pas.
+            C'est le pattern <strong>Strategy / Adapter</strong> en POO.
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- SECTION 8: POWER BI -->
+<!-- ============================================================ -->
+<section id="powerbi">
+  <div class="section-tag">Reporting · Power BI · Dashboards Finance</div>
+  <h2 class="section-title">Power BI — La Couche de Présentation</h2>
+  <p class="section-subtitle">
+    Un modèle composite (Import + DirectQuery) connecté au Gold Layer SQL —
+    des dashboards professionnels pour les gestionnaires et les équipes de contrôle.
+  </p>
+
+  <div class="expert-box">
+    <div class="avatar">👨‍💼</div>
+    <div class="content">
+      <div class="label">Senior · Composite Model — la bonne pratique BI</div>
+      <p>
+        Un <strong>modèle composite</strong> Power BI = certaines tables en <strong>Import</strong>
+        (chargées en mémoire — ultra-rapide pour les filtres) et d'autres en <strong>DirectQuery</strong>
+        (requête SQL en temps réel — données fraîches).
+        Les <strong>dimensions</strong> (DimDate, DimSecurity) vont en Import — elles changent peu.
+        Les <strong>faits</strong> (FactTrades, AI tables) vont en DirectQuery — on veut voir les nouvelles données immédiatement.
+        C'est l'architecture Power BI recommandée par Microsoft pour les modèles financiers.
+      </p>
+    </div>
+  </div>
+
+  <div class="cards-grid">
+    <div class="card">
+      <div class="card-icon">🏠</div>
+      <h3>Page 1 : Vue Portfolio</h3>
+      <p>NAV total, nombre de positions, allocation par titre, date de dernier refresh. Vue d'ensemble exécutive.</p>
+      <span class="card-tag tag-bi">Import · Dimensions</span>
+    </div>
+    <div class="card">
+      <div class="card-icon">📈</div>
+      <h3>Page 2 : Performance</h3>
+      <p>Courbe NAV historique, P&L journalier, rendements cumulés, comparaison benchmark. Graphiques interactifs.</p>
+      <span class="card-tag tag-bi">DirectQuery · PnLDaily</span>
+    </div>
+    <div class="card">
+      <div class="card-icon">⚠️</div>
+      <h3>Page 3 : Risque</h3>
+      <p>Volatilité rolling, courbe de drawdown, VaR waterfall, Sharpe ratio trend. Tableaux de bord réglementaires.</p>
+      <span class="card-tag tag-bi">DirectQuery · RiskMetrics</span>
+    </div>
+    <div class="card">
+      <div class="card-icon">🤖</div>
+      <h3>Page 4 : IA Insights</h3>
+      <p>Feed des recommandations actives, résumé du briefing du jour, what-if scenarios visualisés.</p>
+      <span class="card-tag tag-ai">DirectQuery · AI Tables</span>
+    </div>
+  </div>
+
+  <div class="two-col" style="margin-top: 32px;">
+    <div>
+      <h3 style="font-size: 16px; font-weight: 700; margin-bottom: 16px;">🎨 Thème KHL Finance</h3>
+      <div style="background: var(--dark3); border: 1px solid var(--border); border-radius: 12px; padding: 20px;">
+        <div style="display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap;">
+          <div style="width:40px; height:40px; border-radius:8px; background:#1A3A6B;" title="#1A3A6B"></div>
+          <div style="width:40px; height:40px; border-radius:8px; background:#2E6DA4;" title="#2E6DA4"></div>
+          <div style="width:40px; height:40px; border-radius:8px; background:#F5A623;" title="#F5A623 — KHL Gold"></div>
+          <div style="width:40px; height:40px; border-radius:8px; background:#00C853;" title="#00C853"></div>
+          <div style="width:40px; height:40px; border-radius:8px; background:#FF3B3B;" title="#FF3B3B"></div>
+          <div style="width:40px; height:40px; border-radius:8px; background:#9B59B6;" title="#9B59B6"></div>
+          <div style="width:40px; height:40px; border-radius:8px; background:#F5F7FA;" title="#F5F7FA — Background"></div>
+          <div style="width:40px; height:40px; border-radius:8px; background:#1E2A3A;" title="#1E2A3A — Dark"></div>
+        </div>
+        <p style="font-size: 12px; color: var(--text-muted);">Palette professionnelle finance — Segoe UI, 11-16pt — définie dans <code>KHL_Data_Finance_Theme.json</code></p>
+      </div>
+    </div>
+    <div>
+      <h3 style="font-size: 16px; font-weight: 700; margin-bottom: 16px;">📊 Vues SQL exposées à Power BI</h3>
+      <table class="model-table" style="font-size: 12px;">
+        <tr><th>Vue</th><th>Utilisation</th></tr>
+        <tr><td>vw_FactTradesEnriched</td><td>Trades avec libellés métier</td></tr>
+        <tr><td>vw_PortfolioDashboardDaily</td><td>Performance + risque joint</td></tr>
+        <tr><td>vw_PositionSnapshot</td><td>Positions avec valorisation</td></tr>
+        <tr><td>vw_AI_LatestRecommendations</td><td>Dernière reco par position</td></tr>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- SECTION 9: CI/CD -->
+<!-- ============================================================ -->
+<section id="cicd">
+  <div class="section-tag">CI/CD · Qualité · GitHub Actions · Tests</div>
+  <h2 class="section-title">Pipeline CI/CD & Qualité</h2>
+  <p class="section-subtitle">
+    Chaque commit déclenche une validation automatique — tests Python, analyse SQL,
+    et packaging de release. La qualité est non-négociable.
+  </p>
+
+  <div class="expert-box">
+    <div class="avatar">👨‍💼</div>
+    <div class="content">
+      <div class="label">Senior · Pourquoi le CI/CD est essentiel en finance ?</div>
+      <p>
+        En finance, un bug en production peut coûter des millions. Le CI/CD est le
+        <strong>filet de sécurité automatique</strong> — personne ne peut merger du code
+        qui casse les tests. Dans un contexte réglementé (MiFID II, bâle III),
+        tu dois prouver à l'auditeur que ton code a été <strong>validé, testé, et versionné</strong>.
+        Le pipeline GitHub Actions est cette preuve. Sans CI/CD, tu n'as pas de projet data en production — tu as un prototype.
+      </p>
+    </div>
+  </div>
+
+  <div class="cards-grid">
+    <div class="card">
+      <div class="card-icon">🐍</div>
+      <h3>ci-python.yml</h3>
+      <p>Déclenché à chaque push/PR sur les fichiers <code>.py</code>. Lance le compilateur Python et découvre les tests unitaires automatiquement.</p>
+      <div class="code-block" style="margin-top: 12px; font-size: 11px;">
+on: push paths: ['**.py']<br>
+jobs:<br>
+  ✓ Python compile check<br>
+  ✓ unittest discover -s tests<br>
+  ✓ 4 suites de tests
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-icon">🗄️</div>
+      <h3>ci-sql.yml</h3>
+      <p>Déclenché sur les fichiers <code>.sql</code>. Vérifie la syntaxe SQL et les conventions de nommage via le script <code>validate_sql.py</code>.</p>
+      <div class="code-block" style="margin-top: 12px; font-size: 11px;">
+on: push paths: ['**.sql']<br>
+jobs:<br>
+  ✓ SQL syntax validation<br>
+  ✓ Naming conventions check
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-icon">🚀</div>
+      <h3>release.yml</h3>
+      <p>Déclenché manuellement lors d'un tag de version. Génère le changelog, package la release et crée la note de version GitHub.</p>
+      <div class="code-block" style="margin-top: 12px; font-size: 11px;">
+on: push tags: ['v*']<br>
+jobs:<br>
+  ✓ Version changelog<br>
+  ✓ Release packaging
+      </div>
+    </div>
+  </div>
+
+  <h3 style="font-size: 18px; font-weight: 700; margin: 32px 0 16px;">🧪 Couverture des Tests</h3>
+  <table class="model-table">
+    <tr>
+      <th>Suite de Tests</th>
+      <th>Module Testé</th>
+      <th>Ce qui est validé</th>
+    </tr>
+    <tr>
+      <td>test_simulator.py</td>
+      <td>trading-sim/engine/</td>
+      <td>Calcul fees/slippage, exécution d'ordres, snapshots de position, validation quantité</td>
+    </tr>
+    <tr>
+      <td>test_performance_risk_mvp.py</td>
+      <td>analytics/</td>
+      <td>Calcul NAV, P&L, volatilité, VaR, Sharpe ratio — formules mathématiques validées</td>
+    </tr>
+    <tr>
+      <td>test_load_factprice_from_stg.py</td>
+      <td>scripts/</td>
+      <td>Parsing décimal français ("2 034,500"), déduplication, mapping sécurité</td>
+    </tr>
+    <tr>
+      <td>test_schemas_and_rules.py</td>
+      <td>ai-assistant/</td>
+      <td>Validation dataclasses, règles de constraints, postcheck quality gates</td>
+    </tr>
+  </table>
+
+  <div class="expert-box">
+    <div class="avatar">👨‍💼</div>
+    <div class="content">
+      <div class="label">Senior · Le test du parsing décimal français, pourquoi c'est brillant</div>
+      <p>
+        Boursorama exporte les prix en format français : <strong>"2 034,500"</strong> (espace milliers, virgule décimale).
+        Si tu charges ça directement en float Python, tu obtiens une erreur ou — pire — une valeur fausse.
+        Le test <code>test_load_factprice_from_stg.py</code> valide que le parser transforme correctement
+        <code>"2 034,500"</code> → <code>2034.50</code>. C'est le genre de bug silencieux qui coûte
+        des millions en prod. Tester les cas limites, c'est l'ADN d'un bon data engineer.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- SECTION 10: ROADMAP -->
+<!-- ============================================================ -->
+<section id="roadmap">
+  <div class="section-tag">Vision · Roadmap · Next Steps</div>
+  <h2 class="section-title">Roadmap & Vision Produit</h2>
+  <p class="section-subtitle">
+    Le MVP v0.1.0 est opérationnel. Voici le chemin vers une plateforme
+    de gestion de portefeuille enterprise-grade.
+  </p>
+
+  <div class="two-col">
+    <div>
+      <h3 style="font-size: 16px; font-weight: 700; margin-bottom: 20px;">✅ Déjà Réalisé (v0.1.0)</h3>
+      <div class="timeline">
+        <div class="timeline-item done">
+          <h4><span class="tl-tag tl-done">DONE</span>Gold Layer SQL complet</h4>
+          <p>15+ tables, vues enrichies, indexes, contraintes FK — schéma en étoile production-ready</p>
+        </div>
+        <div class="timeline-item done">
+          <h4><span class="tl-tag tl-done">DONE</span>Simulation de Trading</h4>
+          <p>Moteur Python avec fees, slippage, tracking de position, stratégie de rotation</p>
+        </div>
+        <div class="timeline-item done">
+          <h4><span class="tl-tag tl-done">DONE</span>Analytics & Risk Engine</h4>
+          <p>NAV, P&L, volatilité, drawdown, VaR95, Beta, Sharpe — pipeline idempotent</p>
+        </div>
+        <div class="timeline-item done">
+          <h4><span class="tl-tag tl-done">DONE</span>AI Assistant Mock</h4>
+          <p>Daily briefing, recommandations, what-if — guardrails compliance intégrés</p>
+        </div>
+        <div class="timeline-item done">
+          <h4><span class="tl-tag tl-done">DONE</span>Ingestion Prix Boursorama</h4>
+          <p>699 lignes chargées, 183 securities, parsing décimal français, MERGE SQL</p>
+        </div>
+        <div class="timeline-item done">
+          <h4><span class="tl-tag tl-done">DONE</span>CI/CD GitHub Actions</h4>
+          <p>3 workflows automatiques, 4 suites de tests, validation SQL statique</p>
+        </div>
+      </div>
+    </div>
+
+    <div>
+      <h3 style="font-size: 16px; font-weight: 700; margin-bottom: 20px;">🔮 En Cours & Planifié</h3>
+      <div class="timeline">
+        <div class="timeline-item wip">
+          <h4><span class="tl-tag tl-wip">WIP</span>Intégration OpenAI Réelle</h4>
+          <p>Remplacement du mock provider par les appels API OpenAI GPT-4. Architecture adapter déjà en place.</p>
+        </div>
+        <div class="timeline-item wip">
+          <h4><span class="tl-tag tl-wip">WIP</span>Dashboards Power BI</h4>
+          <p>4 pages (Overview, Performance, Risk, AI Insights) — structure composite model prête, visuels à créer.</p>
+        </div>
+        <div class="timeline-item">
+          <h4><span class="tl-tag tl-todo">TODO</span>Containerisation Docker</h4>
+          <p>Dockerfile + docker-compose pour déploiement one-click en dev et CI. Portabilité multi-environnement.</p>
+        </div>
+        <div class="timeline-item">
+          <h4><span class="tl-tag tl-todo">TODO</span>Infrastructure as Code</h4>
+          <p>Bicep ARM templates pour déploiement Azure. Microsoft Fabric pour scale-out du Gold Layer.</p>
+        </div>
+        <div class="timeline-item">
+          <h4><span class="tl-tag tl-todo">TODO</span>Stratégies Quantitatives Avancées</h4>
+          <p>Mean reversion, momentum, multi-factor — au-delà de la rotation tactique simple.</p>
+        </div>
+        <div class="timeline-item">
+          <h4><span class="tl-tag tl-todo">TODO</span>UI Web (Streamlit / FastAPI)</h4>
+          <p>Interface web pour les gérants non-techniques — visualisation temps réel sans Power BI.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="chart-container" style="margin-top: 40px;">
+    <h3>🗺️ Maturité par Module</h3>
+    <canvas id="maturityChart" height="100"></canvas>
+  </div>
+
+  <div class="expert-box" style="margin-top: 32px;">
+    <div class="avatar">👨‍💼</div>
+    <div class="content">
+      <div class="label">Senior · Ce projet sur ton CV, ça dit quoi ?</div>
+      <p>
+        Si tu peux expliquer ce projet en entretien — comment les données circulent du staging au gold,
+        pourquoi tu as choisi le star schema, comment tu valides l'idempotence,
+        et pourquoi les guardrails IA sont nécessaires — tu te positionnes comme quelqu'un
+        qui <strong>pense en systèmes</strong>, pas juste en code.
+        C'est exactement ce que recherchent les DSI de fonds d'investissement et les fintechs de scale-up.
+        <strong>Maîtrise chaque couche, sache l'expliquer au métier, et tu seras dans le top 5% des profils data finance.</strong>
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ============================================================ -->
+<!-- FOOTER -->
+<!-- ============================================================ -->
+<footer id="footer">
+  <div class="footer-logo">KHL Portfolio Lab</div>
+  <p style="margin-bottom: 8px;">Investment Analytics Platform · v0.1.0 · Mars 2026</p>
+  <p>Python · SQL Server · Power BI · GitHub Actions · OpenAI-Ready</p>
+  <p style="margin-top: 16px; font-size: 12px;">
+    <span style="color: var(--gold);">Trading Sim</span> ·
+    <span style="color: var(--green);">Analytics & Risk</span> ·
+    <span style="color: var(--purple);">AI Assistant</span> ·
+    <span style="color: var(--blue-light);">Power BI</span> ·
+    <span style="color: var(--text-muted);">CI/CD</span>
+  </p>
+</footer>
+
+</main>
+
+<!-- ===== SCRIPTS ===== -->
+<script>
+// ===== NAVIGATION ACTIVE HIGHLIGHT =====
+const sections = document.querySelectorAll('section[id]');
+const navLinks = document.querySelectorAll('#sidebar nav a');
+
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      navLinks.forEach(l => l.classList.remove('active'));
+      const active = document.querySelector(`#sidebar nav a[href="#${entry.target.id}"]`);
+      if (active) active.classList.add('active');
+    }
+  });
+}, { threshold: 0.3 });
+
+sections.forEach(s => observer.observe(s));
+
+navLinks.forEach(link => {
+  link.addEventListener('click', e => {
+    e.preventDefault();
+    const target = document.querySelector(link.getAttribute('href'));
+    if (target) target.scrollIntoView({ behavior: 'smooth' });
+  });
+});
+
+// ===== CHART DEFAULTS =====
+Chart.defaults.color = '#8899AA';
+Chart.defaults.borderColor = 'rgba(255,255,255,0.06)';
+Chart.defaults.font.family = "'Segoe UI', system-ui, sans-serif";
+
+// ===== NAV CHART =====
+const navCtx = document.getElementById('navChart').getContext('2d');
+const days = Array.from({length: 100}, (_, i) => `J${i+1}`);
+let nav = 100000;
+const navData = days.map(() => {
+  nav *= (1 + (Math.random() * 0.012 - 0.004));
+  return Math.round(nav);
+});
+let bench = 100000;
+const benchData = days.map(() => {
+  bench *= (1 + (Math.random() * 0.008 - 0.003));
+  return Math.round(bench);
+});
+
+new Chart(navCtx, {
+  type: 'line',
+  data: {
+    labels: days,
+    datasets: [
+      {
+        label: 'NAV Portfolio',
+        data: navData,
+        borderColor: '#F5A623',
+        backgroundColor: 'rgba(245,166,35,0.08)',
+        fill: true,
+        tension: 0.4,
+        pointRadius: 0,
+        borderWidth: 2
+      },
+      {
+        label: 'Benchmark SPY',
+        data: benchData,
+        borderColor: '#1E90FF',
+        backgroundColor: 'transparent',
+        tension: 0.4,
+        pointRadius: 0,
+        borderWidth: 1.5,
+        borderDash: [4, 4]
+      }
+    ]
+  },
+  options: {
+    responsive: true,
+    plugins: {
+      legend: { position: 'top' }
+    },
+    scales: {
+      y: {
+        ticks: {
+          callback: v => '€' + v.toLocaleString('fr-FR')
+        }
+      }
+    }
+  }
+});
+
+// ===== TABLE TYPE CHART (Donut) =====
+new Chart(document.getElementById('tableTypeChart'), {
+  type: 'doughnut',
+  data: {
+    labels: ['Dimensions', 'Faits Opérationnels', 'Faits IA', 'Vues SQL'],
+    datasets: [{
+      data: [3, 5, 4, 4],
+      backgroundColor: ['#F5A623', '#1E90FF', '#9B59B6', '#00C853'],
+      borderWidth: 2,
+      borderColor: '#1E2A3A'
+    }]
+  },
+  options: {
+    plugins: {
+      legend: { position: 'bottom' }
+    },
+    cutout: '60%'
+  }
+});
+
+// ===== DATA FLOW (Bar) =====
+new Chart(document.getElementById('dataFlowChart'), {
+  type: 'bar',
+  data: {
+    labels: ['Sources', 'Gold Dims', 'Gold Facts', 'Gold IA', 'Vues', 'Power BI'],
+    datasets: [{
+      label: 'Objets par couche',
+      data: [3, 3, 5, 4, 4, 4],
+      backgroundColor: [
+        '#1E90FF44', '#F5A62344', '#F5A62366', '#9B59B644', '#00C85344', '#F5A623'
+      ],
+      borderColor: ['#1E90FF', '#F5A623', '#F5A623', '#9B59B6', '#00C853', '#F5A623'],
+      borderWidth: 1,
+      borderRadius: 6
+    }]
+  },
+  options: {
+    plugins: { legend: { display: false } },
+    scales: { y: { beginAtZero: true, ticks: { stepSize: 1 } } }
+  }
+});
+
+// ===== ALLOCATION CHART (Stacked Area) =====
+const days60 = Array.from({length: 60}, (_, i) => `J${i+1}`);
+let aapl = 40, msft = 35, spy = 25;
+const aaplData = [], msftData = [], spyData = [];
+for (let i = 0; i < 60; i++) {
+  aapl += (Math.random() - 0.5) * 3;
+  msft += (Math.random() - 0.5) * 3;
+  spy = 100 - aapl - msft;
+  aapl = Math.max(5, Math.min(45, aapl));
+  msft = Math.max(5, Math.min(45, msft));
+  spy = Math.max(10, Math.min(50, spy));
+  const total = aapl + msft + spy;
+  aaplData.push(+(aapl/total*100).toFixed(1));
+  msftData.push(+(msft/total*100).toFixed(1));
+  spyData.push(+(spy/total*100).toFixed(1));
+}
+
+new Chart(document.getElementById('allocationChart'), {
+  type: 'line',
+  data: {
+    labels: days60,
+    datasets: [
+      { label: 'AAPL', data: aaplData, fill: true, backgroundColor: 'rgba(245,166,35,0.3)', borderColor: '#F5A623', tension: 0.4, pointRadius: 0, borderWidth: 2 },
+      { label: 'MSFT', data: msftData, fill: true, backgroundColor: 'rgba(30,144,255,0.25)', borderColor: '#1E90FF', tension: 0.4, pointRadius: 0, borderWidth: 2 },
+      { label: 'SPY', data: spyData, fill: true, backgroundColor: 'rgba(0,200,83,0.2)', borderColor: '#00C853', tension: 0.4, pointRadius: 0, borderWidth: 2 }
+    ]
+  },
+  options: {
+    plugins: { legend: { position: 'top' } },
+    scales: {
+      y: {
+        min: 0, max: 100,
+        ticks: { callback: v => v + '%' }
+      }
+    }
+  }
+});
+
+// ===== PERFORMANCE CHART =====
+let nav2 = 100, bench2 = 100;
+const perfDays = Array.from({length: 80}, (_, i) => `J${i+1}`);
+const perfData = perfDays.map(() => {
+  nav2 *= (1 + (Math.random() * 0.014 - 0.005));
+  return +((nav2 - 100)).toFixed(2);
+});
+const benchData2 = perfDays.map(() => {
+  bench2 *= (1 + (Math.random() * 0.009 - 0.004));
+  return +((bench2 - 100)).toFixed(2);
+});
+
+new Chart(document.getElementById('perfChart'), {
+  type: 'line',
+  data: {
+    labels: perfDays,
+    datasets: [
+      { label: 'Portfolio Cum P&L (%)', data: perfData, borderColor: '#F5A623', backgroundColor: 'rgba(245,166,35,0.08)', fill: true, tension: 0.4, pointRadius: 0, borderWidth: 2 },
+      { label: 'Benchmark (%)', data: benchData2, borderColor: '#1E90FF', backgroundColor: 'transparent', tension: 0.4, pointRadius: 0, borderWidth: 1.5, borderDash: [5, 5] }
+    ]
+  },
+  options: {
+    plugins: { legend: { position: 'top' } },
+    scales: {
+      y: { ticks: { callback: v => v + '%' } }
+    }
+  }
+});
+
+// ===== MATURITY CHART (Horizontal Bar) =====
+new Chart(document.getElementById('maturityChart'), {
+  type: 'bar',
+  data: {
+    labels: ['Gold Layer SQL', 'Trading Simulation', 'Analytics & Risk', 'AI Assistant', 'Power BI', 'CI/CD', 'Docker / IaC', 'OpenAI Intégration'],
+    datasets: [{
+      label: 'Maturité (%)',
+      data: [95, 90, 90, 70, 40, 85, 15, 30],
+      backgroundColor: [
+        '#00C853', '#00C853', '#00C853', '#F5A623',
+        '#F5A623', '#00C853', '#FF3B3B', '#FF7B72'
+      ],
+      borderRadius: 6,
+      borderWidth: 0
+    }]
+  },
+  options: {
+    indexAxis: 'y',
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { min: 0, max: 100, ticks: { callback: v => v + '%' } }
+    }
+  }
+});
+
+// ===== SMOOTH SCROLL ON LOAD =====
+window.scrollTo(0, 0);
+
+// =====================================================
+// FINANCE TERMS TOOLTIP ENGINE
+// =====================================================
+const FINANCE_TERMS = {
+  // ---- PERFORMANCE ----
+  "NAV": {
+    cat: "cat-perf", catLabel: "Performance",
+    def: `<strong>Net Asset Value</strong> (Valeur Nette d'Inventaire) — La valeur totale d'un portefeuille à un instant T. C'est la mesure fondamentale de richesse d'un fonds.<br><br>Le NAV augmente quand les prix montent ou quand les positions gagnent de la valeur.`,
+    formula: "NAV = Cash disponible + Σ(Quantité_i × Prix_marché_i)",
+    example: "Ex: 50 000€ cash + 30 000€ en AAPL + 20 000€ en MSFT = NAV 100 000€"
+  },
+  "P&L": {
+    cat: "cat-perf", catLabel: "Performance",
+    def: `<strong>Profit & Loss</strong> — Le gain ou la perte réalisé(e) ou latent(e) sur une période. On distingue : <strong>P&L réalisé</strong> (trade clôturé) vs <strong>P&L latent</strong> (position encore ouverte).`,
+    formula: "P&L = NAV(t) - NAV(t-1)   ou   Prix_vente - Prix_achat × Quantité",
+    example: "Ex: Acheté AAPL à 150$, cours actuel 162$ → P&L latent = +12$ × nb actions"
+  },
+  "P&L journalier": {
+    cat: "cat-perf", catLabel: "Performance",
+    def: `Le gain ou la perte <strong>sur une seule journée de bourse</strong>. Calculé comme la différence entre le NAV de clôture d'aujourd'hui et celui d'hier. Indicateur de suivi quotidien par les gérants.`,
+    formula: "DailyP&L = NAV(t) - NAV(t-1)",
+    example: "Ex: NAV hier 100 000€, NAV aujourd'hui 101 200€ → DailyP&L = +1 200€"
+  },
+  "DailyPnL": {
+    cat: "cat-perf", catLabel: "Performance",
+    def: `<strong>Daily Profit & Loss</strong> — Colonne SQL du gold layer stockant la variation quotidienne de valeur du portefeuille. Alimentée chaque soir par le script analytics après la clôture des marchés.`,
+    formula: "DailyPnL = NAV_t - NAV_(t-1)",
+    example: "Stockée dans PortfolioPnLDaily, consultable via vw_PortfolioDashboardDaily"
+  },
+  "CumPnL": {
+    cat: "cat-perf", catLabel: "Performance",
+    def: `<strong>Cumulative P&L</strong> — Le P&L accumulé depuis le démarrage du portefeuille (inception date). Mesure la performance totale depuis l'origine, indépendamment des hauts et bas intermédiaires.`,
+    formula: "CumPnL = NAV(t) - NAV(t=0)",
+    example: "Si NAV initiale = 100 000€ et NAV aujourd'hui = 118 500€ → CumPnL = +18 500€"
+  },
+  "rendement": {
+    cat: "cat-perf", catLabel: "Performance",
+    def: `Le <strong>taux de retour</strong> d'un investissement sur une période donnée, exprimé en pourcentage. Permet de comparer des portefeuilles de tailles différentes sur un pied d'égalité.`,
+    formula: "Rendement = (NAV_fin - NAV_début) / NAV_début × 100",
+    example: "100 000€ → 108 000€ = rendement de 8%"
+  },
+  "ReturnPct": {
+    cat: "cat-perf", catLabel: "Performance",
+    def: `<strong>Return Percentage</strong> — Le rendement journalier en pourcentage stocké dans la table PortfolioPnLDaily. Colonne clé pour calculer la volatilité et le Sharpe ratio.`,
+    formula: "ReturnPct = (NAV_t - NAV_(t-1)) / NAV_(t-1) × 100",
+    example: "Utilisé par le pipeline analytics comme input pour Vol20d et VaR95"
+  },
+  "performance": {
+    cat: "cat-perf", catLabel: "Performance",
+    def: `Mesure globale de la capacité d'un portefeuille ou d'un gérant à créer de la valeur. Se mesure en <strong>rendement absolu</strong> (% gagné) ou <strong>relatif</strong> (comparé à un benchmark comme le S&P 500).`,
+    formula: "Performance absolue = CumPnL / NAV_initiale × 100",
+    example: "Un fonds à +12% vs benchmark à +8% = alpha de +4%"
+  },
+  // ---- RISQUE ----
+  "VaR": {
+    cat: "cat-risk", catLabel: "Risque",
+    def: `<strong>Value at Risk</strong> — La perte maximale probable sur une période donnée, avec un niveau de confiance défini. La VaR 95% à 1 jour signifie : dans 95% des cas, tu ne perdras pas plus que ce montant en une journée.`,
+    formula: "VaR_95 = Percentile(rendements_historiques, 5%)",
+    example: "VaR 95% = -1.8% → sur 20 jours de trading, 19 jours tu perds moins de 1.8%"
+  },
+  "VaR95": {
+    cat: "cat-risk", catLabel: "Risque",
+    def: `<strong>Value at Risk à 95% de confiance</strong> — Le 5ème percentile de la distribution historique des rendements. Mesure réglementaire standard utilisée sous les accords de <strong>Bâle III</strong> pour les banques.`,
+    formula: "VaR_95 = np.percentile(daily_returns, 5)",
+    example: "Si returns_20j = [-2.1%, -1.8%, ...+1.5%], VaR95 = -1.8% (5ème pire jour)"
+  },
+  "volatilité": {
+    cat: "cat-risk", catLabel: "Risque",
+    def: `L'<strong>écart-type annualisé des rendements quotidiens</strong>. Mesure l'amplitude des fluctuations d'un portefeuille. Une volatilité élevée = risque élevé. Facteur clé dans le Sharpe ratio et les modèles de pricing d'options (Black-Scholes).`,
+    formula: "Volatilité = σ(rendements_20j) × √252",
+    example: "Vol 15% = en moyenne, le portefeuille fluctue de ±15% par an"
+  },
+  "Volatility20d": {
+    cat: "cat-risk", catLabel: "Risque",
+    def: `<strong>Volatilité sur fenêtre glissante de 20 jours</strong> (≈ 1 mois de trading), annualisée. Chaque jour, recalculée sur les 20 derniers rendements. Permet de détecter une montée du risque en temps réel.`,
+    formula: "Vol20d = std(returns[-20:]) × √252",
+    example: "Une Vol20d qui passe de 10% à 18% = signal d'alerte pour le risk manager"
+  },
+  "drawdown": {
+    cat: "cat-risk", catLabel: "Risque",
+    def: `La <strong>chute depuis un sommet</strong> (peak-to-trough). Mesure combien un portefeuille a perdu depuis sa valeur maximale atteinte. Très utilisé pour évaluer la résistance d'une stratégie aux crises.`,
+    formula: "Drawdown(t) = (NAV_t - Peak_t) / Peak_t",
+    example: "Peak = 120 000€, NAV actuelle = 105 000€ → Drawdown = -12.5%"
+  },
+  "MaxDrawdown": {
+    cat: "cat-risk", catLabel: "Risque",
+    def: `Le <strong>pire drawdown historique</strong> — la plus grande chute enregistrée depuis un sommet jusqu'à un creux, sur toute la durée de vie du portefeuille. Utilisé par les investisseurs pour estimer le pire scénario vécu.`,
+    formula: "MaxDD = min sur tout t de [(NAV_t - Peak_t) / Peak_t]",
+    example: "MaxDD = -23% signifie qu'à un moment, le fonds a perdu 23% depuis son pic"
+  },
+  "Sharpe": {
+    cat: "cat-risk", catLabel: "Risque / Performance",
+    def: `Le <strong>Sharpe Ratio</strong> mesure le rendement obtenu par unité de risque pris. Inventé par William Sharpe (Prix Nobel 1990). C'est LE ratio de comparaison entre fonds : un Sharpe > 1 est excellent, > 2 est exceptionnel.`,
+    formula: "Sharpe = (Rendement annualisé - Taux sans risque) / Volatilité annualisée",
+    example: "Rendement 12%, Vol 10%, taux sans risque 0% → Sharpe = 1.2 ✓"
+  },
+  "Sharpe ratio": {
+    cat: "cat-risk", catLabel: "Risque / Performance",
+    def: `Le <strong>Sharpe Ratio</strong> mesure le rendement obtenu par unité de risque pris. Inventé par William Sharpe (Prix Nobel 1990). C'est LE ratio de comparaison entre fonds : un Sharpe > 1 est excellent, > 2 est exceptionnel.`,
+    formula: "Sharpe = (Rendement annualisé - Taux sans risque) / Volatilité annualisée",
+    example: "Rendement 12%, Vol 10%, taux sans risque 0% → Sharpe = 1.2 ✓"
+  },
+  "SharpeRatio": {
+    cat: "cat-risk", catLabel: "Risque / Performance",
+    def: `Colonne SQL dans <strong>RiskMetricsDaily</strong> stockant le ratio de Sharpe calculé quotidiennement. Calculé avec taux sans risque = 0 dans ce projet (simplification acceptable pour un lab MVP).`,
+    formula: "SharpeRatio = AnnualReturn / Volatility20d_annualized",
+    example: "SharpeRatio > 1 : le gérant génère du rendement au-delà du risque pris"
+  },
+  "Beta": {
+    cat: "cat-risk", catLabel: "Risque",
+    def: `Mesure la <strong>sensibilité d'un portefeuille aux mouvements du marché</strong>. Beta = 1 : bouge comme le marché. Beta = 0.8 : bouge 80% autant que le marché (moins risqué). Beta = 1.2 : amplifie les mouvements de 20%.`,
+    formula: "Beta = Cov(r_portfolio, r_benchmark) / Var(r_benchmark)",
+    example: "Beta 0.87 → si le S&P500 chute de 10%, le portefeuille devrait chuter de 8.7%"
+  },
+  "écart-type": {
+    cat: "cat-risk", catLabel: "Risque",
+    def: `Mesure statistique de la <strong>dispersion des rendements autour de leur moyenne</strong>. La racine carrée de la variance. En finance, c'est la définition mathématique de la volatilité.`,
+    formula: "σ = √[ Σ(rᵢ - r̄)² / (n-1) ]",
+    example: "Rendements : [+1%, -2%, +3%, -1%], r̄ = 0.25%, σ ≈ 2.06%"
+  },
+  "percentile": {
+    cat: "cat-risk", catLabel: "Statistiques",
+    def: `Valeur en-dessous de laquelle se trouve un certain pourcentage des données. Le <strong>5ème percentile des rendements</strong> = la frontière des 5% pires jours → utilisé pour calculer la VaR 95%.`,
+    formula: "VaR_95 = percentile(daily_returns_array, 5)",
+    example: "Sur 100 jours : le 5ème jour le plus mauvais = VaR95"
+  },
+  // ---- MARCHÉ / TRADING ----
+  "slippage": {
+    cat: "cat-exec", catLabel: "Exécution",
+    def: `Le <strong>glissement de prix</strong> entre le moment où tu passes un ordre et le moment où il est exécuté. Sur les marchés, le carnet d'ordres évolue en millisecondes. Le slippage est un coût caché inévitable, surtout sur les titres peu liquides.`,
+    formula: "Slippage_cost = Quantité × Prix × taux_slippage (ex: 0.03%)",
+    example: "Ordre AAPL à 150$, exécuté à 150.045$ → slippage = 3bps = 0.03%"
+  },
+  "fees": {
+    cat: "cat-exec", catLabel: "Exécution",
+    def: `Les <strong>frais de courtage</strong> prélevés par le broker (Interactive Brokers, Degiro, etc.) sur chaque transaction. Exprimés en basis points (bps). Ils réduisent directement la rentabilité de chaque trade.`,
+    formula: "Fees = Notionnel_trade × taux_fees (ex: 0.05%)",
+    example: "100 000€ de MSFT achetés → fees à 5bps = 50€ de commission"
+  },
+  "bps": {
+    cat: "cat-exec", catLabel: "Exécution",
+    def: `<strong>Basis Points</strong> (Points de Base) — Unité de mesure 1/100ème de pourcent. Utilisée pour exprimer les frais, les spreads, les variations de taux d'intérêt. Standard universel en finance.`,
+    formula: "1 bps = 0.01% = 0.0001",
+    example: "25 bps = 0.25%. Spread BCE de +50bps = hausse du taux de 0.5%"
+  },
+  "5 bps": {
+    cat: "cat-exec", catLabel: "Exécution",
+    def: `<strong>5 Basis Points = 0.05%</strong> de frais de courtage appliqués sur chaque transaction dans le simulateur KHL. Représente des frais standards pour un accès institutionnel ou un néobroker premium.`,
+    formula: "Frais = Montant_trade × 0.0005",
+    example: "Trade de 200 000€ → frais = 100€ (5bps)"
+  },
+  "3 bps": {
+    cat: "cat-exec", catLabel: "Exécution",
+    def: `<strong>3 Basis Points = 0.03%</strong> de slippage appliqués sur chaque ordre dans le simulateur. Modélise l'impact marché et le décalage de prix lors de l'exécution sur des marchés liquides (large caps).`,
+    formula: "Slippage_cost = Montant_trade × 0.0003",
+    example: "Pour un trade de 200 000€ → impact slippage = 60€"
+  },
+  "benchmark": {
+    cat: "cat-perf", catLabel: "Performance",
+    def: `L'<strong>indice de référence</strong> utilisé pour évaluer la performance relative d'un portefeuille. Si tu bats ton benchmark, tu crées de l'<em>alpha</em>. Le S&P 500 (via SPY) est le benchmark standard pour un portefeuille actions américaines.`,
+    formula: "Alpha = Rendement_portfolio - Rendement_benchmark",
+    example: "Portfolio +12% vs SPY +8% → Alpha = +4% (surperformance)"
+  },
+  "alpha": {
+    cat: "cat-perf", catLabel: "Performance",
+    def: `L'<strong>excès de rendement</strong> par rapport au benchmark, ajusté du risque. Un alpha positif signifie que le gérant ajoute de la valeur au-delà de ce que le marché offrirait seul. C'est la mesure du talent du gérant.`,
+    formula: "Alpha = Rendement_portfolio - (Rf + Beta × (Rendement_marché - Rf))",
+    example: "Alpha = 3% → le gérant surperforme de 3% ce que son niveau de risque justifie"
+  },
+  "ticker": {
+    cat: "cat-marche", catLabel: "Marché",
+    def: `Code abrégé unique identifiant un titre financier sur une bourse. <strong>AAPL</strong> = Apple Inc., <strong>MSFT</strong> = Microsoft, <strong>SPY</strong> = ETF répliquant le S&P 500. Standard universel pour les APIs de données financières.`,
+    formula: null,
+    example: "AAPL (Nasdaq), LVMH.PA (Euronext Paris), BNP.PA, MC.PA"
+  },
+  "ETF": {
+    cat: "cat-marche", catLabel: "Marché",
+    def: `<strong>Exchange Traded Fund</strong> — Fonds indiciel coté en bourse comme une action. Le SPY réplique le S&P 500 (500 plus grandes entreprises américaines). Les ETF offrent diversification instantanée et frais très faibles.`,
+    formula: null,
+    example: "SPY : 1 action SPY = exposition à toutes les 500 entreprises du S&P 500"
+  },
+  "SPY": {
+    cat: "cat-marche", catLabel: "Marché",
+    def: `Le plus grand <strong>ETF au monde</strong> (SPDR S&P 500 ETF Trust), géré par State Street. Réplique fidèlement l'indice S&P 500. Utilisé dans ce projet comme benchmark de marché et comme actif de diversification.`,
+    formula: null,
+    example: "AUM > 400 milliards $. Ticker sur NYSE Arca. Volume journalier > 80M actions."
+  },
+  "carnet d'ordres": {
+    cat: "cat-marche", catLabel: "Marché",
+    def: `La <strong>liste en temps réel de tous les ordres d'achat et de vente</strong> en attente pour un titre. Le prix d'exécution réel dépend de la profondeur du carnet. Plus il est épais, moins il y a de slippage.`,
+    formula: null,
+    example: "Si tu achètes 10 000 actions et qu'il n'y en a que 3 000 à ton prix → slippage !"
+  },
+  "liquidité": {
+    cat: "cat-marche", catLabel: "Marché",
+    def: `La <strong>facilité à acheter ou vendre un actif rapidement sans impacter son prix</strong>. AAPL ou SPY sont très liquides (milliards de $ échangés/jour). Une small cap peut être illiquide → slippage important.`,
+    formula: null,
+    example: "Volume journalier AAPL > 50M actions. Small cap = peut-être 50 000 actions/jour"
+  },
+  "régime de marché": {
+    cat: "cat-marche", catLabel: "Marché",
+    def: `L'<strong>état macroéconomique du marché</strong> à un instant T : <strong>constructif</strong> (tendance haussière, faible volatilité), <strong>défensif</strong> (baisse, incertitude) ou <strong>neutre</strong>. L'assistant IA KHL classe le régime quotidiennement.`,
+    formula: null,
+    example: "Régime constructif → allocation en actions ↑. Régime défensif → cash ou obligations ↑"
+  },
+  "rotation tactique": {
+    cat: "cat-marche", catLabel: "Stratégie",
+    def: `Stratégie consistant à <strong>déplacer l'allocation entre actifs</strong> en fonction des conditions de marché ou d'un calendrier. Différent de la gestion passive (acheter-garder). Dans KHL, basée sur des règles Python simples.`,
+    formula: null,
+    example: "Ex: Si AAPL > 40% du portefeuille → vendre une partie et rééquilibrer vers MSFT/SPY"
+  },
+  "mean reversion": {
+    cat: "cat-marche", catLabel: "Stratégie Quantitative",
+    def: `Stratégie supposant que les prix <strong>reviennent vers leur moyenne historique</strong> après un écart. Si un titre chute fortement sous sa moyenne, on l'achète car il est censé « revenir ». Basée sur la loi des grands nombres.`,
+    formula: "Signal = (Prix_actuel - Moyenne_N_jours) / Écart_type_N_jours",
+    example: "Z-score > 2 → prix trop haut → SHORT. Z-score < -2 → prix trop bas → LONG"
+  },
+  "momentum": {
+    cat: "cat-marche", catLabel: "Stratégie Quantitative",
+    def: `Stratégie qui <strong>suit la tendance</strong> : acheter ce qui monte, vendre ce qui descend. La tendance a tendance à persister à court terme. Opposé philosophique du mean reversion.`,
+    formula: "Signal = Rendement_12m - Rendement_1m (momentum de Jegadeesh-Titman)",
+    example: "Un titre +20% sur 12 mois a statistiquement plus de chances de continuer à monter"
+  },
+  // ---- STRUCTURE / DATA ----
+  "schéma en étoile": {
+    cat: "cat-struct", catLabel: "Data Architecture",
+    def: `Modèle de données développé par <strong>Ralph Kimball</strong> (1996). Une table de faits centrale (les transactions) entourée de tables de dimensions (qui ? quoi ? quand ?). Standard de l'industrie BI pour sa performance sur les agrégations.`,
+    formula: null,
+    example: "FactTrades ← DimDate, DimSecurity, DimPortfolio = étoile à 3 branches"
+  },
+  "star schema": {
+    cat: "cat-struct", catLabel: "Data Architecture",
+    def: `Le <strong>schéma en étoile</strong> (Star Schema) — modèle Kimball pour le data warehousing. Table de faits au centre, dimensions autour. Optimisé pour les requêtes analytiques (GROUP BY, SUM, COUNT).`,
+    formula: null,
+    example: "SELECT SUM(P&L) FROM FactTrades JOIN DimDate ON ... WHERE Year = 2025"
+  },
+  "Kimball": {
+    cat: "cat-struct", catLabel: "Data Architecture",
+    def: `<strong>Ralph Kimball</strong> — guru du data warehousing, auteur de "The Data Warehouse Toolkit" (1996). A popularisé le schéma en étoile et le modèle dimensionnel. Sa méthode bottom-up est le standard dans les équipes BI.`,
+    formula: null,
+    example: "La méthode Kimball = modéliser par rapport au besoin métier, pas à la source"
+  },
+  "Gold Layer": {
+    cat: "cat-data", catLabel: "Data Engineering",
+    def: `Dans l'<strong>architecture Medallion (Bronze → Silver → Gold)</strong>, le Gold Layer est la couche de données la plus raffinée, prête à la consommation métier. Données nettoyées, enrichies, validées. Source de vérité unique pour tous les dashboards.`,
+    formula: null,
+    example: "Bronze = données brutes. Silver = nettoyées. Gold = enrichies + modélisées pour le métier"
+  },
+  "architecture Medallion": {
+    cat: "cat-data", catLabel: "Data Engineering",
+    def: `Architecture data en 3 couches popularisée par <strong>Databricks</strong>. Bronze = ingestion brute. Silver = nettoyage et standardisation. Gold = modélisation métier finale. Permet de rejouer n'importe quelle étape sans perdre les données sources.`,
+    formula: null,
+    example: "Utilisée dans les lakehouses Azure, Databricks, AWS Glue, Snowflake"
+  },
+  "idempotent": {
+    cat: "cat-data", catLabel: "Data Engineering",
+    def: `Une opération est <strong>idempotente</strong> si on peut l'exécuter plusieurs fois et obtenir le même résultat. En ETL, ça signifie : pas de doublons si on re-run. Pattern : purger les données de la période, puis réinsérer.`,
+    formula: null,
+    example: "DELETE WHERE date BETWEEN X AND Y → puis INSERT : garanti sans doublon"
+  },
+  "idempotence": {
+    cat: "cat-data", catLabel: "Data Engineering",
+    def: `Propriété d'un pipeline ETL garantissant qu'on peut le relancer n'importe quand sans créer de doublons ni corrompre les données. Critique en production financière où les re-runs sont fréquents (corrections, restatements).`,
+    formula: null,
+    example: "Pattern SQL : DELETE + INSERT (ou MERGE UPSERT) sur la fenêtre de dates ciblée"
+  },
+  "ETL": {
+    cat: "cat-data", catLabel: "Data Engineering",
+    def: `<strong>Extract, Transform, Load</strong> — Le processus standard de déplacement de données. Extract depuis la source, Transform (nettoyer, enrichir, calculer), Load dans la destination (gold layer). Colonne vertébrale de tout projet data.`,
+    formula: null,
+    example: "Ex: Boursorama → parse décimales FR → MERGE SQL → FactPrice (ETL quotidien)"
+  },
+  "ELT": {
+    cat: "cat-data", catLabel: "Data Engineering",
+    def: `<strong>Extract, Load, Transform</strong> — Variante moderne de l'ETL. On charge d'abord les données brutes dans la destination (lakehouse, cloud warehouse), puis on transforme avec SQL ou dbt. Adapté aux architectures cloud modernes.`,
+    formula: null,
+    example: "ELT = charger en Bronze brut, puis transformer en Silver/Gold avec SQL/dbt"
+  },
+  "DirectQuery": {
+    cat: "cat-struct", catLabel: "Power BI",
+    def: `Mode Power BI où les données <strong>ne sont pas copiées en mémoire</strong> — chaque interaction génère une requête SQL envoyée à la base de données en temps réel. Garantit la fraîcheur des données mais nécessite une source performante.`,
+    formula: null,
+    example: "DirectQuery = données toujours fraîches. Import = données snapshot rapide mais figées"
+  },
+  "modèle composite": {
+    cat: "cat-struct", catLabel: "Power BI",
+    def: `Mode Power BI combinant <strong>Import ET DirectQuery</strong> dans le même modèle. Les dimensions (stables) en Import pour la vitesse, les faits (évolutifs) en DirectQuery pour la fraîcheur. Best practice Microsoft pour les modèles financiers.`,
+    formula: null,
+    example: "DimDate (Import) + FactTrades (DirectQuery) = composite model optimal"
+  },
+  "MERGE": {
+    cat: "cat-data", catLabel: "SQL",
+    def: `Instruction SQL combinant INSERT, UPDATE et DELETE en une seule opération atomique. Utilisée pour l'<strong>upsert</strong> (mise à jour si existe, insertion sinon). Garantit l'idempotence du chargement.`,
+    formula: "MERGE target USING source ON clé WHEN MATCHED → UPDATE WHEN NOT MATCHED → INSERT",
+    example: "MERGE INTO FactPrice USING staging ON (Date, SecurityID) → upsert sans doublon"
+  },
+  "vues SQL": {
+    cat: "cat-data", catLabel: "SQL",
+    def: `<strong>Requêtes SQL sauvegardées</strong> comme un objet de base de données. N'ont pas de stockage propre — exécutent la requête sous-jacente à chaque appel. Servent de couche de présentation : simplifient les jointures complexes pour Power BI.`,
+    formula: null,
+    example: "CREATE VIEW vw_Dashboard AS SELECT ... FROM FactTrades JOIN DimSecurity ..."
+  },
+  // ---- RÉGLEMENTAIRE ----
+  "MiFID II": {
+    cat: "cat-regl", catLabel: "Réglementation",
+    def: `<strong>Markets in Financial Instruments Directive II</strong> — Directive européenne (2018) régulant les marchés financiers. Exige la traçabilité complète de toutes les transactions, la justification des décisions d'investissement, et la transparence des coûts.`,
+    formula: null,
+    example: "MiFID II = chaque ordre doit être journalisé avec heure, prix, raison → AI_AuditLog"
+  },
+  "AIFMD": {
+    cat: "cat-regl", catLabel: "Réglementation",
+    def: `<strong>Alternative Investment Fund Managers Directive</strong> — Directive européenne réglementant les gestionnaires de fonds alternatifs (hedge funds, private equity). Exige reporting de risque, limites de levier, et dépositaire agréé.`,
+    formula: null,
+    example: "Un fonds AIFMD doit reporter sa VaR et son levier à l'autorité compétente (AMF en France)"
+  },
+  "AMF": {
+    cat: "cat-regl", catLabel: "Réglementation",
+    def: `<strong>Autorité des Marchés Financiers</strong> — Le gendarme de la bourse française. Réglemente les acteurs des marchés, agrée les fonds, contrôle les reportings. Équivalent de la SEC aux États-Unis.`,
+    formula: null,
+    example: "Tout OPCVM vendu en France doit être agréé par l'AMF et respecter ses règles"
+  },
+  "ESMA": {
+    cat: "cat-regl", catLabel: "Réglementation",
+    def: `<strong>European Securities and Markets Authority</strong> — L'autorité européenne de supervision des marchés financiers. Coordonne les régulateurs nationaux (AMF, BaFin...) et émet les standards techniques.`,
+    formula: null,
+    example: "ESMA définit les standards de calcul de la VaR pour les fonds UCITS"
+  },
+  "compliance": {
+    cat: "cat-regl", catLabel: "Réglementation",
+    def: `La <strong>conformité réglementaire</strong> — s'assurer que toutes les activités respectent les lois et règlements (MiFID II, GDPR, etc.). En finance, le département compliance valide chaque produit et chaque processus. Le non-respect = amendes massives.`,
+    formula: null,
+    example: "BNP Paribas : 8.9 milliards $ d'amende en 2014 pour non-compliance"
+  },
+  "audit trail": {
+    cat: "cat-regl", catLabel: "Réglementation",
+    def: `La <strong>piste d'audit</strong> — journal immuable de toutes les actions, décisions et modifications avec timestamp, auteur, et contexte. Obligatoire en finance. Dans KHL, l'AI_AuditLog en est l'implémentation pour les recommandations IA.`,
+    formula: null,
+    example: "Chaque reco IA → stockée avec: datetime, user, confidence, raisonnement, version"
+  },
+  "Bâle III": {
+    cat: "cat-regl", catLabel: "Réglementation",
+    def: `Accord international (Comité de Bâle, 2010) fixant les <strong>exigences minimales en capital des banques</strong> pour résister aux crises. Impose le calcul de la VaR et du stress testing. Renforcé après la crise de 2008.`,
+    formula: null,
+    example: "Une banque Bâle III doit maintenir un ratio CET1 > 4.5% et calculer sa VaR quotidiennement"
+  },
+  // ---- PORTFOLIO MANAGEMENT ----
+  "portefeuille": {
+    cat: "cat-marche", catLabel: "Gestion de Portefeuille",
+    def: `L'ensemble des <strong>actifs financiers détenus par un investisseur</strong> (actions, obligations, cash, ETF...). Un portefeuille bien diversifié réduit le risque total sans réduire le rendement espéré (théorème de Markowitz).`,
+    formula: null,
+    example: "Portefeuille MAIN = 40% AAPL + 35% MSFT + 25% SPY = exposition diversifiée"
+  },
+  "Asset Manager": {
+    cat: "cat-marche", catLabel: "Métier",
+    def: `<strong>Société de Gestion d'Actifs</strong> — entreprise qui gère des portefeuilles pour le compte de clients (particuliers, institutionnels). BlackRock, Amundi, Vanguard sont les plus grands. Leur business model = frais de gestion (% des actifs).`,
+    formula: null,
+    example: "BlackRock gère > 10 000 milliards $. Frais de gestion moyen : 0.2% à 1% par an"
+  },
+  "family office": {
+    cat: "cat-marche", catLabel: "Métier",
+    def: `Structure privée gérant le <strong>patrimoine financier d'une famille ultra-wealthy</strong> (> 100M€). Combine gestion de portefeuille, planning fiscal, philanthropie. Beaucoup construisent leur propre stack data comme KHL Portfolio Lab.`,
+    formula: null,
+    example: "Ex: Bezos, Arnault ont leurs propres family offices avec des équipes data dédiées"
+  },
+  "position": {
+    cat: "cat-marche", catLabel: "Trading",
+    def: `La <strong>détention d'un titre financier</strong> dans un portefeuille. Une position longue = on détient le titre (on gagne si le prix monte). Une position courte (short) = on parie sur la baisse. Dans KHL, uniquement des positions longues.`,
+    formula: null,
+    example: "Position AAPL : 500 actions × 162$ = valeur de marché = 81 000$"
+  },
+  "asset class": {
+    cat: "cat-marche", catLabel: "Gestion de Portefeuille",
+    def: `<strong>Catégorie d'actifs</strong> financiers partageant des caractéristiques similaires de risque et rendement. Principales classes : actions, obligations, immobilier, matières premières, cash. Diversifier entre classes réduit le risque global.`,
+    formula: null,
+    example: "KHL suit : Actions (AAPL, MSFT) + ETF (SPY) dans DimSecurity.AssetClass"
+  },
+  "inception date": {
+    cat: "cat-marche", catLabel: "Gestion de Portefeuille",
+    def: `La <strong>date de lancement d'un portefeuille ou d'un fonds</strong>. Toutes les performances sont mesurées depuis cette date. La NAV initiale à la date d'inception est la référence pour le calcul du CumPnL.`,
+    formula: null,
+    example: "Inception: 01/01/2025, NAV initiale: 100 000€ → CumPnL calculé depuis cette base"
+  },
+  "profil de risque": {
+    cat: "cat-marche", catLabel: "Gestion de Portefeuille",
+    def: `L'<strong>appétit pour le risque</strong> d'un investisseur ou d'un fonds, classifié de conservateur à agressif. Détermine les limites de volatilité, de drawdown, et de concentration autorisées. Stocké dans DimPortfolio.RiskProfile.`,
+    formula: null,
+    example: "Profil conservateur: Vol max 8%, DrawdownMax -10%. Agressif: Vol max 25%, DD -30%"
+  },
+  "backtests": {
+    cat: "cat-marche", catLabel: "Finance Quantitative",
+    def: `Simulation d'une stratégie de trading <strong>sur des données historiques passées</strong> pour évaluer ses performances. Attention au sur-ajustement (overfitting) : une stratégie qui performe parfaitement en backtest peut échouer en live.`,
+    formula: null,
+    example: "Backtest sur 2015-2020 ne garantit pas les performances sur 2021-2025"
+  },
+  "cash ledger": {
+    cat: "cat-perf", catLabel: "Comptabilité",
+    def: `Le <strong>journal de trésorerie</strong> du portefeuille. Enregistre chaque mouvement de cash : achat (débit), vente (crédit), dividende (crédit), frais (débit). La somme du cash ledger + valeur des positions = NAV totale.`,
+    formula: "Cash_t = Cash_0 - Σ(Achats × Prix) + Σ(Ventes × Prix) - Σ(Fees)",
+    example: "Départ 100 000€ cash, achat AAPL 50 000€ → Cash restant = 50 000€"
+  },
+  "mark-to-market": {
+    cat: "cat-perf", catLabel: "Comptabilité",
+    def: `<strong>Valorisation au prix de marché</strong> — évaluer une position au prix actuel du marché, pas au prix d'achat. La NAV est calculée mark-to-market quotidiennement. Impose de reconnaître les pertes ou gains latents immédiatement.`,
+    formula: "Market Value = Quantité_détenue × Prix_clôture_du_jour",
+    example: "Achetés MSFT à 300$, prix actuel 285$ → Mark-to-Market = perte latente de 5%"
+  },
+  "annualisé": {
+    cat: "cat-perf", catLabel: "Statistiques Finance",
+    def: `<strong>Extrapolation d'une mesure sur 1 an</strong> pour la rendre comparable entre périodes. La volatilité quotidienne × √252 = volatilité annualisée (252 = jours de bourse dans une année).`,
+    formula: "Mesure_annualisée = Mesure_quotidienne × √252",
+    example: "Vol journalière 0.53% × √252 = Vol annualisée ≈ 8.4%"
+  },
+  "taux sans risque": {
+    cat: "cat-perf", catLabel: "Finance",
+    def: `Le rendement d'un investissement <strong>sans aucun risque de défaut</strong> — typiquement les bons du Trésor américain (US T-Bills) ou allemands (Bunds). Utilisé comme base de comparaison dans le Sharpe ratio. Actuellement ~4-5% aux USA.`,
+    formula: "Sharpe = (Rendement - Taux_sans_risque) / Volatilité",
+    example: "Taux sans risque = 0 dans KHL (simplification MVP). En réel : T-Bill 3 mois (~5%)"
+  },
+  "random walk": {
+    cat: "cat-marche", catLabel: "Finance Quantitative",
+    def: `Modèle stochastique où les prix <strong>évoluent de façon aléatoire</strong>, chaque variation étant indépendante de la précédente. Fondement de l'hypothèse des marchés efficients (Fama, 1970). Utilisé dans KHL pour générer des prix synthétiques réalistes.`,
+    formula: "P(t+1) = P(t) × (1 + drift + σ × ε)    ε ~ N(0,1)",
+    example: "KHL: drift=0.0004 (rendement journalier moyen), σ=1% (bruit quotidien)"
+  },
+  "guardrail": {
+    cat: "cat-regl", catLabel: "IA & Compliance",
+    def: `<strong>Règle de sécurité automatique</strong> empêchant un système IA de produire des outputs dangereux ou non-conformes. Dans KHL, les guardrails vérifient : concentration max, phrases interdites, score de confiance max. Obligatoires en finance réglementée.`,
+    formula: null,
+    example: "Guardrail: TargetWeight > 40% → recommandation REJETÉE avant insertion SQL"
+  },
+  "score de confiance": {
+    cat: "cat-regl", catLabel: "IA & Finance",
+    def: `Un <strong>indicateur entre 0 et 1</strong> représentant le niveau de certitude d'un modèle IA dans sa prédiction. En finance, il ne doit jamais atteindre 1.0 (certitude absolue impossible sur les marchés). KHL impose ≤ 0.95.`,
+    formula: null,
+    example: "Confidence = 0.72 → le modèle est à 72% confiant dans sa recommandation HOLD MSFT"
+  }
+};
+
+// ---- TOOLTIP ENGINE ----
+const tooltip = document.getElementById('fin-tooltip');
+const ttTermEl = document.getElementById('tt-term-text');
+const ttCatEl = document.getElementById('tt-cat');
+const ttDefEl = document.getElementById('tt-def-text');
+const ttFormulaEl = document.getElementById('tt-formula');
+const ttExampleEl = document.getElementById('tt-example');
+
+let hideTimer = null;
+
+function showTooltip(e, termKey) {
+  clearTimeout(hideTimer);
+  const data = FINANCE_TERMS[termKey];
+  if (!data) return;
+
+  ttTermEl.textContent = termKey;
+  ttCatEl.textContent = data.catLabel;
+  ttCatEl.className = 'tt-category ' + data.cat;
+  ttDefEl.innerHTML = data.def;
+
+  if (data.formula) {
+    ttFormulaEl.textContent = data.formula;
+    ttFormulaEl.style.display = 'block';
+  } else {
+    ttFormulaEl.style.display = 'none';
+  }
+
+  if (data.example) {
+    ttExampleEl.textContent = data.example;
+    ttExampleEl.style.display = 'block';
+  } else {
+    ttExampleEl.style.display = 'none';
+  }
+
+  // Position near cursor, avoid overflow
+  const x = e.clientX + 16;
+  const y = e.clientY - 20;
+  const maxX = window.innerWidth - 380;
+  const maxY = window.innerHeight - tooltip.offsetHeight - 10;
+  tooltip.style.left = Math.min(x, maxX) + 'px';
+  tooltip.style.top = Math.max(10, Math.min(y, maxY)) + 'px';
+  tooltip.classList.add('visible');
+}
+
+function hideTooltip() {
+  hideTimer = setTimeout(() => {
+    tooltip.classList.remove('visible');
+  }, 120);
+}
+
+// ---- TEXT NODE WALKER ----
+// Build sorted keys (longest first to avoid partial matches)
+const TERM_KEYS = Object.keys(FINANCE_TERMS).sort((a, b) => b.length - a.length);
+
+// Escape for regex
+function escapeReg(s) {
+  return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+// Build combined regex
+const PATTERN = new RegExp(
+  '(' + TERM_KEYS.map(k => escapeReg(k)).join('|') + ')',
+  'g'
+);
+
+const SKIP_TAGS = new Set(['SCRIPT', 'STYLE', 'CODE', 'PRE', 'INPUT', 'TEXTAREA', 'NAV', 'CANVAS']);
+
+function wrapTextNode(textNode) {
+  const text = textNode.nodeValue;
+  if (!PATTERN.test(text)) return;
+  PATTERN.lastIndex = 0;
+
+  const frag = document.createDocumentFragment();
+  let last = 0, match;
+
+  while ((match = PATTERN.exec(text)) !== null) {
+    const term = match[1];
+    if (!FINANCE_TERMS[term]) continue;
+
+    if (match.index > last) {
+      frag.appendChild(document.createTextNode(text.slice(last, match.index)));
+    }
+
+    const span = document.createElement('span');
+    span.className = 'fin-term';
+    span.dataset.term = term;
+    span.textContent = term;
+    span.addEventListener('mouseenter', (e) => showTooltip(e, term));
+    span.addEventListener('mousemove', (e) => {
+      const x = e.clientX + 16;
+      const y = e.clientY - 20;
+      const maxX = window.innerWidth - 380;
+      const maxY = window.innerHeight - tooltip.offsetHeight - 10;
+      tooltip.style.left = Math.min(x, maxX) + 'px';
+      tooltip.style.top = Math.max(10, Math.min(y, maxY)) + 'px';
+    });
+    span.addEventListener('mouseleave', hideTooltip);
+    frag.appendChild(span);
+    last = match.index + term.length;
+  }
+
+  if (last < text.length) {
+    frag.appendChild(document.createTextNode(text.slice(last)));
+  }
+
+  textNode.parentNode.replaceChild(frag, textNode);
+}
+
+function walkNode(node) {
+  if (node.nodeType === Node.TEXT_NODE) {
+    if (node.nodeValue.trim()) wrapTextNode(node);
+    return;
+  }
+  if (node.nodeType !== Node.ELEMENT_NODE) return;
+  if (SKIP_TAGS.has(node.tagName)) return;
+  if (node.classList && (node.classList.contains('fin-term') || node.id === 'fin-tooltip')) return;
+
+  // Walk children (collect first to avoid live mutation issues)
+  const children = Array.from(node.childNodes);
+  children.forEach(walkNode);
+}
+
+// Run after DOM is ready and charts are done
+requestAnimationFrame(() => {
+  setTimeout(() => {
+    walkNode(document.getElementById('main'));
+  }, 200);
+});
+</script>
+
+</body>
+</html>

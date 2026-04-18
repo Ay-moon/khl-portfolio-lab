@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% block title %}Portefeuilles{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-icon" style="background:#1a3a5c;"><i class="bi bi-pie-chart"></i></div>
+  <div class="flex-grow-1">
+    <h1>Création & Simulation de Portefeuille</h1>
+    <nav aria-label="breadcrumb"><ol class="breadcrumb mb-0">
+      <li class="breadcrumb-item"><a href="{{ url_for('home') }}">Accueil</a></li>
+      <li class="breadcrumb-item active">Portefeuilles</li>
+    </ol></nav>
+  </div>
+  <a href="{{ url_for('portfolio.wizard_start') }}" class="btn btn-primary"
+     style="background:#1a3a5c;border-color:#1a3a5c;">
+    <i class="bi bi-plus-lg me-2"></i>Nouveau Portefeuille
+  </a>
+</div>
+
+<div class="story-block mb-4">
+  <div class="story-title"><i class="bi bi-person-workspace me-2"></i>Contexte métier — Asset Manager</div>
+  <p>
+    En tant qu'Asset Manager chez KHL Bank CIB, votre mission est de construire et piloter des portefeuilles
+    pour le compte de clients institutionnels (fonds de pension, compagnies d'assurance, family offices).
+    Chaque portefeuille a un <strong>profil risque</strong>, une <strong>stratégie d'allocation</strong>
+    et des <strong>contraintes réglementaires</strong> à respecter.
+  </p>
+</div>
+
+{% if portfolios %}
+<div class="khl-card">
+  <div class="card-title"><i class="bi bi-collection me-1"></i>Portefeuilles actifs ({{ portfolios|length }})</div>
+  <table class="table khl-table mb-0">
+    <thead>
+      <tr>
+        <th>Code</th><th>Nom</th><th>Devise</th><th>Profil Risque</th>
+        <th>Inception</th><th class="text-end">Positions</th><th>Statut</th><th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for p in portfolios %}
+      <tr>
+        <td><strong class="mono">{{ p.code }}</strong></td>
+        <td>{{ p.name }}</td>
+        <td><span class="badge bg-light text-dark">{{ p.currency }}</span></td>
+        <td>
+          <span class="badge"
+            style="background:{{ '#0d6e3b' if p.risk == 'CONSERVATIVE' else ('#e8a020' if p.risk == 'BALANCED' else '#8b1a1a') }}22;
+                   color:{{ '#0d6e3b' if p.risk == 'CONSERVATIVE' else ('#856404' if p.risk == 'BALANCED' else '#8b1a1a') }};">
+            {{ p.risk }}
+          </span>
+        </td>
+        <td>{{ p.inception }}</td>
+        <td class="text-end mono">{{ p.nb_positions }}</td>
+        <td>
+          {% if p.active %}
+          <span class="badge badge-ok">Actif</span>
+          {% else %}
+          <span class="badge badge-error">Inactif</span>
+          {% endif %}
+        </td>
+        <td>
+          <a href="{{ url_for('portfolio.view', code=p.code) }}"
+             class="btn btn-sm btn-outline-primary" style="font-size:0.75rem;">
+            <i class="bi bi-eye me-1"></i>Voir
+          </a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="khl-card text-center py-5">
+  <i class="bi bi-pie-chart" style="font-size:3rem;color:#dee2e6;"></i>
+  <h5 class="mt-3 text-muted">Aucun portefeuille créé</h5>
+  <p class="text-muted" style="font-size:0.85rem;">
+    Lancez le wizard pour créer votre premier portefeuille professionnel.
+  </p>
+  <a href="{{ url_for('portfolio.wizard_start') }}" class="btn btn-primary mt-2"
+     style="background:#1a3a5c;border-color:#1a3a5c;">
+    <i class="bi bi-plus-lg me-2"></i>Créer un portefeuille
+  </a>
+</div>
+{% endif %}
+{% endblock %}

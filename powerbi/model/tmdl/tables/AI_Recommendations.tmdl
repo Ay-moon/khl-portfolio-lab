@@ -1,0 +1,77 @@
+/// AI-generated trade recommendations per security
+table AI_Recommendations
+	lineageTag: da5eff6f-75f4-4b4b-b9df-8420c507bc8a
+
+	column RecommendationId
+		dataType: int64
+		isHidden
+		lineageTag: 7a1f998f-2f9c-4920-8b1f-0435b57676b4
+		summarizeBy: count
+		sourceColumn: RecommendationId
+
+		annotation SummarizationSetBy = Automatic
+
+	column DateKey
+		dataType: int64
+		isHidden
+		lineageTag: 300a9b4f-6ce2-40db-ad64-8dcca8213a8c
+		summarizeBy: none
+		sourceColumn: DateKey
+
+	column PortfolioKey
+		dataType: int64
+		isHidden
+		lineageTag: 8513133d-bafa-41de-bec0-ef429c784e54
+		summarizeBy: none
+		sourceColumn: PortfolioKey
+
+	column SecurityKey
+		dataType: int64
+		isHidden
+		lineageTag: 5d9feeac-1b84-45de-8a3d-6a2cdd56013b
+		summarizeBy: count
+		sourceColumn: SecurityKey
+
+		annotation SummarizationSetBy = Automatic
+
+	column Action
+		dataType: string
+		lineageTag: 5403e03d-ed0b-4062-bc1d-5d5aca4c96c8
+		summarizeBy: none
+		sourceColumn: Action
+
+	column ConfidenceScore
+		dataType: decimal
+		formatString: 0.0%
+		lineageTag: edf6aa64-733c-43b7-b364-d15d50ccf81f
+		summarizeBy: sum
+		sourceColumn: ConfidenceScore
+
+		annotation SummarizationSetBy = Automatic
+
+	column Reasoning
+		dataType: string
+		lineageTag: 64811a67-0f10-47fe-a08d-d9a4f7585243
+		summarizeBy: none
+		sourceColumn: Reasoning
+
+	column Status
+		dataType: string
+		lineageTag: 8c3865d0-e738-4b41-8e6a-80860cca5911
+		summarizeBy: none
+		sourceColumn: Status
+
+	column CreatedAt
+		dataType: dateTime
+		lineageTag: 0af23d5e-14ef-4986-8278-4210c6785332
+		summarizeBy: none
+		sourceColumn: CreatedAt
+
+	partition AI_Reco_Import = m
+		mode: directQuery
+		source =
+				let
+				    Source = Sql.Database("PERSO-AJE-DELL\BFASERVER01", "SmartAssetAdvicedb"),
+				    result = Value.NativeQuery(Source, "SELECT * FROM [dbo].[AI_Recommendations]", null, [EnableFolding=true])
+				in  result
+

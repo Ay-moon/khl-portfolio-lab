@@ -1,0 +1,51 @@
+/// AI-generated what-if scenario analyses
+table AI_WhatIf
+	lineageTag: 420a7498-8b74-429b-bf0f-1004446b0e0c
+
+	column WhatIfId
+		dataType: int64
+		isHidden
+		lineageTag: 8463e821-aef6-45c7-83b9-aecd54d24638
+		summarizeBy: none
+		sourceColumn: WhatIfId
+
+	column DateKey
+		dataType: int64
+		isHidden
+		lineageTag: 1f8a896f-2633-48e3-b607-a4498253d12d
+		summarizeBy: none
+		sourceColumn: DateKey
+
+	column PortfolioKey
+		dataType: int64
+		isHidden
+		lineageTag: 7061deda-a5e3-476a-9e41-f6cfafdeb0e6
+		summarizeBy: none
+		sourceColumn: PortfolioKey
+
+	column ScenarioName
+		dataType: string
+		lineageTag: 4e3cdd3d-b08c-41d7-92b3-27ad1c1c3a65
+		summarizeBy: none
+		sourceColumn: ScenarioName
+
+	column Narrative
+		dataType: string
+		lineageTag: 68f4c647-5b49-4745-90f5-1ee90f0d9e16
+		summarizeBy: none
+		sourceColumn: Narrative
+
+	column CreatedAt
+		dataType: dateTime
+		lineageTag: 68ca1b47-71fa-4d4a-8fb3-9a22ee5ded6e
+		summarizeBy: none
+		sourceColumn: CreatedAt
+
+	partition AI_WhatIf_Import = m
+		mode: directQuery
+		source =
+				let
+				    Source = Sql.Database("PERSO-AJE-DELL\BFASERVER01", "SmartAssetAdvicedb"),
+				    result = Value.NativeQuery(Source, "SELECT * FROM [dbo].[AI_WhatIf]", null, [EnableFolding=true])
+				in  result
+

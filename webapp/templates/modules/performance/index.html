@@ -1,0 +1,183 @@
+{% extends "base.html" %}
+{% block title %}Performance{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="page-icon" style="background:#e8a020;"><i class="bi bi-trophy"></i></div>
+  <div class="flex-grow-1">
+    <h1>Performance & Reporting</h1>
+  </div>
+  <select class="form-select form-select-sm" style="width:auto;"
+          onchange="location.href='/performance/?portfolio='+this.value">
+    {% for p in all_portfolios %}
+    <option value="{{ p.code }}" {{ 'selected' if p.code == portfolio_code else '' }}>{{ p.code }} — {{ p.name }}</option>
+    {% endfor %}
+  </select>
+</div>
+
+<div class="story-block mb-4">
+  <div class="story-title"><i class="bi bi-person-workspace me-2"></i>Contexte métier — Gérant de portefeuille</div>
+  <p>
+    La <strong>performance</strong> mesure combien le portefeuille a gagné (ou perdu) par rapport à son capital initial.
+    Le <strong>rendement ajusté du risque</strong> (Sharpe) évalue si la performance justifie le niveau de risque pris.
+    Ces indicateurs sont reportés quotidiennement aux clients et aux comités de gestion.
+  </p>
+</div>
+
+<!-- KPIs -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-3">
+    <div class="metric-card blue">
+      <div class="metric-label">NAV actuelle</div>
+      <div class="metric-value" style="font-size:1.3rem;">{{ "{:,.0f}".format(latest_nav) }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="metric-card {{ 'green' if total_return >= 0 else 'red' }}">
+      <div class="metric-label">PnL cumulé</div>
+      <div class="metric-value" style="color:{{ '#0d6e3b' if total_return >= 0 else '#8b1a1a' }};">
+        {{ "{:+,.0f}".format(total_return) }}
+      </div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="metric-card green">
+      <div class="metric-label">Meilleur jour</div>
+      <div class="metric-value" style="color:#0d6e3b;">{{ "{:+,.0f}".format(best_day) }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="metric-card red">
+      <div class="metric-label">Pire jour</div>
+      <div class="metric-value" style="color:#8b1a1a;">{{ "{:+,.0f}".format(worst_day) }}</div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3">
+  <div class="col-lg-8">
+    <div class="khl-card">
+      <div class="card-title"><i class="bi bi-graph-up me-1"></i>Évolution NAV & PnL cumulé</div>
+      {% if pnl_data %}
+      <canvas id="navChart" height="220"></canvas>
+      {% else %}
+      <p class="text-center text-muted py-4">
+        Aucune donnée de performance.
+        <a href="{{ url_for('monitoring.index') }}">Lancez le calcul depuis le Monitoring.</a>
+      </p>
+      {% endif %}
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="khl-card">
+      <div class="card-title"><i class="bi bi-shield me-1"></i>Métriques Risque</div>
+      {% if risk_data %}
+      <table class="table table-sm khl-table mb-0">
+        <tr>
+          <td class="text-muted">Volatilité 20j</td>
+          <td class="text-end mono"><strong>{{ risk_data.vol20d }}%</strong></td>
+        </tr>
+        <tr>
+          <td class="text-muted">Max Drawdown</td>
+          <td class="text-end mono" style="color:#8b1a1a;"><strong>{{ risk_data.drawdown }}%</strong></td>
+        </tr>
+        <tr>
+          <td class="text-muted">VaR 95%</td>
+          <td class="text-end mono" style="color:#8b1a1a;"><strong>{{ risk_data.var95 }}%</strong></td>
+        </tr>
+        <tr>
+          <td class="text-muted">Ratio Sharpe</td>
+          <td class="text-end mono"><strong>{{ risk_data.sharpe }}</strong></td>
+        </tr>
+        <tr>
+          <td class="text-muted">Beta</td>
+          <td class="text-end mono"><strong>{{ risk_data.beta }}</strong></td>
+        </tr>
+      </table>
+      {% else %}
+      <p class="text-muted" style="font-size:0.82rem;">Métriques non disponibles.</p>
+      {% endif %}
+    </div>
+
+    <div class="khl-card">
+      <div class="card-title"><i class="bi bi-bar-chart-line me-1"></i>Reporting Power BI</div>
+      <p style="font-size:0.82rem;color:#495057;">
+        Connectez ce portefeuille à un rapport Power BI pour un reporting
+        visuel professionnel partageable avec les clients.
+      </p>
+      <a href="{{ url_for('performance.powerbi') }}" class="btn btn-warning btn-sm w-100"
+         style="color:#0d1b2a;font-weight:600;">
+        <i class="bi bi-bar-chart-line me-2"></i>Ouvrir Power BI
+      </a>
+    </div>
+  </div>
+</div>
+
+{% if pnl_data %}
+<!-- Tableau PnL -->
+<div class="khl-card mt-3">
+  <div class="card-title"><i class="bi bi-table me-1"></i>Historique PnL journalier</div>
+  <div class="table-responsive" style="max-height:300px;overflow-y:auto;">
+    <table class="table table-sm khl-table mb-0">
+      <thead style="position:sticky;top:0;background:white;">
+        <tr><th>Date</th><th class="text-end">NAV</th><th class="text-end">PnL Jour</th>
+            <th class="text-end">PnL Cumulé</th><th class="text-end">Return (%)</th></tr>
+      </thead>
+      <tbody>
+        {% for p in pnl_data|reverse %}
+        <tr>
+          <td class="mono">{{ p.date }}</td>
+          <td class="text-end mono"><strong>{{ "{:,.2f}".format(p.nav) }}</strong></td>
+          <td class="text-end mono" style="color:{{ '#0d6e3b' if p.daily_pnl >= 0 else '#8b1a1a' }};">
+            {{ "{:+,.2f}".format(p.daily_pnl) }}
+          </td>
+          <td class="text-end mono" style="color:{{ '#0d6e3b' if p.cum_pnl >= 0 else '#8b1a1a' }};">
+            {{ "{:+,.2f}".format(p.cum_pnl) }}
+          </td>
+          <td class="text-end mono" style="color:{{ '#0d6e3b' if p.return_pct >= 0 else '#8b1a1a' }};">
+            {{ "{:+.4f}".format(p.return_pct) }}%
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+{% if pnl_data %}
+<script>
+const data = {{ pnl_data|tojson }};
+new Chart(document.getElementById('navChart'), {
+  type: 'line',
+  data: {
+    labels: data.map(d => d.date),
+    datasets: [
+      {
+        label: 'NAV',
+        data: data.map(d => d.nav),
+        borderColor: '#1a3a5c', backgroundColor: 'rgba(26,58,92,0.06)',
+        fill: true, tension: 0.3, pointRadius: 0, yAxisID: 'y'
+      },
+      {
+        label: 'PnL Cumulé',
+        data: data.map(d => d.cum_pnl),
+        borderColor: '#e8a020', backgroundColor: 'transparent',
+        borderDash: [4,4], tension: 0.3, pointRadius: 0, yAxisID: 'y2'
+      }
+    ]
+  },
+  options: {
+    responsive: true,
+    interaction: { mode: 'index', intersect: false },
+    plugins: { legend: { labels: { font: { size: 11 } } } },
+    scales: {
+      y:  { position: 'left',  grid: { color: '#f0f2f5' } },
+      y2: { position: 'right', grid: { display: false } }
+    }
+  }
+});
+</script>
+{% endif %}
+{% endblock %}

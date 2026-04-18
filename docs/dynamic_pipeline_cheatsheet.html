@@ -1,0 +1,835 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dynamic Big Data Pipeline Cheatsheet</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=Sora:wght@600;700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg-1: #080b13;
+      --bg-2: #101a2b;
+      --panel: rgba(8, 14, 27, 0.86);
+      --panel-border: rgba(145, 189, 255, 0.2);
+      --ink: #e9f3ff;
+      --ink-muted: #a7bad6;
+      --accent: #40d39a;
+      --chip: #1e355b;
+      --danger: #ff6a57;
+      --shadow: 0 18px 42px rgba(0, 0, 0, 0.45);
+      --radius: 16px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Space Grotesk", "Segoe UI", sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 5% 10%, #1a2f57 0%, transparent 28%),
+        radial-gradient(circle at 90% 0%, #0a5f52 0%, transparent 23%),
+        linear-gradient(145deg, var(--bg-1), var(--bg-2));
+      min-height: 100vh;
+    }
+
+    .grain {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      background-image: radial-gradient(rgba(255, 255, 255, 0.04) 0.7px, transparent 0.7px);
+      background-size: 3px 3px;
+      opacity: 0.18;
+    }
+
+    .wrap {
+      max-width: 1420px;
+      margin: 0 auto;
+      padding: 22px 16px 28px;
+    }
+
+    .hero {
+      background: linear-gradient(160deg, rgba(8, 15, 29, 0.94), rgba(9, 30, 54, 0.84));
+      border: 1px solid var(--panel-border);
+      border-radius: var(--radius);
+      padding: 18px;
+      box-shadow: var(--shadow);
+    }
+
+    .hero-head {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .title {
+      margin: 0;
+      font: 700 1.35rem/1.2 "Sora", "Space Grotesk", sans-serif;
+      letter-spacing: 0.01em;
+    }
+
+    .subtitle {
+      margin-top: 6px;
+      color: var(--ink-muted);
+      font-size: 0.92rem;
+    }
+
+    .pills {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .pill {
+      border: 1px solid rgba(116, 212, 180, 0.32);
+      color: #c8ffed;
+      background: rgba(37, 111, 83, 0.35);
+      padding: 7px 10px;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .controls {
+      margin-top: 14px;
+      display: grid;
+      gap: 12px;
+    }
+
+    .provider-tabs, .stage-tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .tab {
+      border: 1px solid transparent;
+      background: var(--chip);
+      color: #d9ebff;
+      padding: 9px 14px;
+      border-radius: 10px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: transform 140ms ease, background 140ms ease, border-color 140ms ease;
+    }
+
+    .tab:hover {
+      transform: translateY(-1px);
+      border-color: rgba(163, 206, 255, 0.3);
+    }
+
+    .tab.active {
+      background: linear-gradient(180deg, #225f4d, #184639);
+      border-color: rgba(123, 247, 204, 0.45);
+      color: #ddfff5;
+    }
+
+    .stage-tab[data-stage="ingestion"] { background: #1c6954; }
+    .stage-tab[data-stage="lake"] { background: #244a8a; }
+    .stage-tab[data-stage="compute"] { background: #91531d; }
+    .stage-tab[data-stage="warehouse"] { background: #503281; }
+    .stage-tab[data-stage="presentation"] { background: #1f5f72; }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .search {
+      border: 1px solid rgba(169, 210, 255, 0.3);
+      background: rgba(12, 23, 40, 0.9);
+      color: var(--ink);
+      padding: 10px 11px;
+      border-radius: 9px;
+      min-width: 240px;
+      font-size: 0.88rem;
+      outline: none;
+    }
+
+    .search:focus {
+      border-color: rgba(100, 243, 191, 0.8);
+      box-shadow: 0 0 0 3px rgba(74, 200, 158, 0.23);
+    }
+
+    .switch {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      border: 1px solid rgba(161, 204, 255, 0.25);
+      background: rgba(10, 23, 40, 0.85);
+      padding: 6px 10px;
+      border-radius: 9px;
+      font-size: 0.82rem;
+      color: var(--ink-muted);
+    }
+
+    .switch input {
+      accent-color: var(--accent);
+      width: 16px;
+      height: 16px;
+      margin: 0;
+      cursor: pointer;
+    }
+
+    .layout {
+      margin-top: 14px;
+      display: grid;
+      gap: 12px;
+      grid-template-columns: minmax(0, 1fr) 330px;
+    }
+
+    .board-wrap {
+      border: 1px solid var(--panel-border);
+      border-radius: var(--radius);
+      background: var(--panel);
+      box-shadow: var(--shadow);
+      overflow: auto;
+      min-height: 560px;
+      max-height: 76vh;
+      position: relative;
+    }
+
+    .board {
+      min-width: 1100px;
+      min-height: 560px;
+      position: relative;
+      padding: 14px;
+    }
+
+    .edge-layer {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      overflow: visible;
+    }
+
+    .edge {
+      fill: none;
+      stroke: rgba(169, 200, 255, 0.26);
+      stroke-width: 2;
+      stroke-dasharray: 5 6;
+      transition: opacity 160ms ease, stroke 160ms ease;
+    }
+
+    .edge.dimmed {
+      opacity: 0.15;
+    }
+
+    .edge.active {
+      stroke: rgba(95, 241, 182, 0.95);
+      opacity: 1;
+      stroke-dasharray: 5 5;
+      animation: flow 1.1s linear infinite;
+    }
+
+    @keyframes flow {
+      to { stroke-dashoffset: -24; }
+    }
+
+    .columns {
+      position: relative;
+      display: grid;
+      grid-template-columns: repeat(5, minmax(190px, 1fr));
+      gap: 10px;
+      height: 100%;
+      z-index: 1;
+    }
+
+    .column {
+      border: 1px solid rgba(157, 205, 255, 0.14);
+      border-radius: 14px;
+      background: linear-gradient(180deg, rgba(16, 25, 42, 0.7), rgba(8, 17, 33, 0.65));
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .column h3 {
+      margin: 0;
+      font-size: 0.82rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #cde2ff;
+      border-bottom: 1px dashed rgba(153, 196, 248, 0.22);
+      padding-bottom: 7px;
+    }
+
+    .node {
+      border: 1px solid rgba(181, 214, 255, 0.26);
+      border-radius: 11px;
+      background: rgba(17, 34, 57, 0.9);
+      padding: 9px 10px;
+      color: var(--ink);
+      text-align: left;
+      cursor: pointer;
+      transition: transform 140ms ease, border-color 140ms ease, opacity 140ms ease, box-shadow 140ms ease;
+      opacity: 1;
+      box-shadow: 0 6px 14px rgba(2, 6, 13, 0.2);
+      animation: reveal 360ms ease both;
+    }
+
+    @keyframes reveal {
+      from {
+        transform: translateY(10px);
+        opacity: 0;
+      }
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+
+    .node:hover {
+      transform: translateY(-1px);
+      border-color: rgba(131, 245, 199, 0.55);
+    }
+
+    .node small {
+      display: block;
+      margin-top: 4px;
+      color: #9ec2e5;
+      font-size: 0.73rem;
+    }
+
+    .node.dimmed {
+      opacity: 0.2;
+      pointer-events: none;
+    }
+
+    .node.selected {
+      border-color: rgba(110, 245, 194, 0.95);
+      box-shadow: 0 0 0 3px rgba(74, 207, 161, 0.18), 0 12px 26px rgba(0, 0, 0, 0.37);
+      transform: translateY(-1px);
+    }
+
+    .side {
+      border: 1px solid var(--panel-border);
+      border-radius: var(--radius);
+      background: var(--panel);
+      box-shadow: var(--shadow);
+      padding: 14px;
+      min-height: 560px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .side h2 {
+      margin: 0;
+      font: 700 1.02rem/1.2 "Sora", "Space Grotesk", sans-serif;
+      letter-spacing: 0.02em;
+    }
+
+    .kpi {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .kpi-card {
+      border: 1px solid rgba(146, 190, 248, 0.24);
+      border-radius: 10px;
+      padding: 8px;
+      background: rgba(15, 29, 50, 0.88);
+    }
+
+    .kpi-card b {
+      display: block;
+      font-size: 1.05rem;
+      margin-bottom: 3px;
+    }
+
+    .kpi-card span {
+      font-size: 0.74rem;
+      color: var(--ink-muted);
+    }
+
+    .node-meta {
+      border: 1px solid rgba(133, 194, 255, 0.26);
+      border-radius: 11px;
+      padding: 10px;
+      background: rgba(13, 26, 45, 0.9);
+      min-height: 110px;
+    }
+
+    .node-meta h3 {
+      margin: 0 0 7px;
+      font-size: 0.94rem;
+    }
+
+    .node-meta p {
+      margin: 0 0 6px;
+      font-size: 0.83rem;
+      color: var(--ink-muted);
+      line-height: 1.35;
+    }
+
+    .list {
+      margin: 0;
+      padding-left: 17px;
+      color: #b7d2f1;
+      font-size: 0.8rem;
+      line-height: 1.36;
+    }
+
+    .legend {
+      border-top: 1px dashed rgba(157, 199, 245, 0.24);
+      padding-top: 10px;
+      margin-top: auto;
+      color: #b9d0eb;
+      font-size: 0.77rem;
+      line-height: 1.35;
+    }
+
+    .legend b {
+      color: #deefff;
+    }
+
+    .notice {
+      color: #ffd8d2;
+      background: rgba(130, 38, 26, 0.34);
+      border: 1px solid rgba(255, 120, 95, 0.35);
+      border-radius: 9px;
+      padding: 7px 9px;
+      font-size: 0.78rem;
+    }
+
+    @media (max-width: 1120px) {
+      .layout {
+        grid-template-columns: 1fr;
+      }
+      .side {
+        min-height: 340px;
+      }
+      .board-wrap {
+        min-height: 500px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="grain"></div>
+  <main class="wrap">
+    <section class="hero">
+      <div class="hero-head">
+        <div>
+          <h1 class="title">Big Data Pipeline Cheatsheet - Dynamic View</h1>
+          <div class="subtitle">Vue interactive AWS / Azure / Google Cloud avec filtres par couche et dependances animees.</div>
+        </div>
+        <div class="pills">
+          <span class="pill">Ingestion</span>
+          <span class="pill">Data Lake</span>
+          <span class="pill">Computation</span>
+          <span class="pill">Data Warehouse</span>
+          <span class="pill">Presentation</span>
+        </div>
+      </div>
+
+      <div class="controls">
+        <div id="providerTabs" class="provider-tabs"></div>
+        <div id="stageTabs" class="stage-tabs"></div>
+        <div class="toolbar">
+          <input id="searchInput" class="search" type="text" placeholder="Filtrer un service (ex: Databricks, Athena, BigQuery)" />
+          <label class="switch">
+            <input id="autoFlow" type="checkbox" checked />
+            Flow auto
+          </label>
+        </div>
+      </div>
+    </section>
+
+    <section class="layout">
+      <div class="board-wrap">
+        <div id="board" class="board">
+          <svg id="edgeLayer" class="edge-layer"></svg>
+          <div id="columns" class="columns"></div>
+        </div>
+      </div>
+
+      <aside class="side">
+        <h2 id="providerTitle">Provider</h2>
+        <div class="kpi">
+          <div class="kpi-card"><b id="kpiServices">0</b><span>Services</span></div>
+          <div class="kpi-card"><b id="kpiLinks">0</b><span>Liens</span></div>
+          <div class="kpi-card"><b id="kpiLayer">All</b><span>Layer actif</span></div>
+          <div class="kpi-card"><b id="kpiFocus">None</b><span>Noeud focus</span></div>
+        </div>
+
+        <div class="node-meta">
+          <h3 id="metaName">Selection</h3>
+          <p id="metaDesc">Clique un service pour voir ses details et les connexions directes.</p>
+          <ul id="metaLinks" class="list"></ul>
+        </div>
+
+        <div class="notice">Exemple pedagogique: mapping generique des services cloud, a adapter a ton architecture cible.</div>
+        <div class="legend"><b>Interaction:</b> clique une couche pour filtrer, clique un noeud pour tracer ses dependances directes.</div>
+      </aside>
+    </section>
+  </main>
+
+  <script>
+    const STAGES = [
+      { id: "ingestion", label: "Ingestion" },
+      { id: "lake", label: "Data Lake" },
+      { id: "compute", label: "Computation" },
+      { id: "warehouse", label: "Data Warehouse" },
+      { id: "presentation", label: "Presentation" },
+    ];
+
+    const PROVIDERS = {
+      aws: {
+        label: "AWS",
+        nodes: [
+          { id: "aws_iot", name: "AWS IoT", stage: "ingestion", desc: "Collecte d'evenements IoT." },
+          { id: "aws_lambda_in", name: "Lambda", stage: "ingestion", desc: "Ingestion event-driven." },
+          { id: "aws_kinesis", name: "Kinesis Streams", stage: "ingestion", desc: "Stream ingestion haut debit." },
+          { id: "aws_s3", name: "S3", stage: "lake", desc: "Stockage objet brut et curated." },
+          { id: "aws_glacier", name: "Glacier", stage: "lake", desc: "Archivage cold tier." },
+          { id: "aws_glue", name: "Glue ETL", stage: "compute", desc: "ETL serverless." },
+          { id: "aws_emr", name: "EMR", stage: "compute", desc: "Spark/Hadoop manage." },
+          { id: "aws_sagemaker", name: "SageMaker", stage: "compute", desc: "ML training/serving." },
+          { id: "aws_redshift", name: "Redshift", stage: "warehouse", desc: "Entrepot analytique colonne." },
+          { id: "aws_rds", name: "RDS", stage: "warehouse", desc: "Stockage relationnel." },
+          { id: "aws_athena", name: "Athena", stage: "presentation", desc: "Query SQL serverless." },
+          { id: "aws_quicksight", name: "QuickSight", stage: "presentation", desc: "Visualization BI." },
+        ],
+        edges: [
+          ["aws_iot", "aws_lambda_in"], ["aws_lambda_in", "aws_kinesis"], ["aws_kinesis", "aws_s3"],
+          ["aws_kinesis", "aws_glue"], ["aws_s3", "aws_glue"], ["aws_s3", "aws_emr"], ["aws_glue", "aws_redshift"],
+          ["aws_emr", "aws_redshift"], ["aws_s3", "aws_athena"], ["aws_redshift", "aws_quicksight"],
+          ["aws_rds", "aws_quicksight"], ["aws_sagemaker", "aws_quicksight"]
+        ]
+      },
+      azure: {
+        label: "Azure",
+        nodes: [
+          { id: "az_iot", name: "IoT Hub", stage: "ingestion", desc: "Ingestion telemetrie IoT." },
+          { id: "az_func_in", name: "Azure Functions", stage: "ingestion", desc: "Traitement serverless event." },
+          { id: "az_eventhub", name: "Event Hub", stage: "ingestion", desc: "Bus streaming." },
+          { id: "az_adls", name: "Azure Data Lake", stage: "lake", desc: "Zone bronze/silver/gold." },
+          { id: "az_explorer", name: "Data Explorer", stage: "lake", desc: "Exploration serie temporelle." },
+          { id: "az_databricks", name: "Databricks", stage: "compute", desc: "Lakehouse + Spark." },
+          { id: "az_stream", name: "Stream Analytics", stage: "compute", desc: "SQL streaming." },
+          { id: "az_ml", name: "Azure ML", stage: "compute", desc: "MLOps et training." },
+          { id: "az_sql", name: "Azure SQL", stage: "warehouse", desc: "Warehouse relationnel." },
+          { id: "az_cosmos", name: "Cosmos DB", stage: "warehouse", desc: "NoSQL distribue." },
+          { id: "az_redis", name: "Azure Redis", stage: "warehouse", desc: "Cache ultra-rapide." },
+          { id: "az_powerbi", name: "Power BI", stage: "presentation", desc: "Reporting et dashboard." },
+        ],
+        edges: [
+          ["az_iot", "az_func_in"], ["az_func_in", "az_eventhub"], ["az_eventhub", "az_adls"],
+          ["az_adls", "az_databricks"], ["az_adls", "az_stream"], ["az_databricks", "az_sql"],
+          ["az_stream", "az_cosmos"], ["az_sql", "az_powerbi"], ["az_cosmos", "az_powerbi"],
+          ["az_redis", "az_powerbi"], ["az_ml", "az_powerbi"], ["az_explorer", "az_databricks"]
+        ]
+      },
+      gcp: {
+        label: "Google Cloud",
+        nodes: [
+          { id: "gcp_iot", name: "Cloud IoT", stage: "ingestion", desc: "Entree telemetrie IoT." },
+          { id: "gcp_cf", name: "Cloud Function", stage: "ingestion", desc: "Function event-driven." },
+          { id: "gcp_pubsub", name: "Pub/Sub", stage: "ingestion", desc: "Bus de messaging streaming." },
+          { id: "gcp_storage", name: "Cloud Storage", stage: "lake", desc: "Stockage objet central." },
+          { id: "gcp_prep", name: "DataPrep", stage: "lake", desc: "Preparation de donnees." },
+          { id: "gcp_dataflow", name: "Dataflow", stage: "compute", desc: "Pipelines batch/stream." },
+          { id: "gcp_dataproc", name: "DataProc", stage: "compute", desc: "Cluster Spark manage." },
+          { id: "gcp_automl", name: "AutoML", stage: "compute", desc: "ML auto-entraine." },
+          { id: "gcp_bigquery", name: "BigQuery", stage: "warehouse", desc: "Entrepot analytique serverless." },
+          { id: "gcp_datastore", name: "Datastore", stage: "warehouse", desc: "NoSQL document store." },
+          { id: "gcp_cloudsql", name: "Cloud SQL", stage: "warehouse", desc: "Base relationnelle managee." },
+          { id: "gcp_colab", name: "Colab", stage: "presentation", desc: "Notebook collaboratif." },
+          { id: "gcp_datalab", name: "DataLab", stage: "presentation", desc: "Visual analytics." },
+        ],
+        edges: [
+          ["gcp_iot", "gcp_cf"], ["gcp_cf", "gcp_pubsub"], ["gcp_pubsub", "gcp_storage"],
+          ["gcp_storage", "gcp_prep"], ["gcp_storage", "gcp_dataflow"], ["gcp_prep", "gcp_dataflow"],
+          ["gcp_dataflow", "gcp_bigquery"], ["gcp_dataproc", "gcp_bigquery"], ["gcp_automl", "gcp_bigquery"],
+          ["gcp_bigquery", "gcp_colab"], ["gcp_bigquery", "gcp_datalab"], ["gcp_cloudsql", "gcp_datalab"],
+          ["gcp_datastore", "gcp_colab"]
+        ]
+      }
+    };
+
+    const state = {
+      provider: "aws",
+      stage: "all",
+      selected: null,
+      search: "",
+      timer: null,
+    };
+
+    const providerTabs = document.getElementById("providerTabs");
+    const stageTabs = document.getElementById("stageTabs");
+    const columns = document.getElementById("columns");
+    const edgeLayer = document.getElementById("edgeLayer");
+    const board = document.getElementById("board");
+    const searchInput = document.getElementById("searchInput");
+    const autoFlow = document.getElementById("autoFlow");
+    const providerTitle = document.getElementById("providerTitle");
+    const kpiServices = document.getElementById("kpiServices");
+    const kpiLinks = document.getElementById("kpiLinks");
+    const kpiLayer = document.getElementById("kpiLayer");
+    const kpiFocus = document.getElementById("kpiFocus");
+    const metaName = document.getElementById("metaName");
+    const metaDesc = document.getElementById("metaDesc");
+    const metaLinks = document.getElementById("metaLinks");
+
+    function neighborsOf(edges, id) {
+      const result = new Set();
+      edges.forEach(([a, b]) => {
+        if (a === id) result.add(b);
+        if (b === id) result.add(a);
+      });
+      return result;
+    }
+
+    function initTabs() {
+      providerTabs.innerHTML = "";
+      Object.entries(PROVIDERS).forEach(([id, cfg]) => {
+        const btn = document.createElement("button");
+        btn.className = "tab";
+        btn.textContent = cfg.label;
+        btn.dataset.id = id;
+        btn.addEventListener("click", () => {
+          state.provider = id;
+          state.selected = null;
+          render();
+        });
+        providerTabs.appendChild(btn);
+      });
+
+      stageTabs.innerHTML = "";
+      const allBtn = document.createElement("button");
+      allBtn.className = "tab stage-tab";
+      allBtn.textContent = "All";
+      allBtn.dataset.stage = "all";
+      allBtn.addEventListener("click", () => {
+        state.stage = "all";
+        render();
+      });
+      stageTabs.appendChild(allBtn);
+
+      STAGES.forEach((stage) => {
+        const btn = document.createElement("button");
+        btn.className = "tab stage-tab";
+        btn.dataset.stage = stage.id;
+        btn.textContent = stage.label;
+        btn.addEventListener("click", () => {
+          state.stage = stage.id;
+          render();
+        });
+        stageTabs.appendChild(btn);
+      });
+    }
+
+    function renderColumns() {
+      const cfg = PROVIDERS[state.provider];
+      columns.innerHTML = "";
+      STAGES.forEach((stage, idx) => {
+        const col = document.createElement("section");
+        col.className = "column";
+        col.innerHTML = `<h3>${stage.label}</h3>`;
+
+        cfg.nodes
+          .filter((n) => n.stage === stage.id)
+          .forEach((node, nidx) => {
+            const btn = document.createElement("button");
+            btn.className = "node";
+            btn.style.animationDelay = `${idx * 35 + nidx * 24}ms`;
+            btn.dataset.node = node.id;
+            btn.dataset.stage = node.stage;
+            btn.innerHTML = `${node.name}<small>${node.stage}</small>`;
+            btn.addEventListener("click", () => {
+              state.selected = state.selected === node.id ? null : node.id;
+              render();
+            });
+            col.appendChild(btn);
+          });
+
+        columns.appendChild(col);
+      });
+    }
+
+    function applyNodeState() {
+      const cfg = PROVIDERS[state.provider];
+      const connected = state.selected ? neighborsOf(cfg.edges, state.selected) : new Set();
+      const q = state.search.trim().toLowerCase();
+      const allNodes = [...document.querySelectorAll(".node")];
+
+      allNodes.forEach((el) => {
+        const id = el.dataset.node;
+        const stage = el.dataset.stage;
+        const node = cfg.nodes.find((n) => n.id === id);
+
+        const byStage = state.stage === "all" || state.stage === stage;
+        const bySearch = q === "" || node.name.toLowerCase().includes(q);
+        const inFocus = !state.selected || id === state.selected || connected.has(id);
+        const visible = byStage && bySearch && inFocus;
+
+        el.classList.toggle("selected", id === state.selected);
+        el.classList.toggle("dimmed", !visible);
+      });
+    }
+
+    function drawEdges() {
+      const cfg = PROVIDERS[state.provider];
+      const allNodes = [...document.querySelectorAll(".node")];
+      const byId = {};
+      allNodes.forEach((el) => { byId[el.dataset.node] = el; });
+
+      const b = board.getBoundingClientRect();
+      edgeLayer.setAttribute("viewBox", `0 0 ${b.width} ${b.height}`);
+      edgeLayer.innerHTML = `
+        <defs>
+          <marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto" markerUnits="strokeWidth">
+            <path d="M 0 0 L 8 4 L 0 8 z" fill="rgba(169, 200, 255, 0.52)"></path>
+          </marker>
+          <marker id="arrowActive" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto" markerUnits="strokeWidth">
+            <path d="M 0 0 L 8 4 L 0 8 z" fill="rgba(95, 241, 182, 0.94)"></path>
+          </marker>
+        </defs>
+      `;
+
+      const connected = state.selected ? neighborsOf(cfg.edges, state.selected) : new Set();
+      const q = state.search.trim().toLowerCase();
+
+      cfg.edges.forEach(([from, to]) => {
+        const a = byId[from];
+        const z = byId[to];
+        if (!a || !z) return;
+
+        const nodeA = cfg.nodes.find((n) => n.id === from);
+        const nodeZ = cfg.nodes.find((n) => n.id === to);
+        const matchSearch = !q || nodeA.name.toLowerCase().includes(q) || nodeZ.name.toLowerCase().includes(q);
+        const matchStage =
+          state.stage === "all" || nodeA.stage === state.stage || nodeZ.stage === state.stage;
+
+        const ra = a.getBoundingClientRect();
+        const rz = z.getBoundingClientRect();
+        const x1 = ra.right - b.left;
+        const y1 = ra.top - b.top + ra.height / 2;
+        const x2 = rz.left - b.left;
+        const y2 = rz.top - b.top + rz.height / 2;
+        const cx = Math.max(24, (x2 - x1) * 0.45);
+        const d = `M ${x1} ${y1} C ${x1 + cx} ${y1}, ${x2 - cx} ${y2}, ${x2} ${y2}`;
+
+        const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        path.setAttribute("d", d);
+        path.classList.add("edge");
+
+        const active =
+          state.selected &&
+          ((from === state.selected && connected.has(to)) || (to === state.selected && connected.has(from)));
+        if (active) {
+          path.classList.add("active");
+          path.setAttribute("marker-end", "url(#arrowActive)");
+        } else {
+          path.setAttribute("marker-end", "url(#arrow)");
+        }
+
+        if (!matchSearch || !matchStage) {
+          path.classList.add("dimmed");
+        }
+        edgeLayer.appendChild(path);
+      });
+    }
+
+    function updateSidePanel() {
+      const cfg = PROVIDERS[state.provider];
+      providerTitle.textContent = cfg.label;
+      kpiServices.textContent = String(cfg.nodes.length);
+      kpiLinks.textContent = String(cfg.edges.length);
+      kpiLayer.textContent = state.stage === "all" ? "All" : state.stage;
+      kpiFocus.textContent = state.selected || "None";
+
+      metaLinks.innerHTML = "";
+      if (!state.selected) {
+        metaName.textContent = "Selection";
+        metaDesc.textContent = "Clique un service pour voir ses details et les connexions directes.";
+        return;
+      }
+
+      const node = cfg.nodes.find((n) => n.id === state.selected);
+      const neigh = [...neighborsOf(cfg.edges, state.selected)];
+      metaName.textContent = node.name;
+      metaDesc.textContent = node.desc;
+
+      if (!neigh.length) {
+        const li = document.createElement("li");
+        li.textContent = "Aucune dependance directe.";
+        metaLinks.appendChild(li);
+        return;
+      }
+      neigh.forEach((nid) => {
+        const target = cfg.nodes.find((n) => n.id === nid);
+        const li = document.createElement("li");
+        li.textContent = `${target.name} (${target.stage})`;
+        metaLinks.appendChild(li);
+      });
+    }
+
+    function updateActiveTabs() {
+      [...providerTabs.querySelectorAll(".tab")].forEach((el) => {
+        el.classList.toggle("active", el.dataset.id === state.provider);
+      });
+      [...stageTabs.querySelectorAll(".tab")].forEach((el) => {
+        el.classList.toggle("active", el.dataset.stage === state.stage);
+      });
+    }
+
+    function render() {
+      updateActiveTabs();
+      renderColumns();
+      applyNodeState();
+      updateSidePanel();
+      requestAnimationFrame(drawEdges);
+    }
+
+    function stopAuto() {
+      if (state.timer) {
+        clearInterval(state.timer);
+        state.timer = null;
+      }
+    }
+
+    function startAuto() {
+      stopAuto();
+      if (!autoFlow.checked) return;
+      const cycle = ["all", ...STAGES.map((s) => s.id)];
+      let idx = cycle.indexOf(state.stage);
+      state.timer = setInterval(() => {
+        idx = (idx + 1) % cycle.length;
+        state.stage = cycle[idx];
+        render();
+      }, 2600);
+    }
+
+    searchInput.addEventListener("input", (e) => {
+      state.search = e.target.value || "";
+      render();
+    });
+
+    autoFlow.addEventListener("change", startAuto);
+    window.addEventListener("resize", () => requestAnimationFrame(drawEdges));
+
+    initTabs();
+    render();
+    startAuto();
+  </script>
+</body>
+</html>

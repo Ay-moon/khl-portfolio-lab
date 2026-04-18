@@ -1,0 +1,35 @@
+/// Security/instrument master
+table DimSecurity
+	lineageTag: 8cedfddf-6343-4311-bc83-1abaca007bf2
+
+	column DB
+		dataType: string
+		lineageTag: 03177527-3f66-4c6a-b794-fb64c0316f1a
+		summarizeBy: none
+		sourceColumn: DB
+
+		annotation SummarizationSetBy = Automatic
+
+	column TABLE_NAME
+		dataType: string
+		lineageTag: 3fbfd1fb-1253-4a1e-9b6c-65a117d5a6e4
+		summarizeBy: none
+		sourceColumn: TABLE_NAME
+
+		annotation SummarizationSetBy = Automatic
+
+	partition DimSecurity_Import = m
+		mode: import
+		source =
+				let
+				    src1 = Sql.Database("PERSO-AJE-DELL\BFASERVER01", "SmartAssetAdvicedb",
+				                [Query="SELECT 'SmartAssetAdvicedb' AS DB, TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME IN ('DimSecurity','DimPortfolio','FactTrades','PortfolioPositionsDaily','PortfolioPnLDaily','RiskMetricsDaily') ORDER BY TABLE_NAME"]),
+				    src2 = Sql.Database("PERSO-AJE-DELL\BFASERVER01", "KHLWorldInvest",
+				                [Query="SELECT 'KHLWorldInvest' AS DB, TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME IN ('DimSecurity','DimPortfolio','FactTrades','PortfolioPositionsDaily','PortfolioPnLDaily','RiskMetricsDaily') ORDER BY TABLE_NAME"]),
+				    src3 = Sql.Database("PERSO-AJE-DELL\BFASERVER01", "DWH_KHLWorldInvest",
+				                [Query="SELECT 'DWH_KHLWorldInvest' AS DB, TABLE_NAME FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME IN ('DimSecurity','DimPortfolio','FactTrades','PortfolioPositionsDaily','PortfolioPnLDaily','RiskMetricsDaily') ORDER BY TABLE_NAME"]),
+				    combined = Table.Combine({src1, src2, src3})
+				in  combined
+
+	annotation PBI_ResultType = Exception
+

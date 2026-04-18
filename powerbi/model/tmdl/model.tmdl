@@ -1,0 +1,30 @@
+model Model
+	culture: fr-FR
+	defaultPowerBIDataSourceVersion: powerBI_V3
+	discourageImplicitMeasures
+	sourceQueryCulture: fr-FR
+	dataAccessOptions
+		legacyRedirects
+		returnErrorValuesAsNull
+
+annotation __PBI_TimeIntelligenceEnabled = 1
+
+annotation PBI_ProTooling = ["MCP-PBIModeling"]
+
+annotation PBI_QueryOrder = ["DimDate","DimSecurity","DimPortfolio","FactPrice","FactTrades","PortfolioPositionsDaily","PortfolioPnLDaily","RiskMetricsDaily","AI_DailyBriefing","AI_Recommendations","AI_WhatIf"]
+
+ref table DimDate
+ref table DimSecurity
+ref table DimPortfolio
+ref table FactPrice
+ref table FactTrades
+ref table PortfolioPositionsDaily
+ref table PortfolioPnLDaily
+ref table RiskMetricsDaily
+ref table AI_DailyBriefing
+ref table AI_Recommendations
+ref table AI_WhatIf
+ref table _Measures
+
+ref cultureInfo fr-FR
+

@@ -1,0 +1,68 @@
+/// Daily P&L and NAV per portfolio
+table PortfolioPnLDaily
+	lineageTag: 9c400e41-add4-484a-ab59-d3bdf078aa45
+
+	column PnLKey
+		dataType: int64
+		isHidden
+		lineageTag: 232205b9-d025-4a58-a5c5-99a809d2c94c
+		summarizeBy: none
+		sourceColumn: PnLKey
+
+	column DateKey
+		dataType: int64
+		isHidden
+		lineageTag: 65502df4-2762-44bf-9234-b8a645842c73
+		summarizeBy: none
+		sourceColumn: DateKey
+
+	column PortfolioKey
+		dataType: int64
+		isHidden
+		lineageTag: d4d1b6ee-0ee6-4f1a-a1a3-591cebb0d337
+		summarizeBy: none
+		sourceColumn: PortfolioKey
+
+	column DailyPnL
+		dataType: decimal
+		formatString: #,##0.00
+		lineageTag: 51a788ab-e798-40ad-846e-2b34179a840f
+		summarizeBy: none
+		sourceColumn: DailyPnL
+
+	column CumPnL
+		dataType: decimal
+		formatString: #,##0.00
+		lineageTag: d5adf166-f68c-4b68-bb13-62b00c55478a
+		summarizeBy: none
+		sourceColumn: CumPnL
+
+	column Nav
+		dataType: decimal
+		formatString: #,##0.00
+		lineageTag: 743f1f27-7bd4-4b2d-8bda-58c73a57850b
+		summarizeBy: none
+		sourceColumn: Nav
+
+	column ReturnPct
+		dataType: decimal
+		formatString: 0.00%
+		lineageTag: e09d2707-768d-4520-8102-2a9cd384b863
+		summarizeBy: none
+		sourceColumn: ReturnPct
+
+	column ContributionPct
+		dataType: decimal
+		formatString: 0.00%
+		lineageTag: 0d3171bc-7aa5-4cff-8dee-d34f2144fb9d
+		summarizeBy: none
+		sourceColumn: ContributionPct
+
+	partition PnL_Import = m
+		mode: directQuery
+		source =
+				let
+				    Source = Sql.Database("PERSO-AJE-DELL\BFASERVER01", "SmartAssetAdvicedb"),
+				    result = Value.NativeQuery(Source, "SELECT * FROM [dbo].[PortfolioPnLDaily]", null, [EnableFolding=true])
+				in  result
+

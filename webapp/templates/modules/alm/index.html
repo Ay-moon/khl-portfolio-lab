@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+{% block title %}ALM{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="page-icon" style="background:#1a5c5c;"><i class="bi bi-bank"></i></div>
+  <div><h1>ALM — Asset & Liability Management</h1></div>
+</div>
+
+<div class="story-block mb-4">
+  <div class="story-title"><i class="bi bi-person-workspace me-2"></i>Contexte métier — ALM Officer</div>
+  <p>
+    L'<strong>ALM (Gestion Actif-Passif)</strong> consiste à s'assurer que les actifs de la banque
+    couvrent bien ses passifs dans le temps, en termes de <strong>liquidité</strong> et de
+    <strong>sensibilité aux taux d'intérêt</strong>.
+    Le gap de liquidité montre les flux nets par maturité.
+    La duration mesure la sensibilité de la valeur aux variations de taux.
+    Les ratios LCR et NSFR sont des exigences réglementaires (Bâle III).
+  </p>
+</div>
+
+<!-- Ratios réglementaires -->
+<div class="row g-3 mb-4">
+  {% for key, ratio in ratios.items() %}
+  <div class="col-md-4">
+    <div class="metric-card {{ 'green' if ratio.value >= ratio.min * 1.1 else ('red' if ratio.value < ratio.min else '') }}">
+      <div class="metric-label">{{ ratio.label }}</div>
+      <div class="metric-value" style="color:{{ '#0d6e3b' if ratio.value >= ratio.min * 1.1 else ('#8b1a1a' if ratio.value < ratio.min else '#e8a020') }};">
+        {{ ratio.value }}%
+      </div>
+      <div class="metric-delta text-muted">Minimum réglementaire : {{ ratio.min }}%</div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<div class="row g-3">
+  <!-- Gap de liquidité -->
+  <div class="col-lg-7">
+    <div class="khl-card">
+      <div class="card-title"><i class="bi bi-bar-chart me-1"></i>Gap de Liquidité par Maturité</div>
+      <canvas id="gapChart" height="220"></canvas>
+      <div class="mt-2 p-2 bg-light rounded" style="font-size:0.75rem;">
+        <strong>Lecture :</strong> Un <span style="color:#0d6e3b;">gap positif</span> (actifs > passifs)
+        indique un excédent de liquidité. Un <span style="color:#8b1a1a;">gap négatif</span>
+        signale un besoin de refinancement sur ce bucket.
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-5">
+    <!-- Duration & BPV -->
+    <div class="khl-card">
+      <div class="card-title"><i class="bi bi-rulers me-1"></i>Sensibilité Taux — Duration & BPV</div>
+      <table class="table table-sm khl-table mb-2">
+        <tr><td>Duration Actifs</td><td class="text-end mono"><strong>{{ duration.duration_actifs }} ans</strong></td></tr>
+        <tr><td>Duration Passifs</td><td class="text-end mono"><strong>{{ duration.duration_passifs }} ans</strong></td></tr>
+        <tr>
+          <td>Gap Duration (Actifs − Passifs)</td>
+          <td class="text-end mono" style="color:{{ '#8b1a1a' if duration.gap_duration < 0 else '#0d6e3b' }};">
+            <strong>{{ "{:+.1f}".format(duration.gap_duration) }} ans</strong>
+          </td>
+        </tr>
+        <tr><td>BPV Actifs (+1bp)</td><td class="text-end mono">{{ "{:+,.0f}".format(duration.bpv_actifs) }} €</td></tr>
+        <tr><td>BPV Passifs (+1bp)</td><td class="text-end mono">{{ "{:+,.0f}".format(duration.bpv_passifs) }} €</td></tr>
+        <tr>
+          <td><strong>BPV Net</strong></td>
+          <td class="text-end mono" style="color:{{ '#8b1a1a' if duration.bpv_net < 0 else '#0d6e3b' }};">
+            <strong>{{ "{:+,.0f}".format(duration.bpv_net) }} €</strong>
+          </td>
+        </tr>
+      </table>
+      <div class="p-2 bg-light rounded" style="font-size:0.72rem;">
+        <strong>BPV</strong> (Basis Point Value) = variation de valeur pour +1bp de taux.
+        Un BPV net positif signifie que la banque bénéficie d'une hausse des taux.
+      </div>
+    </div>
+
+    <!-- Stress tests -->
+    <div class="khl-card">
+      <div class="card-title"><i class="bi bi-exclamation-triangle me-1"></i>Stress Tests Taux</div>
+      <table class="table table-sm khl-table mb-0">
+        <thead><tr><th>Scénario</th><th class="text-end">Actifs</th><th class="text-end">Passifs</th><th class="text-end">Net</th></tr></thead>
+        <tbody>
+          {% for s in stress_scenarios %}
+          <tr>
+            <td style="font-size:0.78rem;">{{ s.name }}</td>
+            <td class="text-end mono" style="color:{{ '#0d6e3b' if s.impact_actifs >= 0 else '#8b1a1a' }};font-size:0.78rem;">
+              {{ "{:+.1f}".format(s.impact_actifs) }}%
+            </td>
+            <td class="text-end mono" style="color:{{ '#0d6e3b' if s.impact_passifs >= 0 else '#8b1a1a' }};font-size:0.78rem;">
+              {{ "{:+.1f}".format(s.impact_passifs) }}%
+            </td>
+            <td class="text-end mono" style="color:{{ '#0d6e3b' if s.impact_net >= 0 else '#8b1a1a' }};font-size:0.78rem;">
+              <strong>{{ "{:+.1f}".format(s.impact_net) }}%</strong>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const gapData = {{ gap_data|tojson }};
+const actifs   = gapData.map(d => d.actifs / 1e6);
+const passifs  = gapData.map(d => d.passifs / 1e6);
+const gaps     = gapData.map((d,i) => (d.actifs - d.passifs) / 1e6);
+new Chart(document.getElementById('gapChart'), {
+  type: 'bar',
+  data: {
+    labels: gapData.map(d => d.bucket),
+    datasets: [
+      { label: 'Actifs (M€)',  data: actifs,  backgroundColor: 'rgba(26,58,92,0.7)' },
+      { label: 'Passifs (M€)', data: passifs, backgroundColor: 'rgba(232,160,32,0.7)' },
+      { label: 'Gap net (M€)', data: gaps,    type: 'line',
+        borderColor: '#0d6e3b', backgroundColor:'transparent',
+        tension:0.3, pointRadius:4, yAxisID:'y' }
+    ]
+  },
+  options: {
+    responsive: true,
+    plugins: { legend: { labels: { font: { size:10 } } } },
+    scales: {
+      y:  { grid: { color:'#f0f2f5' }, title: { display:true, text:'Millions €' } },
+      x:  { grid: { display:false } }
+    }
+  }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,327 @@
+{% extends "base.html" %}
+{% block title %}Monitoring Technique{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-icon" style="background:#2c2c2c;">
+    <i class="bi bi-activity"></i>
+  </div>
+  <div class="flex-grow-1">
+    <h1>Monitoring Technique</h1>
+    <nav aria-label="breadcrumb"><ol class="breadcrumb mb-0">
+      <li class="breadcrumb-item"><a href="{{ url_for('home') }}">Accueil</a></li>
+      <li class="breadcrumb-item active">Monitoring</li>
+    </ol></nav>
+  </div>
+  <div class="d-flex gap-2">
+    <span id="auto-refresh-badge" class="badge bg-success" style="font-size:0.72rem;">
+      <i class="bi bi-arrow-repeat me-1"></i>Auto-refresh: ON
+    </span>
+    <button class="btn btn-sm btn-outline-secondary" onclick="toggleAutoRefresh()">
+      <i class="bi bi-pause-circle me-1"></i>Pause
+    </button>
+  </div>
+</div>
+
+<!-- Story block -->
+<div class="story-block mb-3">
+  <div class="story-title"><i class="bi bi-info-circle me-2"></i>À quoi sert ce panneau ?</div>
+  <p>
+    Vue technique en temps réel : état de toutes les tables de la base Gold,
+    logs d'exécution tracés, jobs disponibles à lancer.
+    En banque, ce rôle est assuré par les équipes <strong>Data Engineering / Production</strong>
+    qui supervisent les pipelines de données et les calculs EOD (End Of Day).
+  </p>
+</div>
+
+<!-- Métriques rapides -->
+<div class="row g-3 mb-3">
+  {% set total_rows = namespace(val=0) %}
+  {% for t in table_stats %}{% if t.rows %}{% set total_rows.val = total_rows.val + t.rows %}{% endif %}{% endfor %}
+  <div class="col-6 col-md-3">
+    <div class="metric-card blue">
+      <div class="metric-label">Tables Gold</div>
+      <div class="metric-value">{{ table_stats|length }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="metric-card">
+      <div class="metric-label">Total lignes Gold</div>
+      <div class="metric-value">{{ "{:,}".format(total_rows.val) }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="metric-card green">
+      <div class="metric-label">Logs applicatifs</div>
+      <div class="metric-value">{{ logs|length }}+</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="metric-card">
+      <div class="metric-label">STOOQ Cotations</div>
+      <div class="metric-value">
+        {% if stg_stats.STOOQ %}{{ "{:,}".format(stg_stats.STOOQ.rows) }}{% else %}—{% endif %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3">
+
+  <!-- Colonne gauche : tables + staging -->
+  <div class="col-lg-5">
+
+    <!-- Tables Gold -->
+    <div class="khl-card">
+      <div class="card-title"><i class="bi bi-database me-1"></i>Tables — SmartAssetAdvicedb (Gold)</div>
+      <div id="table-stats-container">
+        <table class="table table-sm khl-table mb-0">
+          <thead>
+            <tr>
+              <th>Table</th>
+              <th class="text-end">Lignes</th>
+              <th>Statut</th>
+            </tr>
+          </thead>
+          <tbody id="table-stats-body">
+            {% for t in table_stats %}
+            <tr>
+              <td class="mono">{{ t.table }}</td>
+              <td class="text-end mono">
+                {% if t.rows is not none %}
+                  <strong>{{ "{:,}".format(t.rows) }}</strong>
+                {% else %}—{% endif %}
+              </td>
+              <td>
+                {% if t.status == 'ok' %}
+                <span class="badge badge-ok">OK</span>
+                {% else %}
+                <span class="badge badge-error" title="{{ t.status }}">ERR</span>
+                {% endif %}
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Staging Boursorama/STOOQ -->
+    <div class="khl-card">
+      <div class="card-title"><i class="bi bi-cloud-download me-1"></i>Staging — KHLWorldInvest</div>
+      <table class="table table-sm khl-table mb-0">
+        <thead><tr><th>Type</th><th class="text-end">Lignes</th><th class="text-end">Tickers</th></tr></thead>
+        <tbody>
+          {% for ptype, info in stg_stats.items() %}
+          {% if ptype != 'error' %}
+          <tr>
+            <td class="mono">{{ ptype }}</td>
+            <td class="text-end mono"><strong>{{ "{:,}".format(info.rows) }}</strong></td>
+            <td class="text-end mono">{{ "{:,}".format(info.tickers) }}</td>
+          </tr>
+          {% endif %}
+          {% endfor %}
+          {% if stg_stats.error is defined %}
+          <tr><td colspan="3" class="text-danger small">{{ stg_stats.error }}</td></tr>
+          {% endif %}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Jobs disponibles -->
+    <div class="khl-card">
+      <div class="card-title"><i class="bi bi-play-circle me-1"></i>Jobs — Lancer un traitement</div>
+      <div id="job-output" class="log-terminal mb-3" style="min-height:60px; display:none;">
+        <span class="log-info">En attente de sortie...</span>
+      </div>
+      <!-- Job spécial : Contrôle comptable EOD (inline, sans script Python) -->
+      <div class="d-flex align-items-start gap-2 mb-2 p-2 border rounded" style="border-left:3px solid #1a3a5c !important;">
+        <i class="bi bi-clipboard2-check mt-1" style="color:#1a3a5c;font-size:1rem;"></i>
+        <div class="flex-grow-1">
+          <strong style="font-size:0.85rem;">Contrôle comptable EOD</strong>
+          <p style="font-size:0.73rem;color:#6c757d;margin:0;">
+            Vérifie ∑Débits = ∑Crédits dans FactAccountingMovement. Enregistre le résultat dans FactReconciliationControl.
+          </p>
+        </div>
+        <button class="btn btn-sm btn-outline-primary"
+                style="font-size:0.75rem;flex-shrink:0;"
+                onclick="runEodReco(this)">
+          <i class="bi bi-play me-1"></i>Run
+        </button>
+      </div>
+      {% for job in jobs %}
+      <div class="d-flex align-items-start gap-2 mb-2 p-2 border rounded">
+        <i class="bi bi-{{ job.icon }} mt-1" style="color:#1a3a5c;font-size:1rem;"></i>
+        <div class="flex-grow-1">
+          <strong style="font-size:0.85rem;">{{ job.label }}</strong>
+          <p style="font-size:0.73rem;color:#6c757d;margin:0;">{{ job.desc }}</p>
+        </div>
+        <button class="btn btn-sm {{ 'btn-danger' if job.danger else 'btn-outline-primary' }}"
+                style="font-size:0.75rem;flex-shrink:0;"
+                onclick="runJob('{{ job.id }}', this)">
+          <i class="bi bi-play me-1"></i>Run
+        </button>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+
+  <!-- Colonne droite : logs terminal -->
+  <div class="col-lg-7">
+    <div class="khl-card h-100 d-flex flex-column">
+      <div class="card-title d-flex align-items-center justify-content-between">
+        <span><i class="bi bi-terminal me-1"></i>AppLog — Traçage en temps réel</span>
+        <div class="d-flex gap-2">
+          <select id="log-filter" class="form-select form-select-sm" style="font-size:0.72rem;width:auto;">
+            <option value="">Tous niveaux</option>
+            <option value="INFO">INFO</option>
+            <option value="WARN">WARN</option>
+            <option value="ERROR">ERROR</option>
+            <option value="SQL">SQL</option>
+          </select>
+          <button class="btn btn-sm btn-outline-secondary" style="font-size:0.72rem;"
+                  onclick="clearFilter()">Reset</button>
+        </div>
+      </div>
+      <div class="log-terminal flex-grow-1" id="log-terminal" style="max-height:580px;">
+        <div id="log-lines">
+          {% for log in logs %}
+          <div class="log-line log-{{ log.level|lower }}" data-level="{{ log.level }}">
+            <span class="log-ts">[{{ log.ts }}]</span>
+            <span class="log-{{ log.level|lower }}"> {{ log.level.ljust(5) }} </span>
+            <span style="color:#93c5fd;">[{{ log.module.ljust(12) }}]</span>
+            {{ log.action }}
+            {% if log.detail %}<span style="color:rgba(255,255,255,0.4)"> │ {{ log.detail[:120] }}</span>{% endif %}
+            {% if log.rows is not none %}<span style="color:#fcd34d;"> [{{ log.rows }} rows]</span>{% endif %}
+            {% if log.dur_ms is not none %}<span style="color:#a78bfa;"> {{ log.dur_ms }}ms</span>{% endif %}
+          </div>
+          {% endfor %}
+          {% if not logs %}
+          <span class="log-info">Aucun log disponible. Exécutez un job pour voir les traces.</span>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// ── Auto-refresh ──────────────────────────────���─────────────
+let refreshInterval = null;
+let autoRefreshOn   = true;
+
+function startAutoRefresh() {
+  refreshInterval = setInterval(refreshLogs, 5000);
+  document.getElementById('auto-refresh-badge').className = 'badge bg-success';
+  document.getElementById('auto-refresh-badge').innerHTML = '<i class="bi bi-arrow-repeat me-1"></i>Auto-refresh: ON';
+}
+
+function toggleAutoRefresh() {
+  if (autoRefreshOn) {
+    clearInterval(refreshInterval);
+    autoRefreshOn = false;
+    document.getElementById('auto-refresh-badge').className = 'badge bg-secondary';
+    document.getElementById('auto-refresh-badge').innerHTML = '<i class="bi bi-pause me-1"></i>Auto-refresh: OFF';
+    document.querySelector('[onclick="toggleAutoRefresh()"]').innerHTML = '<i class="bi bi-play-circle me-1"></i>Resume';
+  } else {
+    autoRefreshOn = true;
+    startAutoRefresh();
+    document.querySelector('[onclick="toggleAutoRefresh()"]').innerHTML = '<i class="bi bi-pause-circle me-1"></i>Pause';
+  }
+}
+
+startAutoRefresh();
+
+// ── Refresh logs via AJAX ────────────────────────────────────
+function refreshLogs() {
+  const filter = document.getElementById('log-filter').value;
+  fetch('/monitoring/api/logs')
+    .then(r => r.json())
+    .then(logs => {
+      const container = document.getElementById('log-lines');
+      const levelColors = {INFO:'#a8d8a8',WARN:'#ffc107',ERROR:'#f87171',SQL:'#60a5fa'};
+      container.innerHTML = logs
+        .filter(l => !filter || l.level === filter)
+        .map(l => {
+          const color = levelColors[l.level] || '#a8d8a8';
+          let line = `<div class="log-line" data-level="${l.level}">`;
+          line += `<span class="log-ts">[${l.ts}]</span>`;
+          line += ` <span style="color:${color};">${(l.level||'INFO').padEnd(5)}</span>`;
+          line += ` <span style="color:#93c5fd;">[${(l.module||'').padEnd(12)}]</span>`;
+          line += ` ${escHtml(l.action||'')}`;
+          if (l.detail) line += ` <span style="color:rgba(255,255,255,0.4)"> │ ${escHtml((l.detail||'').slice(0,120))}</span>`;
+          if (l.rows != null) line += ` <span style="color:#fcd34d;"> [${l.rows} rows]</span>`;
+          if (l.dur_ms != null) line += ` <span style="color:#a78bfa;"> ${l.dur_ms}ms</span>`;
+          line += `</div>`;
+          return line;
+        }).join('');
+      // Scroll to top (most recent first)
+    });
+}
+
+function escHtml(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function clearFilter() {
+  document.getElementById('log-filter').value = '';
+  refreshLogs();
+}
+
+// ── Contrôle EOD comptable ───────────────────────────────────
+function runEodReco(btn) {
+  const out = document.getElementById('job-output');
+  out.style.display = 'block';
+  out.innerHTML = '<span class="log-ts">Contrôle EOD Débit=Crédit en cours...</span>';
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>En cours...';
+
+  fetch('/monitoring/run-job/eod-reco', {method:'POST'})
+    .then(r => r.json())
+    .then(data => {
+      const cls = data.status === 'OK' ? 'log-info' : 'log-error';
+      out.innerHTML = `<div class="${cls}">Statut : <strong>${data.status}</strong> | ${escHtml(data.output || '')}</div>`;
+      btn.disabled = false;
+      btn.innerHTML = '<i class="bi bi-play me-1"></i>Run';
+      refreshLogs();
+    })
+    .catch(e => {
+      out.innerHTML = `<span class="log-error">Erreur réseau : ${e}</span>`;
+      btn.disabled = false;
+      btn.innerHTML = '<i class="bi bi-play me-1"></i>Run';
+    });
+}
+
+// ── Run job ─────────────────────────────────────────────────
+function runJob(jobId, btn) {
+  const out = document.getElementById('job-output');
+  out.style.display = 'block';
+  out.innerHTML = `<span class="log-ts">Lancement de <strong>${jobId}</strong>...</span>`;
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>En cours...';
+
+  fetch(`/monitoring/run-job/${jobId}`, {method:'POST'})
+    .then(r => r.json())
+    .then(data => {
+      const lines = (data.output || data.msg || '').split('\n').map(l => {
+        const cls = l.includes('ERROR') || l.includes('error') ? 'log-error'
+                  : l.includes('WARN')  ? 'log-warn'
+                  : l.includes('INSERT') || l.includes('SELECT') ? 'log-sql'
+                  : 'log-info';
+        return `<div class="${cls}">${escHtml(l)}</div>`;
+      }).join('');
+      out.innerHTML = lines || `<span class="log-info">rc=${data.rc}</span>`;
+      btn.disabled = false;
+      btn.innerHTML = '<i class="bi bi-play me-1"></i>Run';
+      refreshLogs();
+    })
+    .catch(e => {
+      out.innerHTML = `<span class="log-error">Erreur réseau : ${e}</span>`;
+      btn.disabled = false;
+      btn.innerHTML = '<i class="bi bi-play me-1"></i>Run';
+    });
+}
+</script>
+{% endblock %}

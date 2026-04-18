@@ -1,0 +1,295 @@
+{% extends "base.html" %}
+{% block title %}Power BI Reports{% endblock %}
+
+{% block extra_css %}
+<style>
+  .pbi-frame { width:100%; height:78vh; border:none; border-radius:8px; }
+
+  .setup-card {
+    border: 2px dashed #dee2e6;
+    border-radius: 12px;
+    padding: 2.5rem;
+    text-align: center;
+    background: #fafbfc;
+  }
+  .setup-card.is-admin {
+    border-color: #e8a020;
+    background: #fffdf5;
+  }
+
+  .config-panel {
+    border-left: 4px solid #e8a020;
+    border-radius: 8px;
+    background: #fffdf5;
+  }
+
+  .field-password-wrap { position: relative; }
+  .field-password-wrap .btn-eye {
+    position: absolute; right: 10px; top: 50%; transform: translateY(-50%);
+    background: none; border: none; color: #6c757d; cursor: pointer; padding: 0;
+  }
+
+  .config-badge {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 12px; border-radius: 20px; font-size: 0.72rem; font-weight: 600;
+  }
+  .config-badge.ok   { background:#d1fae5; color:#065f46; }
+  .config-badge.warn { background:#fef3c7; color:#92400e; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-icon" style="background:#e8a020;"><i class="bi bi-bar-chart-line"></i></div>
+  <div class="flex-grow-1">
+    <h1>Power BI — Reporting Professionnel</h1>
+    <nav aria-label="breadcrumb"><ol class="breadcrumb mb-0">
+      <li class="breadcrumb-item"><a href="{{ url_for('home') }}">Accueil</a></li>
+      <li class="breadcrumb-item active">Power BI</li>
+    </ol></nav>
+  </div>
+  <div class="d-flex align-items-center gap-2">
+    {% if is_configured %}
+    <span class="config-badge ok"><i class="bi bi-check-circle-fill"></i>Service configuré</span>
+    {% else %}
+    <span class="config-badge warn"><i class="bi bi-exclamation-triangle-fill"></i>Non configuré</span>
+    {% endif %}
+    {% if is_admin %}
+    <button class="btn btn-sm btn-outline-warning" data-bs-toggle="collapse" data-bs-target="#configPanel">
+      <i class="bi bi-gear me-1"></i>Paramètres
+    </button>
+    {% endif %}
+  </div>
+</div>
+
+{# ── Alertes ── #}
+{% if msg %}
+<div class="alert alert-success alert-dismissible fade show mb-3">
+  <i class="bi bi-check-circle me-2"></i>{{ msg }}
+  <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+{% endif %}
+{% if error %}
+<div class="alert alert-danger alert-dismissible fade show mb-3">
+  <i class="bi bi-x-circle me-2"></i>{{ error }}
+  <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+</div>
+{% endif %}
+
+{# ── Panneau de configuration (ADMIN) — ouvert automatiquement si pas configuré ── #}
+{% if is_admin %}
+<div class="collapse {% if not is_configured %}show{% endif %} mb-4" id="configPanel">
+  <div class="khl-card config-panel">
+    <div class="card-title mb-3">
+      <i class="bi bi-gear-fill me-2" style="color:#e8a020;"></i>
+      Configuration du service Power BI
+    </div>
+
+    <div class="story-block mb-3" style="border-left-color:#e8a020;">
+      <div class="story-title" style="color:#92400e;">
+        <i class="bi bi-info-circle me-2"></i>Paramètres de connexion
+      </div>
+      <p>
+        Renseignez les paramètres de votre service Power BI (on-premises ou cloud).
+        Le login et le mot de passe sont ceux d'un <strong>compte de service</strong> dédié
+        (non nominatif). Stockage en <code>dbo.AppSettings</code> — accès restreint ADMIN.
+      </p>
+    </div>
+
+    <form method="POST">
+      <input type="hidden" name="action" value="save_config">
+      <div class="row g-3">
+
+        {# Serveur #}
+        <div class="col-md-6">
+          <label class="form-label">
+            Serveur Power BI
+            <span class="khl-tip" data-bs-toggle="tooltip" data-bs-html="true"
+                  data-bs-title="<b>Serveur</b><br>URL de base du service Power BI.<br>Ex : <em>https://app.powerbi.com</em> (cloud) ou votre serveur on-premise.">?</span>
+          </label>
+          <input type="text" name="pbi_server" class="form-control"
+                 placeholder="https://app.powerbi.com"
+                 value="{{ pbi_server or '' }}" required>
+          <div class="form-hint">Cloud Microsoft ou serveur Power BI Report Server on-premises.</div>
+        </div>
+
+        {# Nom affiché #}
+        <div class="col-md-6">
+          <label class="form-label">
+            Nom du service / Workspace
+            <span class="khl-tip" data-bs-toggle="tooltip" data-bs-html="true"
+                  data-bs-title="<b>Workspace</b><br>Nom du workspace ou de l'espace de travail Power BI.<br>Affiché dans l'interface.">?</span>
+          </label>
+          <input type="text" name="pbi_name" class="form-control"
+                 placeholder="KHL Bank — CIB Dashboard"
+                 value="{{ pbi_name or '' }}">
+        </div>
+
+        {# Login #}
+        <div class="col-md-6">
+          <label class="form-label">
+            Login (compte de service)
+            <span class="khl-tip" data-bs-toggle="tooltip" data-bs-html="true"
+                  data-bs-title="<b>Compte de service</b><br>Email ou identifiant du compte technique Power BI.<br>Ne pas utiliser un compte nominatif.">?</span>
+          </label>
+          <input type="text" name="pbi_login" class="form-control"
+                 placeholder="pbi-service@khlbank.com"
+                 value="{{ pbi_login or '' }}" required
+                 autocomplete="username">
+        </div>
+
+        {# Mot de passe #}
+        <div class="col-md-6">
+          <label class="form-label">
+            Mot de passe
+            <span class="khl-tip" data-bs-toggle="tooltip" data-bs-html="true"
+                  data-bs-title="<b>Mot de passe</b><br>Laissez vide pour conserver le mot de passe existant.<br>Stocké en base AppSettings.">?</span>
+          </label>
+          <div class="field-password-wrap">
+            <input type="password" name="pbi_password" id="pbi_password"
+                   class="form-control" placeholder="{% if pbi_password %}••••••••••• (déjà configuré){% else %}Mot de passe compte de service{% endif %}"
+                   autocomplete="current-password">
+            <button type="button" class="btn-eye" onclick="togglePwd()">
+              <i class="bi bi-eye" id="eye-icon"></i>
+            </button>
+          </div>
+          <div class="form-hint">
+            {% if pbi_password %}
+            <span class="text-success"><i class="bi bi-check-circle me-1"></i>Mot de passe enregistré — laissez vide pour ne pas modifier.</span>
+            {% else %}
+            Aucun mot de passe configuré.
+            {% endif %}
+          </div>
+        </div>
+
+        {# URL rapport embed #}
+        <div class="col-12">
+          <label class="form-label">
+            URL du rapport (embed)
+            <span class="khl-tip" data-bs-toggle="tooltip" data-bs-html="true"
+                  data-bs-title="<b>URL embed</b><br>URL complète du rapport Power BI à intégrer en iframe.<br>Format : <em>https://app.powerbi.com/reportEmbed?reportId=...</em>">?</span>
+          </label>
+          <input type="url" name="pbi_url" class="form-control"
+                 placeholder="https://app.powerbi.com/reportEmbed?reportId=..."
+                 value="{{ pbi_url or '' }}">
+          <div class="form-hint">Optionnel — URL complète du rapport à afficher en iframe dans la plateforme.</div>
+        </div>
+
+      </div>{# /row #}
+
+      <div class="d-flex gap-2 mt-4 pt-3 border-top">
+        <button type="submit" class="btn btn-warning" style="color:#0d1b2a;font-weight:600;">
+          <i class="bi bi-save me-2"></i>Enregistrer la configuration
+        </button>
+        {% if is_configured %}
+        <button type="submit" name="action" value="clear_config"
+                class="btn btn-outline-danger"
+                onclick="return confirm('Effacer toute la configuration Power BI ?')">
+          <i class="bi bi-trash me-2"></i>Réinitialiser
+        </button>
+        {% endif %}
+      </div>
+    </form>
+  </div>
+</div>
+{% endif %}{# /is_admin #}
+
+{# ── Vue principale : iframe ou message ── #}
+{% if is_configured and pbi_url %}
+
+<div class="khl-card mb-3">
+  <div class="d-flex align-items-center justify-content-between mb-2">
+    <div class="card-title mb-0">
+      <i class="bi bi-bar-chart-line me-1"></i>
+      {{ pbi_name or 'Power BI Report' }}
+      <span class="badge badge-ok ms-2" style="font-size:0.65rem;">CONNECTÉ</span>
+    </div>
+    <a href="{{ pbi_url }}" target="_blank" class="btn btn-sm btn-outline-warning">
+      <i class="bi bi-box-arrow-up-right me-1"></i>Ouvrir dans un onglet
+    </a>
+  </div>
+  <iframe class="pbi-frame" src="{{ pbi_url }}"
+          allow="fullscreen" allowfullscreen
+          title="Power BI Report"></iframe>
+</div>
+
+{% elif is_configured and not pbi_url %}
+
+<div class="setup-card mb-4">
+  <i class="bi bi-check-circle" style="font-size:3rem;color:#0d6e3b;"></i>
+  <h5 class="mt-3">Service configuré — aucun rapport lié</h5>
+  <p style="font-size:0.85rem;color:#6c757d;">
+    Serveur : <strong>{{ pbi_server }}</strong> — Compte : <strong>{{ pbi_login }}</strong><br>
+    {% if is_admin %}
+    Ajoutez l'URL d'un rapport embed dans les <strong>Paramètres</strong> (bouton en haut à droite).
+    {% else %}
+    Demandez à un administrateur d'ajouter l'URL du rapport.
+    {% endif %}
+  </p>
+</div>
+
+{% else %}
+
+<div class="setup-card {% if is_admin %}is-admin{% endif %} mb-4">
+  <i class="bi bi-bar-chart-line" style="font-size:3rem;color:{% if is_admin %}#e8a020{% else %}#dee2e6{% endif %};"></i>
+  <h5 class="mt-3" style="color:{% if is_admin %}#92400e{% else %}#6c757d{% endif %};">
+    {% if is_admin %}
+    Configurez le service Power BI
+    {% else %}
+    Service Power BI non configuré
+    {% endif %}
+  </h5>
+  <p style="font-size:0.85rem;color:#6c757d;">
+    {% if is_admin %}
+    Renseignez les paramètres de connexion dans le panneau <strong>Paramètres</strong> ci-dessus.
+    {% else %}
+    Demandez à un <strong>Administrateur</strong> de configurer la connexion au service Power BI.
+    {% endif %}
+  </p>
+</div>
+
+{% endif %}
+
+{# ── Info connexion SQL Desktop ── #}
+<div class="row g-3 mt-1">
+  <div class="col-md-6">
+    <div class="khl-card">
+      <div class="card-title"><i class="bi bi-plug me-1"></i>Connexion Power BI Desktop (SQL Server)</div>
+      <table class="table table-sm khl-table mb-0">
+        <tr><td>Serveur</td><td class="mono">PERSO-AJE-DELL\BFASERVER01</td></tr>
+        <tr><td>Base</td><td class="mono">SmartAssetAdvicedb</td></tr>
+        <tr><td>Auth</td><td class="mono">Windows (Trusted Connection)</td></tr>
+        <tr><td>Mode</td><td class="mono">Import ou DirectQuery</td></tr>
+      </table>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="khl-card">
+      <div class="card-title"><i class="bi bi-table me-1"></i>Vues SQL recommandées</div>
+      <table class="table table-sm khl-table mb-0">
+        <tr><td class="mono">vw_PortfolioDashboardDaily</td><td style="font-size:0.75rem;">Perf + risque par jour</td></tr>
+        <tr><td class="mono">vw_FactTradesEnriched</td><td style="font-size:0.75rem;">Trades enrichis</td></tr>
+        <tr><td class="mono">vw_PositionSnapshot</td><td style="font-size:0.75rem;">Positions actuelles</td></tr>
+        <tr><td class="mono">vw_AI_LatestRecommendations</td><td style="font-size:0.75rem;">Recos IA</td></tr>
+      </table>
+    </div>
+  </div>
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function togglePwd() {
+  const inp = document.getElementById('pbi_password');
+  const ico = document.getElementById('eye-icon');
+  if (inp.type === 'password') {
+    inp.type = 'text';
+    ico.className = 'bi bi-eye-slash';
+  } else {
+    inp.type = 'password';
+    ico.className = 'bi bi-eye';
+  }
+}
+</script>
+{% endblock %}

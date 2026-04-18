@@ -1,0 +1,119 @@
+/// Trade executions — grain: one row per trade leg
+table FactTrades
+	lineageTag: fae3e799-b178-41a6-bc03-9ef06e1a6adb
+
+	column TradeKey
+		dataType: int64
+		isHidden
+		lineageTag: 885759c7-5ec3-4cb4-8dc6-bc96aeed0315
+		summarizeBy: count
+		sourceColumn: TradeKey
+
+		annotation SummarizationSetBy = Automatic
+
+	column TradeDateKey
+		dataType: int64
+		isHidden
+		lineageTag: c7f8a68c-94c1-4c1e-a3d4-bdcd59be90fa
+		summarizeBy: none
+		sourceColumn: TradeDateKey
+
+	column SettleDateKey
+		dataType: int64
+		isHidden
+		lineageTag: 38b49946-8a93-49d5-81a7-2081eb2bfb64
+		summarizeBy: count
+		sourceColumn: SettleDateKey
+
+		annotation SummarizationSetBy = Automatic
+
+	column PortfolioKey
+		dataType: int64
+		isHidden
+		lineageTag: f3aa58bb-8dcf-421b-aece-ae2492dd49f8
+		summarizeBy: none
+		sourceColumn: PortfolioKey
+
+	column SecurityKey
+		dataType: int64
+		isHidden
+		lineageTag: 2a3dc895-8921-4bc0-8375-3b48db98fc32
+		summarizeBy: count
+		sourceColumn: SecurityKey
+
+		annotation SummarizationSetBy = Automatic
+
+	column Side
+		dataType: string
+		lineageTag: 22959492-efff-488b-bcb6-030393470d62
+		summarizeBy: none
+		sourceColumn: Side
+
+	column Quantity
+		dataType: decimal
+		formatString: #,##0.000000
+		lineageTag: 5a889ead-f13c-41a4-8975-9ba862fa64e5
+		summarizeBy: sum
+		sourceColumn: Quantity
+
+		annotation SummarizationSetBy = Automatic
+
+	column Price
+		dataType: decimal
+		formatString: #,##0.000000
+		lineageTag: f4e72a88-3a51-48a7-8308-ca388f4e6949
+		summarizeBy: sum
+		sourceColumn: Price
+
+		annotation SummarizationSetBy = Automatic
+
+	column FeeAmount
+		dataType: decimal
+		formatString: #,##0.00
+		lineageTag: 8dff9459-2b5f-4b01-be55-78802789b75d
+		summarizeBy: sum
+		sourceColumn: FeeAmount
+
+		annotation SummarizationSetBy = Automatic
+
+	column SlippageAmount
+		dataType: decimal
+		formatString: #,##0.00
+		lineageTag: 720c0f60-c05c-4cb1-9856-c4069d8b6c14
+		summarizeBy: sum
+		sourceColumn: SlippageAmount
+
+		annotation SummarizationSetBy = Automatic
+
+	column CurrencyCode
+		dataType: string
+		lineageTag: 2bf2a7f5-d819-4055-a2be-9f42d4d5cd73
+		summarizeBy: none
+		sourceColumn: CurrencyCode
+
+	column StrategyCode
+		dataType: string
+		lineageTag: 0f9793d1-b2c1-446e-9cb7-975721a24885
+		summarizeBy: none
+		sourceColumn: StrategyCode
+
+	column OrderType
+		dataType: string
+		lineageTag: fb60ae11-9729-40c2-b15c-c4083e6a7eb9
+		summarizeBy: none
+		sourceColumn: OrderType
+
+	column ExecutionTs
+		dataType: dateTime
+		lineageTag: 058bd5b7-31be-4823-808f-e5db3bbc374d
+		summarizeBy: none
+		sourceColumn: ExecutionTs
+
+	partition FactTrades_Import = m
+		mode: directQuery
+		source =
+				let
+				    Source = Sql.Database("PERSO-AJE-DELL\BFASERVER01", "SmartAssetAdvicedb"),
+				    result = Value.NativeQuery(Source, "SELECT * FROM [dbo].[FactTrades]", null, [EnableFolding=true])
+				in  result
+

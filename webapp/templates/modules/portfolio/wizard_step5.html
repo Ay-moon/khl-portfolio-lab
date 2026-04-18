@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% block title %}Wizard — Étape 5 : Paramètres d'exécution{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="page-icon" style="background:#1a3a5c;"><i class="bi bi-gear"></i></div>
+  <div><h1>Paramètres d'Exécution — Étape 5/6</h1></div>
+</div>
+<div class="wizard-steps">
+  {% for i in range(1, 7) %}
+  <div class="wizard-step {{ 'active' if i == step else ('completed' if i < step else '') }}">
+    <div class="step-circle">{% if i < step %}<i class="bi bi-check"></i>{% else %}{{ i }}{% endif %}</div>
+    <div class="step-label">{{ ['Identité','Univers','Stratégie','Contraintes','Exécution','Résumé'][i-1] }}</div>
+  </div>
+  {% endfor %}
+</div>
+<div class="story-block mb-4">
+  <div class="story-title"><i class="bi bi-lightbulb me-2"></i>Étape 5 — Coûts de transaction et moteur de simulation</div>
+  <p>
+    Dans la réalité, chaque ordre a un <strong>coût de transaction</strong> : frais de courtage, taxes,
+    et <strong>slippage</strong> (l'écart entre le prix théorique et le prix d'exécution réel).
+    Ces paramètres impactent directement la performance nette du portefeuille.
+    La simulation utilise une marche aléatoire contrôlée (Random Walk) pour les prix futurs.
+  </p>
+</div>
+<form method="POST">
+  <div class="khl-card">
+    <div class="form-section-title"><i class="bi bi-receipt me-2"></i>Coûts de transaction</div>
+    <div class="row g-3">
+      <div class="col-md-3">
+        <label class="form-label">Frais de courtage (bps)</label>
+        <input type="number" name="fee_bps" class="form-control"
+               value="{{ draft.get('fee_bps','10') }}" min="0" max="200" step="1">
+        <div class="form-hint">1 bps = 0.01% du montant. Typique : 10–30 bps institutionnel.</div>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Slippage (bps)</label>
+        <input type="number" name="slippage_bps" class="form-control"
+               value="{{ draft.get('slippage_bps','5') }}" min="0" max="100" step="1">
+        <div class="form-hint">Impact de marché. Large cap : 2–5 bps. Small cap : 10–50 bps.</div>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Taxe sur transactions (%)</label>
+        <input type="number" name="tax_rate" class="form-control"
+               value="{{ draft.get('tax_rate','0.3') }}" min="0" max="5" step="0.1">
+        <div class="form-hint">TTF France (actions FR) : 0.3%. US : aucune.</div>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Coût d'emprunt (short, %/an)</label>
+        <input type="number" name="borrow_cost" class="form-control"
+               value="{{ draft.get('borrow_cost','1.5') }}" min="0" max="20" step="0.25">
+      </div>
+    </div>
+
+    <div class="form-section-title"><i class="bi bi-calendar3 me-2"></i>Paramètres de simulation</div>
+    <div class="row g-3">
+      <div class="col-md-3">
+        <label class="form-label">Date de début simulation</label>
+        <input type="date" name="sim_start_date" class="form-control"
+               value="{{ draft.get('sim_start_date','2024-01-01') }}">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Nombre de jours ouvrés</label>
+        <input type="number" name="sim_days" class="form-control"
+               value="{{ draft.get('sim_days','60') }}" min="5" max="500" step="5">
+        <div class="form-hint">60 jours ≈ 3 mois. 252 jours ≈ 1 an.</div>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Drift annuel des prix (%)</label>
+        <input type="number" name="price_drift" class="form-control"
+               value="{{ draft.get('price_drift','5') }}" min="-50" max="50" step="1">
+        <div class="form-hint">Tendance haussière/baissière simulée.</div>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">Volatilité simulée (%/an)</label>
+        <input type="number" name="price_vol" class="form-control"
+               value="{{ draft.get('price_vol','20') }}" min="1" max="100" step="1">
+      </div>
+    </div>
+
+    <div class="form-section-title"><i class="bi bi-lightning-charge me-2"></i>Comportement à l'exécution</div>
+    <div class="row g-3">
+      <div class="col-md-4">
+        <label class="form-label">Type d'ordre par défaut</label>
+        <select name="order_type" class="form-select">
+          {% for o in ['Market (au marché)','Limit (cours limité)','VWAP (moyenne pondérée)','TWAP (répartition temporelle)'] %}
+          <option value="{{ o }}" {{ 'selected' if draft.get('order_type') == o else '' }}>{{ o }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Taille max ordre (% du volume)</label>
+        <input type="number" name="max_order_pct_volume" class="form-control"
+               value="{{ draft.get('max_order_pct_volume','10') }}" min="1" max="100" step="1">
+        <div class="form-hint">Impact de marché si > 20–25% du volume quotidien.</div>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label">Lancer la simulation après création ?</label>
+        <select name="auto_simulate" class="form-select">
+          <option value="yes" {{ 'selected' if draft.get('auto_simulate') == 'yes' else '' }}>Oui — lancer automatiquement</option>
+          <option value="no"  {{ 'selected' if draft.get('auto_simulate') == 'no'  else '' }}>Non — créer uniquement la structure</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="d-flex justify-content-between">
+    <a href="{{ url_for('portfolio.wizard_step', step=4) }}" class="btn btn-outline-secondary">
+      <i class="bi bi-arrow-left me-2"></i>Précédent
+    </a>
+    <button type="submit" class="btn btn-primary" style="background:#1a3a5c;border-color:#1a3a5c;">
+      Suivant — Résumé <i class="bi bi-arrow-right ms-2"></i>
+    </button>
+  </div>
+</form>
+{% endblock %}

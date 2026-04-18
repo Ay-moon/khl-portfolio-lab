@@ -1,0 +1,814 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>KHL Portfolio Lab - Architecture Map</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700;800&family=Archivo:wght@700&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg-a: #090f1b;
+      --bg-b: #121b2d;
+      --panel: rgba(7, 14, 27, 0.9);
+      --border: rgba(151, 196, 255, 0.2);
+      --text: #e8f2ff;
+      --muted: #9eb4d2;
+      --good: #4ad9a8;
+      --warn: #f6a25e;
+      --shadow: 0 22px 48px rgba(0, 0, 0, 0.45);
+      --radius: 16px;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Manrope", "Segoe UI", sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 12% 8%, rgba(36, 94, 164, 0.42), transparent 28%),
+        radial-gradient(circle at 88% 0%, rgba(35, 134, 97, 0.33), transparent 24%),
+        linear-gradient(145deg, var(--bg-a), var(--bg-b));
+      min-height: 100vh;
+    }
+
+    .noise {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      opacity: 0.18;
+      background-image: radial-gradient(rgba(255, 255, 255, 0.06) 0.7px, transparent 0.7px);
+      background-size: 3px 3px;
+    }
+
+    .container {
+      max-width: 1480px;
+      margin: 0 auto;
+      padding: 22px 16px 26px;
+    }
+
+    .hero {
+      background: linear-gradient(160deg, rgba(7, 12, 24, 0.95), rgba(9, 23, 42, 0.88));
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px;
+      box-shadow: var(--shadow);
+    }
+
+    .head {
+      display: flex;
+      gap: 10px;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    h1 {
+      margin: 0;
+      font: 800 1.34rem/1.15 "Archivo", "Manrope", sans-serif;
+      letter-spacing: 0.01em;
+    }
+
+    .sub {
+      margin-top: 5px;
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+
+    .chips {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .chip {
+      padding: 7px 10px;
+      border-radius: 999px;
+      border: 1px solid rgba(132, 211, 255, 0.3);
+      background: rgba(24, 54, 93, 0.68);
+      color: #d8ecff;
+      font-size: 0.74rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .controls {
+      margin-top: 14px;
+      display: grid;
+      gap: 10px;
+    }
+
+    .tabs, .layers {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .tab {
+      padding: 9px 13px;
+      border-radius: 10px;
+      border: 1px solid transparent;
+      background: #223f68;
+      color: #e6f3ff;
+      font-size: 0.84rem;
+      font-weight: 800;
+      cursor: pointer;
+      transition: transform 140ms ease, border-color 140ms ease, background 140ms ease;
+    }
+
+    .tab:hover {
+      transform: translateY(-1px);
+      border-color: rgba(161, 212, 255, 0.35);
+    }
+
+    .tab.active {
+      background: linear-gradient(180deg, #265f4b, #194135);
+      border-color: rgba(109, 233, 188, 0.6);
+      color: #e5fff6;
+    }
+
+    .layer[data-layer="setup"] { background: #235b7d; }
+    .layer[data-layer="platform"] { background: #2a4e86; }
+    .layer[data-layer="pipelines"] { background: #6f4e20; }
+    .layer[data-layer="intelligence"] { background: #5b3f85; }
+    .layer[data-layer="delivery"] { background: #2b5f5f; }
+
+    .toolbar {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .search {
+      min-width: 260px;
+      padding: 10px 11px;
+      border-radius: 9px;
+      border: 1px solid rgba(166, 209, 255, 0.35);
+      background: rgba(10, 20, 36, 0.9);
+      color: var(--text);
+      font-size: 0.87rem;
+      outline: none;
+    }
+
+    .search:focus {
+      border-color: rgba(108, 233, 191, 0.75);
+      box-shadow: 0 0 0 3px rgba(77, 200, 161, 0.22);
+    }
+
+    .toggle {
+      display: inline-flex;
+      gap: 8px;
+      align-items: center;
+      font-size: 0.8rem;
+      color: var(--muted);
+      border: 1px solid rgba(156, 201, 252, 0.25);
+      border-radius: 9px;
+      padding: 6px 10px;
+      background: rgba(12, 24, 42, 0.9);
+    }
+
+    .toggle input {
+      margin: 0;
+      width: 16px;
+      height: 16px;
+      accent-color: var(--good);
+      cursor: pointer;
+    }
+
+    .workspace {
+      margin-top: 14px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 350px;
+      gap: 12px;
+    }
+
+    .map-wrap {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--panel);
+      box-shadow: var(--shadow);
+      overflow: auto;
+      min-height: 620px;
+      max-height: 78vh;
+    }
+
+    .map {
+      position: relative;
+      min-width: 1200px;
+      min-height: 610px;
+      padding: 14px;
+    }
+
+    .edge-layer {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      overflow: visible;
+    }
+
+    .edge {
+      fill: none;
+      stroke: rgba(170, 206, 255, 0.26);
+      stroke-width: 2;
+      stroke-dasharray: 5 6;
+      transition: opacity 160ms ease, stroke 160ms ease;
+    }
+
+    .edge.dimmed {
+      opacity: 0.14;
+    }
+
+    .edge.active {
+      stroke: rgba(99, 239, 185, 0.95);
+      stroke-dasharray: 5 5;
+      animation: flow 1.1s linear infinite;
+    }
+
+    @keyframes flow {
+      to { stroke-dashoffset: -24; }
+    }
+
+    .lane-grid {
+      position: relative;
+      z-index: 1;
+      display: grid;
+      grid-template-columns: repeat(5, minmax(200px, 1fr));
+      gap: 10px;
+      height: 100%;
+    }
+
+    .lane {
+      border: 1px solid rgba(160, 204, 255, 0.16);
+      border-radius: 14px;
+      padding: 10px;
+      background: linear-gradient(180deg, rgba(15, 24, 41, 0.75), rgba(9, 18, 33, 0.68));
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .lane h3 {
+      margin: 0;
+      font-size: 0.82rem;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: #cde5ff;
+      border-bottom: 1px dashed rgba(157, 203, 255, 0.24);
+      padding-bottom: 7px;
+    }
+
+    .node {
+      border: 1px solid rgba(167, 212, 255, 0.24);
+      border-radius: 11px;
+      padding: 9px 10px;
+      background: rgba(17, 33, 56, 0.9);
+      color: var(--text);
+      text-align: left;
+      box-shadow: 0 7px 15px rgba(4, 8, 15, 0.3);
+      cursor: pointer;
+      transition: transform 140ms ease, border-color 140ms ease, opacity 140ms ease;
+      animation: reveal 360ms ease both;
+    }
+
+    .node:hover {
+      transform: translateY(-1px);
+      border-color: rgba(121, 242, 198, 0.55);
+    }
+
+    .node small {
+      display: block;
+      margin-top: 4px;
+      color: #99c3ec;
+      font-size: 0.73rem;
+    }
+
+    .node.dimmed {
+      opacity: 0.2;
+      pointer-events: none;
+    }
+
+    .node.selected {
+      border-color: rgba(111, 245, 194, 0.9);
+      box-shadow: 0 0 0 3px rgba(87, 210, 171, 0.18), 0 13px 27px rgba(0, 0, 0, 0.35);
+      transform: translateY(-1px);
+    }
+
+    @keyframes reveal {
+      from { transform: translateY(10px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+
+    .side {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: var(--panel);
+      box-shadow: var(--shadow);
+      padding: 14px;
+      min-height: 620px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .side h2 {
+      margin: 0;
+      font-size: 1.02rem;
+      font-weight: 800;
+      letter-spacing: 0.02em;
+    }
+
+    .metrics {
+      display: grid;
+      gap: 8px;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .metric {
+      border: 1px solid rgba(152, 196, 246, 0.25);
+      border-radius: 10px;
+      background: rgba(14, 28, 47, 0.9);
+      padding: 8px;
+    }
+
+    .metric b {
+      display: block;
+      font-size: 1.04rem;
+    }
+
+    .metric span {
+      color: var(--muted);
+      font-size: 0.74rem;
+    }
+
+    .card {
+      border: 1px solid rgba(141, 193, 255, 0.26);
+      border-radius: 11px;
+      background: rgba(13, 25, 43, 0.9);
+      padding: 10px;
+      min-height: 170px;
+    }
+
+    .card h3 {
+      margin: 0 0 7px;
+      font-size: 0.95rem;
+    }
+
+    .card p {
+      margin: 0 0 7px;
+      font-size: 0.82rem;
+      line-height: 1.34;
+      color: var(--muted);
+    }
+
+    .meta {
+      margin: 0;
+      padding-left: 16px;
+      color: #bed8f5;
+      font-size: 0.8rem;
+      line-height: 1.35;
+    }
+
+    .legend {
+      margin-top: auto;
+      border-top: 1px dashed rgba(153, 196, 245, 0.24);
+      padding-top: 10px;
+      color: #b8cde8;
+      font-size: 0.77rem;
+      line-height: 1.35;
+    }
+
+    .legend b {
+      color: #e3f1ff;
+    }
+
+    .badge {
+      display: inline-block;
+      margin-top: 4px;
+      padding: 4px 8px;
+      border-radius: 999px;
+      font-size: 0.72rem;
+      font-weight: 800;
+      border: 1px solid rgba(255, 177, 112, 0.3);
+      background: rgba(124, 65, 20, 0.28);
+      color: #ffd8b3;
+    }
+
+    @media (max-width: 1180px) {
+      .workspace {
+        grid-template-columns: 1fr;
+      }
+      .side {
+        min-height: 340px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="noise"></div>
+  <main class="container">
+    <section class="hero">
+      <div class="head">
+        <div>
+          <h1>KHL Portfolio Lab - Dynamic Architecture Map</h1>
+          <div class="sub">Cartographie dynamique du projet: scripts, pipelines, analytics, assistant IA, BI, CI/CD.</div>
+        </div>
+        <div class="chips">
+          <span class="chip">Setup</span>
+          <span class="chip">Data Platform</span>
+          <span class="chip">Pipelines</span>
+          <span class="chip">Analytics + AI</span>
+          <span class="chip">Delivery</span>
+        </div>
+      </div>
+
+      <div class="controls">
+        <div id="viewTabs" class="tabs"></div>
+        <div id="layerTabs" class="layers"></div>
+        <div class="toolbar">
+          <input id="searchInput" class="search" type="text" placeholder="Filtrer un composant (ex: run_mvp, FactPrice, ci-python)" />
+          <label class="toggle">
+            <input id="autoLayer" type="checkbox" checked />
+            Layer auto
+          </label>
+        </div>
+      </div>
+    </section>
+
+    <section class="workspace">
+      <div class="map-wrap">
+        <div id="map" class="map">
+          <svg id="edgeLayer" class="edge-layer"></svg>
+          <div id="laneGrid" class="lane-grid"></div>
+        </div>
+      </div>
+
+      <aside class="side">
+        <h2 id="viewTitle">Architecture View</h2>
+        <div class="metrics">
+          <div class="metric"><b id="mNodes">0</b><span>Components</span></div>
+          <div class="metric"><b id="mEdges">0</b><span>Links</span></div>
+          <div class="metric"><b id="mLayer">All</b><span>Layer filter</span></div>
+          <div class="metric"><b id="mFocus">None</b><span>Focus node</span></div>
+        </div>
+
+        <div class="card">
+          <h3 id="metaName">Selection</h3>
+          <p id="metaDesc">Clique un composant pour voir son role et ses relations directes.</p>
+          <ul id="metaList" class="meta"></ul>
+          <span id="metaBadge" class="badge" style="display:none;">placeholder</span>
+        </div>
+
+        <div class="legend">
+          <b>Tip:</b> change de vue pour passer de l execution runtime a la structure code ou qualite/release.<br />
+          Le composant <code>docker/docker-compose.yml</code> reste en placeholder dans le projet actuel.
+        </div>
+      </aside>
+    </section>
+  </main>
+
+  <script>
+    const LAYERS = [
+      { id: "setup", label: "Setup & Config" },
+      { id: "platform", label: "Data Platform" },
+      { id: "pipelines", label: "Pipelines" },
+      { id: "intelligence", label: "Analytics + AI" },
+      { id: "delivery", label: "Delivery" }
+    ];
+
+    const MAPS = {
+      runtime: {
+        label: "Runtime Flow",
+        nodes: [
+          { id: "env", name: ".env + .venv", layer: "setup", path: ".env", desc: "Configuration locale et environnement Python." },
+          { id: "boot", name: "bootstrap_local(.ps1/.sh)", layer: "setup", path: "scripts/bootstrap_local.ps1", desc: "Prepare env, installe deps, lance seed." },
+          { id: "seed", name: "seed_demo_data.py", layer: "platform", path: "scripts/seed_demo_data.py", desc: "Applique DDL/DML SQL et seed healthcheck." },
+          { id: "ddl", name: "001_create_gold_tables.sql", layer: "platform", path: "data-platform/sql/ddl/001_create_gold_tables.sql", desc: "Cree tables Gold + AI + index." },
+          { id: "views", name: "002_create_gold_views.sql", layer: "platform", path: "data-platform/sql/ddl/002_create_gold_views.sql", desc: "Cree vues de consommation metier." },
+          { id: "stgload", name: "load_factprice_from_stg.py", layer: "pipelines", path: "scripts/load_factprice_from_stg.py", desc: "Charge FactPrice depuis staging boursorama." },
+          { id: "trun", name: "trading-sim run_mvp.py", layer: "pipelines", path: "trading-sim/engine/run_mvp.py", desc: "Simule ordres/trades et snapshots positions." },
+          { id: "perf", name: "performance_risk_mvp.py", layer: "intelligence", path: "analytics/performance_risk_mvp.py", desc: "Calcule PnL/NAV/Vol/DD/VaR/Sharpe." },
+          { id: "ai", name: "ai-assistant app/main.py", layer: "intelligence", path: "ai-assistant/app/main.py", desc: "Genere daily briefing/reco/what-if (mock provider)." },
+          { id: "sql", name: "SQL Server Gold", layer: "platform", path: "dbo.*", desc: "Stockage dimensions, facts, metrics et sorties IA." },
+          { id: "pbi", name: "Power BI", layer: "delivery", path: "powerbi/", desc: "Consomme vues et tables pour dashboards." },
+          { id: "docs", name: "Documentation", layer: "delivery", path: "docs/*.md", desc: "Runbook, architecture, backlog, inventaire." }
+        ],
+        edges: [
+          ["env", "boot"], ["boot", "seed"], ["seed", "ddl"], ["seed", "views"],
+          ["ddl", "sql"], ["views", "sql"], ["stgload", "sql"], ["trun", "sql"],
+          ["perf", "sql"], ["ai", "sql"], ["sql", "pbi"], ["sql", "docs"], ["env", "stgload"], ["env", "trun"], ["env", "perf"], ["env", "ai"]
+        ]
+      },
+      modules: {
+        label: "Code Modules",
+        nodes: [
+          { id: "cfg", name: "ai-assistant/app/config.py", layer: "setup", path: "ai-assistant/app/config.py", desc: "Charge config provider/DB depuis .env." },
+          { id: "db", name: "ai-assistant/app/db.py", layer: "platform", path: "ai-assistant/app/db.py", desc: "Resolution portfolio/date + connexion DB." },
+          { id: "rag", name: "ai-assistant/rag/retriever.py", layer: "intelligence", path: "ai-assistant/rag/retriever.py", desc: "Fetch contexte depuis vues SQL." },
+          { id: "schema", name: "ai-assistant/outputs/schemas.py", layer: "intelligence", path: "ai-assistant/outputs/schemas.py", desc: "Schemas outputs + validation." },
+          { id: "rules", name: "ai-assistant/rules/*", layer: "intelligence", path: "ai-assistant/rules/", desc: "Constraints et postcheck." },
+          { id: "writers", name: "ai-assistant/outputs/writers.py", layer: "intelligence", path: "ai-assistant/outputs/writers.py", desc: "Write outputs IA vers SQL." },
+          { id: "models", name: "trading-sim/engine/models.py", layer: "pipelines", path: "trading-sim/engine/models.py", desc: "Dataclasses trading et etat positions." },
+          { id: "sim", name: "trading-sim/engine/simulator.py", layer: "pipelines", path: "trading-sim/engine/simulator.py", desc: "Execution order + snapshots." },
+          { id: "pricing", name: "trading-sim/engine/pricing.py", layer: "pipelines", path: "trading-sim/engine/pricing.py", desc: "Calendar business days + price grid." },
+          { id: "strat", name: "trading-sim/strategies/rotation_strategy.py", layer: "pipelines", path: "trading-sim/strategies/rotation_strategy.py", desc: "Strategie rotation simple." },
+          { id: "runmvp", name: "trading-sim/engine/run_mvp.py", layer: "pipelines", path: "trading-sim/engine/run_mvp.py", desc: "Orchestrateur end-to-end simulation + insert SQL." },
+          { id: "analytics", name: "analytics/performance_risk_mvp.py", layer: "intelligence", path: "analytics/performance_risk_mvp.py", desc: "Perf/risk metrics calcul et persistence." },
+          { id: "sqlscript", name: "scripts/validate_sql.py", layer: "delivery", path: "scripts/validate_sql.py", desc: "Gate qualite SQL utilise en CI." }
+        ],
+        edges: [
+          ["cfg", "db"], ["db", "rag"], ["rag", "schema"], ["schema", "rules"], ["rules", "writers"],
+          ["models", "sim"], ["pricing", "runmvp"], ["strat", "runmvp"], ["sim", "runmvp"], ["models", "runmvp"],
+          ["runmvp", "analytics"], ["db", "writers"], ["sqlscript", "writers"]
+        ]
+      },
+      quality: {
+        label: "Quality & Release",
+        nodes: [
+          { id: "req", name: "requirements.txt", layer: "setup", path: "requirements.txt", desc: "Dependencies Python (pyodbc)." },
+          { id: "ut_trade", name: "test_simulator.py", layer: "pipelines", path: "trading-sim/tests/test_simulator.py", desc: "Tests moteur trading." },
+          { id: "ut_ana", name: "test_performance_risk_mvp.py", layer: "intelligence", path: "analytics/tests/test_performance_risk_mvp.py", desc: "Tests analytics perf/risk." },
+          { id: "ut_load", name: "test_load_factprice_from_stg.py", layer: "pipelines", path: "scripts/tests/test_load_factprice_from_stg.py", desc: "Tests parsing et dedup staging." },
+          { id: "ut_ai", name: "test_schemas_and_rules.py", layer: "intelligence", path: "ai-assistant/tests/test_schemas_and_rules.py", desc: "Tests schemas + constraints IA." },
+          { id: "ut_sql", name: "test_validate_sql.py", layer: "delivery", path: "scripts/tests/test_validate_sql.py", desc: "Tests du validateur SQL." },
+          { id: "ci_py", name: ".github/workflows/ci-python.yml", layer: "delivery", path: ".github/workflows/ci-python.yml", desc: "Compileall + suites unittest." },
+          { id: "ci_sql", name: ".github/workflows/ci-sql.yml", layer: "delivery", path: ".github/workflows/ci-sql.yml", desc: "Execute validate_sql.py." },
+          { id: "release", name: ".github/workflows/release.yml", layer: "delivery", path: ".github/workflows/release.yml", desc: "Tag v*, changelog gate, release artefact zip." },
+          { id: "changelog", name: "CHANGELOG.md", layer: "delivery", path: "CHANGELOG.md", desc: "Historique versions et livrables." },
+          { id: "docker", name: "docker/docker-compose.yml", layer: "delivery", path: "docker/docker-compose.yml", desc: "Placeholder stack docker.", status: "placeholder" }
+        ],
+        edges: [
+          ["req", "ci_py"], ["ut_trade", "ci_py"], ["ut_ana", "ci_py"], ["ut_load", "ci_py"], ["ut_ai", "ci_py"], ["ut_sql", "ci_py"],
+          ["ut_sql", "ci_sql"], ["ci_py", "release"], ["ci_sql", "release"], ["changelog", "release"], ["docker", "release"]
+        ]
+      }
+    };
+
+    const state = {
+      view: "runtime",
+      layer: "all",
+      selected: null,
+      search: "",
+      timer: null
+    };
+
+    const viewTabs = document.getElementById("viewTabs");
+    const layerTabs = document.getElementById("layerTabs");
+    const laneGrid = document.getElementById("laneGrid");
+    const edgeLayer = document.getElementById("edgeLayer");
+    const map = document.getElementById("map");
+    const searchInput = document.getElementById("searchInput");
+    const autoLayer = document.getElementById("autoLayer");
+
+    const viewTitle = document.getElementById("viewTitle");
+    const mNodes = document.getElementById("mNodes");
+    const mEdges = document.getElementById("mEdges");
+    const mLayer = document.getElementById("mLayer");
+    const mFocus = document.getElementById("mFocus");
+    const metaName = document.getElementById("metaName");
+    const metaDesc = document.getElementById("metaDesc");
+    const metaList = document.getElementById("metaList");
+    const metaBadge = document.getElementById("metaBadge");
+
+    function neighborSet(edges, id) {
+      const set = new Set();
+      edges.forEach(([a, b]) => {
+        if (a === id) set.add(b);
+        if (b === id) set.add(a);
+      });
+      return set;
+    }
+
+    function buildTabs() {
+      viewTabs.innerHTML = "";
+      Object.entries(MAPS).forEach(([id, cfg]) => {
+        const btn = document.createElement("button");
+        btn.className = "tab";
+        btn.dataset.view = id;
+        btn.textContent = cfg.label;
+        btn.addEventListener("click", () => {
+          state.view = id;
+          state.selected = null;
+          render();
+        });
+        viewTabs.appendChild(btn);
+      });
+
+      layerTabs.innerHTML = "";
+      const allBtn = document.createElement("button");
+      allBtn.className = "tab layer";
+      allBtn.dataset.layer = "all";
+      allBtn.textContent = "All";
+      allBtn.addEventListener("click", () => {
+        state.layer = "all";
+        render();
+      });
+      layerTabs.appendChild(allBtn);
+
+      LAYERS.forEach((layer) => {
+        const btn = document.createElement("button");
+        btn.className = "tab layer";
+        btn.dataset.layer = layer.id;
+        btn.textContent = layer.label;
+        btn.addEventListener("click", () => {
+          state.layer = layer.id;
+          render();
+        });
+        layerTabs.appendChild(btn);
+      });
+    }
+
+    function drawNodes() {
+      const cfg = MAPS[state.view];
+      laneGrid.innerHTML = "";
+      LAYERS.forEach((layer, i) => {
+        const section = document.createElement("section");
+        section.className = "lane";
+        section.innerHTML = `<h3>${layer.label}</h3>`;
+        cfg.nodes.filter((n) => n.layer === layer.id).forEach((node, j) => {
+          const btn = document.createElement("button");
+          btn.className = "node";
+          btn.style.animationDelay = `${i * 40 + j * 26}ms`;
+          btn.dataset.id = node.id;
+          btn.dataset.layer = node.layer;
+          btn.innerHTML = `${node.name}<small>${node.path}</small>`;
+          btn.addEventListener("click", () => {
+            state.selected = state.selected === node.id ? null : node.id;
+            render();
+          });
+          section.appendChild(btn);
+        });
+        laneGrid.appendChild(section);
+      });
+    }
+
+    function applyNodeFilter() {
+      const cfg = MAPS[state.view];
+      const neighbors = state.selected ? neighborSet(cfg.edges, state.selected) : new Set();
+      const q = state.search.trim().toLowerCase();
+
+      document.querySelectorAll(".node").forEach((el) => {
+        const id = el.dataset.id;
+        const layer = el.dataset.layer;
+        const def = cfg.nodes.find((n) => n.id === id);
+        const byLayer = state.layer === "all" || layer === state.layer;
+        const bySearch = q === "" || def.name.toLowerCase().includes(q) || def.path.toLowerCase().includes(q);
+        const byFocus = !state.selected || id === state.selected || neighbors.has(id);
+        const visible = byLayer && bySearch && byFocus;
+        el.classList.toggle("selected", id === state.selected);
+        el.classList.toggle("dimmed", !visible);
+      });
+    }
+
+    function drawEdges() {
+      const cfg = MAPS[state.view];
+      const nodes = [...document.querySelectorAll(".node")];
+      const byId = {};
+      nodes.forEach((n) => { byId[n.dataset.id] = n; });
+
+      const box = map.getBoundingClientRect();
+      edgeLayer.setAttribute("viewBox", `0 0 ${box.width} ${box.height}`);
+      edgeLayer.innerHTML = `
+        <defs>
+          <marker id="arrowBase" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto" markerUnits="strokeWidth">
+            <path d="M 0 0 L 8 4 L 0 8 z" fill="rgba(168, 205, 255, 0.52)"></path>
+          </marker>
+          <marker id="arrowActive" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto" markerUnits="strokeWidth">
+            <path d="M 0 0 L 8 4 L 0 8 z" fill="rgba(99, 239, 185, 0.95)"></path>
+          </marker>
+        </defs>
+      `;
+
+      const neighbors = state.selected ? neighborSet(cfg.edges, state.selected) : new Set();
+      const q = state.search.trim().toLowerCase();
+
+      cfg.edges.forEach(([from, to]) => {
+        const a = byId[from];
+        const b = byId[to];
+        if (!a || !b) return;
+
+        const na = cfg.nodes.find((n) => n.id === from);
+        const nb = cfg.nodes.find((n) => n.id === to);
+        const byLayer = state.layer === "all" || na.layer === state.layer || nb.layer === state.layer;
+        const bySearch = !q || na.name.toLowerCase().includes(q) || nb.name.toLowerCase().includes(q) || na.path.toLowerCase().includes(q) || nb.path.toLowerCase().includes(q);
+
+        const ra = a.getBoundingClientRect();
+        const rb = b.getBoundingClientRect();
+        const x1 = ra.right - box.left;
+        const y1 = ra.top - box.top + ra.height / 2;
+        const x2 = rb.left - box.left;
+        const y2 = rb.top - box.top + rb.height / 2;
+        const d = `M ${x1} ${y1} C ${x1 + Math.max(20, (x2 - x1) * 0.45)} ${y1}, ${x2 - Math.max(20, (x2 - x1) * 0.45)} ${y2}, ${x2} ${y2}`;
+
+        const p = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        p.setAttribute("d", d);
+        p.classList.add("edge");
+        const active = state.selected && ((from === state.selected && neighbors.has(to)) || (to === state.selected && neighbors.has(from)));
+        if (active) {
+          p.classList.add("active");
+          p.setAttribute("marker-end", "url(#arrowActive)");
+        } else {
+          p.setAttribute("marker-end", "url(#arrowBase)");
+        }
+        if (!byLayer || !bySearch) p.classList.add("dimmed");
+        edgeLayer.appendChild(p);
+      });
+    }
+
+    function updatePanel() {
+      const cfg = MAPS[state.view];
+      viewTitle.textContent = cfg.label;
+      mNodes.textContent = String(cfg.nodes.length);
+      mEdges.textContent = String(cfg.edges.length);
+      mLayer.textContent = state.layer === "all" ? "All" : state.layer;
+      mFocus.textContent = state.selected || "None";
+
+      metaList.innerHTML = "";
+      metaBadge.style.display = "none";
+      if (!state.selected) {
+        metaName.textContent = "Selection";
+        metaDesc.textContent = "Clique un composant pour voir son role et ses relations directes.";
+        return;
+      }
+
+      const node = cfg.nodes.find((n) => n.id === state.selected);
+      const related = [...neighborSet(cfg.edges, state.selected)];
+      metaName.textContent = node.name;
+      metaDesc.textContent = `${node.desc} | Path: ${node.path}`;
+
+      if (!related.length) {
+        const li = document.createElement("li");
+        li.textContent = "Aucune relation directe detectee.";
+        metaList.appendChild(li);
+      } else {
+        related.forEach((id) => {
+          const r = cfg.nodes.find((n) => n.id === id);
+          const li = document.createElement("li");
+          li.textContent = `${r.name} (${r.layer})`;
+          metaList.appendChild(li);
+        });
+      }
+
+      if (node.status === "placeholder") {
+        metaBadge.textContent = "placeholder";
+        metaBadge.style.display = "inline-block";
+      }
+    }
+
+    function activateTabs() {
+      document.querySelectorAll("#viewTabs .tab").forEach((el) => {
+        el.classList.toggle("active", el.dataset.view === state.view);
+      });
+      document.querySelectorAll("#layerTabs .tab").forEach((el) => {
+        el.classList.toggle("active", el.dataset.layer === state.layer);
+      });
+    }
+
+    function render() {
+      activateTabs();
+      drawNodes();
+      applyNodeFilter();
+      updatePanel();
+      requestAnimationFrame(drawEdges);
+    }
+
+    function stopAuto() {
+      if (state.timer) {
+        clearInterval(state.timer);
+        state.timer = null;
+      }
+    }
+
+    function startAuto() {
+      stopAuto();
+      if (!autoLayer.checked) return;
+      const sequence = ["all", ...LAYERS.map((l) => l.id)];
+      let i = sequence.indexOf(state.layer);
+      state.timer = setInterval(() => {
+        i = (i + 1) % sequence.length;
+        state.layer = sequence[i];
+        render();
+      }, 2600);
+    }
+
+    searchInput.addEventListener("input", (e) => {
+      state.search = e.target.value || "";
+      render();
+    });
+
+    autoLayer.addEventListener("change", startAuto);
+    window.addEventListener("resize", () => requestAnimationFrame(drawEdges));
+
+    buildTabs();
+    render();
+    startAuto();
+  </script>
+</body>
+</html>

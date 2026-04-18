@@ -1,0 +1,413 @@
+{% extends "base.html" %}
+{% block title %}Cycle de Vie d'une Transaction{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="page-icon" style="background:#1a3a5c;"><i class="bi bi-arrow-right-circle-fill"></i></div>
+  <div class="flex-grow-1">
+    <h1>Cycle de Vie d'une Transaction</h1>
+    <nav aria-label="breadcrumb"><ol class="breadcrumb mb-0">
+      <li class="breadcrumb-item"><a href="{{ url_for('home') }}">Accueil</a></li>
+      <li class="breadcrumb-item"><a href="{{ url_for('docs.index') }}">Documentation</a></li>
+      <li class="breadcrumb-item active">Cycle de Vie</li>
+    </ol></nav>
+  </div>
+</div>
+
+<div class="story-block mb-4">
+  <div class="story-title"><i class="bi bi-bank me-2"></i>Comment fonctionne une banque CIB ?</div>
+  <p>
+    Dans une banque d'investissement (CIB), chaque transaction traverse trois lignes de contrôle indépendantes.
+    <strong>Le Front Office</strong> prend les décisions et exécute.
+    <strong>Le Middle Office</strong> mesure et surveille les risques en temps réel.
+    <strong>Le Back Office</strong> comptabilise, archive et règle les opérations.
+    Cette séparation garantit qu'aucune personne seule ne peut prendre <em>et</em> valider une transaction.
+  </p>
+</div>
+
+<!-- PIPELINE VISUEL -->
+<div class="d-flex align-items-stretch gap-0 mb-4" style="overflow-x:auto;">
+
+  <!-- FRONT OFFICE -->
+  <div style="flex:1;min-width:200px;background:#0d2040;border-radius:12px 0 0 12px;padding:1.2rem;">
+    <div style="font-size:0.65rem;font-weight:800;letter-spacing:2px;color:#f0b429;text-transform:uppercase;margin-bottom:0.8rem;">
+      ① Front Office
+    </div>
+    <div style="color:#b0bec5;font-size:0.78rem;line-height:1.8;">
+      <div><i class="bi bi-person-workspace" style="color:#f0b429;"></i> Asset Manager</div>
+      <div><i class="bi bi-graph-up" style="color:#f0b429;"></i> Quant / Data Analyst</div>
+      <div><i class="bi bi-lightning-charge" style="color:#f0b429;"></i> Trader</div>
+    </div>
+    <div style="margin-top:0.8rem;font-size:0.72rem;color:#546e7a;">Décision · Analyse · Exécution</div>
+  </div>
+
+  <!-- flèche -->
+  <div style="display:flex;align-items:center;background:#162030;padding:0 0.4rem;">
+    <i class="bi bi-arrow-right" style="color:#f0b429;font-size:1.3rem;"></i>
+  </div>
+
+  <!-- MIDDLE OFFICE -->
+  <div style="flex:1;min-width:200px;background:#1a3a1a;border-radius:0;padding:1.2rem;">
+    <div style="font-size:0.65rem;font-weight:800;letter-spacing:2px;color:#00c853;text-transform:uppercase;margin-bottom:0.8rem;">
+      ② Middle Office
+    </div>
+    <div style="color:#b0bec5;font-size:0.78rem;line-height:1.8;">
+      <div><i class="bi bi-shield-check" style="color:#00c853;"></i> Risk Analyst</div>
+      <div><i class="bi bi-bar-chart" style="color:#00c853;"></i> Performance</div>
+      <div><i class="bi bi-water" style="color:#00c853;"></i> ALM Officer</div>
+    </div>
+    <div style="margin-top:0.8rem;font-size:0.72rem;color:#546e7a;">Contrôle · Mesure · Reporting</div>
+  </div>
+
+  <!-- flèche -->
+  <div style="display:flex;align-items:center;background:#162030;padding:0 0.4rem;">
+    <i class="bi bi-arrow-right" style="color:#00c853;font-size:1.3rem;"></i>
+  </div>
+
+  <!-- BACK OFFICE -->
+  <div style="flex:1;min-width:200px;background:#3a1a1a;border-radius:0 12px 12px 0;padding:1.2rem;">
+    <div style="font-size:0.65rem;font-weight:800;letter-spacing:2px;color:#e53935;text-transform:uppercase;margin-bottom:0.8rem;">
+      ③ Back Office
+    </div>
+    <div style="color:#b0bec5;font-size:0.78rem;line-height:1.8;">
+      <div><i class="bi bi-database-fill" style="color:#e53935;"></i> Data Analyst</div>
+      <div><i class="bi bi-gear-fill" style="color:#e53935;"></i> Admin / Monitoring</div>
+      <div><i class="bi bi-archive-fill" style="color:#e53935;"></i> Archive SQL Server</div>
+    </div>
+    <div style="margin-top:0.8rem;font-size:0.72rem;color:#546e7a;">Archive · Audit · Conformité</div>
+  </div>
+</div>
+
+
+<!-- ÉTAPES DÉTAILLÉES -->
+<div class="khl-card mb-3">
+  <div class="card-title"><i class="bi bi-1-circle-fill me-2" style="color:#f0b429;"></i>FRONT OFFICE — Décision et Analyse</div>
+
+  <table class="table khl-table">
+    <thead>
+      <tr>
+        <th style="width:18%">Étape</th>
+        <th style="width:15%">Rôle</th>
+        <th style="width:20%">Module KHL</th>
+        <th style="width:27%">Ce qui se passe</th>
+        <th style="width:20%">Archivé dans</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>1. Créer le portefeuille</strong></td>
+        <td><span class="badge" style="background:#1a3a5c;">ASSET_MANAGER</span></td>
+        <td>
+          <a href="{{ url_for('portfolio.index') }}" class="badge text-decoration-none" style="background:#1a3a5c;">
+            <i class="bi bi-pie-chart me-1"></i>Gestion Portefeuille
+          </a>
+        </td>
+        <td>Wizard 6 étapes : nom, devise, profil de risque, stratégie, horizon, allocation cible.</td>
+        <td><code>dbo.DimPortfolio</code></td>
+      </tr>
+      <tr>
+        <td><strong>2. Analyser le marché</strong></td>
+        <td><span class="badge" style="background:#4a1a7a;">QUANT</span></td>
+        <td>
+          <a href="{{ url_for('quant.index') }}" class="badge text-decoration-none" style="background:#4a1a7a;">
+            <i class="bi bi-cpu me-1"></i>Quant / Data Lab
+          </a>
+        </td>
+        <td>Chargement prix historiques STOOQ, backtesting stratégies, analyse momentum.</td>
+        <td><code>stg_bourso_price_history</code><br><code>dbo.FactPrice</code></td>
+      </tr>
+      <tr>
+        <td><strong>3. Pricer les dérivés</strong></td>
+        <td><span class="badge" style="background:#4a1a7a;">TRADER · QUANT</span></td>
+        <td>
+          <a href="{{ url_for('trading.index') }}" class="badge text-decoration-none" style="background:#9b59b6;">
+            <i class="bi bi-lightning-charge-fill me-1"></i>CommandoQuant (Excel)
+          </a>
+        </td>
+        <td>Saisie option → Black-Scholes → Prix + Greeks (Δ Γ ν θ ρ). Sauvegarde automatique en base.</td>
+        <td><code>CommandoQuant.tbl_Greeks</code></td>
+      </tr>
+      <tr>
+        <td><strong>4. Exécuter les trades</strong></td>
+        <td><span class="badge" style="background:#0d6e3b;">TRADER</span></td>
+        <td>
+          <a href="{{ url_for('trading.index') }}" class="badge text-decoration-none" style="background:#0d6e3b;">
+            <i class="bi bi-graph-up-arrow me-1"></i>Trading Desk
+          </a>
+        </td>
+        <td>Simulation 60j via moteur Python : BUY/SELL avec frais (5bp) et slippage (3bp).</td>
+        <td><code>dbo.FactTrades</code><br><code>dbo.PortfolioPositionsDaily</code></td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="khl-card mb-3">
+  <div class="card-title"><i class="bi bi-2-circle-fill me-2" style="color:#00c853;"></i>MIDDLE OFFICE — Contrôle des Risques et Performance</div>
+
+  <table class="table khl-table">
+    <thead>
+      <tr>
+        <th style="width:18%">Étape</th>
+        <th style="width:15%">Rôle</th>
+        <th style="width:20%">Module KHL</th>
+        <th style="width:27%">Ce qui se passe</th>
+        <th style="width:20%">Archivé dans</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>5. Mesurer la VaR</strong></td>
+        <td><span class="badge" style="background:#8b1a1a;">RISK_ANALYST</span></td>
+        <td>
+          <a href="{{ url_for('risk.index') }}" class="badge text-decoration-none" style="background:#8b1a1a;">
+            <i class="bi bi-shield-exclamation me-1"></i>Risk Management
+          </a>
+          <a href="{{ url_for('trading.index') }}" class="badge text-decoration-none mt-1" style="background:#9b59b6;">
+            <i class="bi bi-lightning-charge me-1"></i>VaR Dérivés
+          </a>
+        </td>
+        <td>
+          Portefeuille actions : VaR 95%, Drawdown, Volatilité, Sharpe, Beta.<br>
+          Dérivés (CommandoQuant) : VaR Paramétrique + Monte Carlo + Historique sur <code>tbl_Greeks</code>.
+        </td>
+        <td><code>dbo.RiskMetricsDaily</code><br><code>commando-quant/var_results.xlsx</code></td>
+      </tr>
+      <tr>
+        <td><strong>6. Analyser la performance</strong></td>
+        <td><span class="badge" style="background:#1a3a5c;">ASSET_MANAGER</span><br>
+            <span class="badge" style="background:#8b1a1a;">RISK_ANALYST</span></td>
+        <td>
+          <a href="{{ url_for('performance.index') }}" class="badge text-decoration-none" style="background:#1a5c4a;">
+            <i class="bi bi-bar-chart me-1"></i>Performance
+          </a>
+        </td>
+        <td>PnL quotidien, NAV, Sharpe. Reporting Power BI si configuré.</td>
+        <td><code>dbo.PortfolioPnLDaily</code></td>
+      </tr>
+      <tr>
+        <td><strong>7. Contrôle ALM</strong></td>
+        <td><span class="badge" style="background:#5c3a1a;">ALM_OFFICER</span></td>
+        <td>
+          <a href="{{ url_for('alm.index') }}" class="badge text-decoration-none" style="background:#5c3a1a;">
+            <i class="bi bi-water me-1"></i>ALM
+          </a>
+        </td>
+        <td>Gap de liquidité, duration, ratios LCR / NSFR (Bâle III).</td>
+        <td>Tables ALM SQL Server</td>
+      </tr>
+      <tr>
+        <td><strong>8. Simulation stress P&amp;L dérivés</strong></td>
+        <td><span class="badge" style="background:#4a1a7a;">QUANT · TRADER</span></td>
+        <td>
+          <a href="{{ url_for('trading.index') }}" class="badge text-decoration-none" style="background:#9b59b6;">
+            <i class="bi bi-lightning-charge me-1"></i>CommandoQuant (P&amp;L Sim)
+          </a>
+        </td>
+        <td>Simule un choc de spot (ex : -5%) → P&amp;L Taylor ordre 2 (Delta + Gamma) par position.</td>
+        <td>Résultat affiché en feuille Excel<br>(non persisté)</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="khl-card mb-3">
+  <div class="card-title"><i class="bi bi-3-circle-fill me-2" style="color:#e53935;"></i>BACK OFFICE — Archive, Audit, Conformité</div>
+
+  <table class="table khl-table">
+    <thead>
+      <tr>
+        <th style="width:18%">Étape</th>
+        <th style="width:15%">Rôle</th>
+        <th style="width:20%">Module KHL</th>
+        <th style="width:27%">Ce qui se passe</th>
+        <th style="width:20%">Archivé dans</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>9. Suivi des jobs</strong></td>
+        <td><span class="badge" style="background:#333;">DATA_ANALYST · ADMIN</span></td>
+        <td>
+          <a href="{{ url_for('monitoring.index') }}" class="badge text-decoration-none" style="background:#333;">
+            <i class="bi bi-terminal me-1"></i>Monitoring
+          </a>
+        </td>
+        <td>Statut de toutes les tables (row counts), lancement des jobs Python, logs en temps réel.</td>
+        <td><code>dbo.AppLog</code></td>
+      </tr>
+      <tr>
+        <td><strong>10. Audit complet</strong></td>
+        <td><span class="badge" style="background:#333;">ADMIN</span></td>
+        <td>
+          <a href="{{ url_for('monitoring.index') }}" class="badge text-decoration-none" style="background:#333;">
+            <i class="bi bi-journal-text me-1"></i>Monitoring → Logs
+          </a>
+        </td>
+        <td>Chaque action (login, pricer, job lancé, téléchargement) génère une ligne dans AppLog avec timestamp, user, durée.</td>
+        <td><code>dbo.AppLog</code><br>100 derniers logs visibles</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+
+<!-- OÙ TOUT EST ARCHIVÉ -->
+<div class="khl-card mb-3">
+  <div class="card-title"><i class="bi bi-database-fill-gear me-1"></i>Où est archivé quoi ? — Cartographie SQL Server</div>
+
+  <div class="row g-3">
+
+    <div class="col-md-4">
+      <div class="p-3 rounded h-100" style="background:#0d2040;border:1px solid #1e3a5f;">
+        <div style="font-size:0.65rem;letter-spacing:1.5px;font-weight:800;color:#f0b429;text-transform:uppercase;margin-bottom:0.8rem;">
+          <i class="bi bi-server me-1"></i>KHLWorldInvest (base principale)
+        </div>
+        <div style="font-size:0.8rem;line-height:2;">
+          <div><code style="color:#80cbc4;">dbo.DimPortfolio</code> <span style="color:#78909c;">→ portefeuilles</span></div>
+          <div><code style="color:#80cbc4;">dbo.DimSecurity</code> <span style="color:#78909c;">→ titres</span></div>
+          <div><code style="color:#80cbc4;">dbo.DimDate</code> <span style="color:#78909c;">→ calendrier</span></div>
+          <div><code style="color:#80cbc4;">dbo.FactPrice</code> <span style="color:#78909c;">→ prix historiques</span></div>
+          <div><code style="color:#80cbc4;">dbo.FactTrades</code> <span style="color:#f0b429; font-weight:600;">→ TRANSACTIONS</span></div>
+          <div><code style="color:#80cbc4;">dbo.PortfolioPositionsDaily</code> <span style="color:#78909c;">→ positions EOD</span></div>
+          <div><code style="color:#80cbc4;">dbo.PortfolioPnLDaily</code> <span style="color:#78909c;">→ PnL quotidien</span></div>
+          <div><code style="color:#80cbc4;">dbo.RiskMetricsDaily</code> <span style="color:#78909c;">→ VaR, Sharpe...</span></div>
+          <div><code style="color:#f44336;">dbo.AppLog</code> <span style="color:#78909c;">→ audit trail complet</span></div>
+          <div><code style="color:#78909c;">dbo.AppUsers</code> <span style="color:#78909c;">→ comptes</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="p-3 rounded h-100" style="background:#1a1a3a;border:1px solid #2e2e5f;">
+        <div style="font-size:0.65rem;letter-spacing:1.5px;font-weight:800;color:#9b59b6;text-transform:uppercase;margin-bottom:0.8rem;">
+          <i class="bi bi-server me-1"></i>CommandoQuant (dérivés)
+        </div>
+        <div style="font-size:0.8rem;line-height:2;">
+          <div><code style="color:#ce93d8;">tbl_Greeks</code> <span style="color:#78909c;">→ pricings options</span></div>
+          <div style="font-size:0.75rem;color:#546e7a;margin-top:0.5rem;">
+            Chaque clic sur ⚡ PRICER<br>
+            dans CommandoQuant.xlsm<br>
+            écrit une ligne ici.
+          </div>
+          <div style="margin-top:0.8rem;font-size:0.75rem;color:#546e7a;">
+            Lu par :<br>
+            • Blotter (VBA)<br>
+            • Greeks Dashboard (VBA)<br>
+            • P&amp;L Sim (VBA)<br>
+            • var_engine.py (Python)
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="p-3 rounded h-100" style="background:#1a3a1a;border:1px solid #2e5f2e;">
+        <div style="font-size:0.65rem;letter-spacing:1.5px;font-weight:800;color:#00c853;text-transform:uppercase;margin-bottom:0.8rem;">
+          <i class="bi bi-file-earmark-text me-1"></i>Fichiers générés
+        </div>
+        <div style="font-size:0.8rem;line-height:2;">
+          <div><code style="color:#a5d6a7;">commando-quant/var_results.xlsx</code></div>
+          <div style="font-size:0.75rem;color:#546e7a;">Rapport VaR dérivés généré par var_engine.py<br>Téléchargeable depuis Trading Desk.</div>
+          <div style="margin-top:0.8rem;"><code style="color:#78909c;">stg_bourso_price_history</code></div>
+          <div style="font-size:0.75rem;color:#546e7a;">Table staging des prix bruts STOOQ avant chargement Gold.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- QUI FAIT QUOI — MATRICE RÉSUMÉE -->
+<div class="khl-card">
+  <div class="card-title"><i class="bi bi-people-fill me-1"></i>Qui fait quoi — en un coup d'œil</div>
+
+  <div class="table-responsive">
+    <table class="table khl-table" style="font-size:0.8rem;">
+      <thead>
+        <tr>
+          <th>Rôle</th>
+          <th>Office</th>
+          <th>Il décide</th>
+          <th>Il exécute</th>
+          <th>Il surveille</th>
+          <th>Il archive / consulte</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><strong>ASSET_MANAGER</strong></td>
+          <td><span style="color:#f0b429;">FRONT</span></td>
+          <td>Allocation, stratégie</td>
+          <td>Création portefeuille</td>
+          <td>Performance, PnL</td>
+          <td>DimPortfolio, PnLDaily</td>
+        </tr>
+        <tr>
+          <td><strong>TRADER</strong></td>
+          <td><span style="color:#f0b429;">FRONT</span></td>
+          <td>Entrée/sortie position</td>
+          <td>Pricer dérivés, lancer simulation</td>
+          <td>Blotter, Greeks, P&amp;L Sim</td>
+          <td>FactTrades, tbl_Greeks</td>
+        </tr>
+        <tr>
+          <td><strong>QUANT</strong></td>
+          <td><span style="color:#f0b429;">FRONT</span></td>
+          <td>Signaux, modèles</td>
+          <td>Backtesting, pricing options</td>
+          <td>Data Lab, Greeks Dashboard</td>
+          <td>FactPrice, tbl_Greeks</td>
+        </tr>
+        <tr>
+          <td><strong>RISK_ANALYST</strong></td>
+          <td><span style="color:#00c853;">MIDDLE</span></td>
+          <td>Limites, alertes</td>
+          <td>Lance calcul VaR</td>
+          <td>VaR, Drawdown, Sharpe, Beta</td>
+          <td>RiskMetricsDaily, var_results.xlsx</td>
+        </tr>
+        <tr>
+          <td><strong>ALM_OFFICER</strong></td>
+          <td><span style="color:#00c853;">MIDDLE</span></td>
+          <td>Couverture liquidité</td>
+          <td>Analyse gaps</td>
+          <td>LCR, NSFR, Duration</td>
+          <td>Tables ALM</td>
+        </tr>
+        <tr>
+          <td><strong>DATA_ANALYST</strong></td>
+          <td><span style="color:#e53935;">BACK</span></td>
+          <td>Pipeline données</td>
+          <td>Jobs chargement (Monitoring)</td>
+          <td>Statut tables, logs</td>
+          <td>AppLog, stg_bourso</td>
+        </tr>
+        <tr>
+          <td><strong>ADMIN</strong></td>
+          <td><span style="color:#e53935;">BACK</span></td>
+          <td>Config plateforme</td>
+          <td>Gestion users, jobs</td>
+          <td>Tous les modules</td>
+          <td>AppLog complet, AppSettings</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="mt-3 d-flex flex-wrap gap-2">
+    <a href="{{ url_for('docs.roles') }}" class="btn btn-sm btn-outline-secondary">
+      <i class="bi bi-shield-fill me-1"></i>Matrice des rôles complète
+    </a>
+    <a href="{{ url_for('monitoring.index') }}" class="btn btn-sm btn-outline-secondary">
+      <i class="bi bi-terminal me-1"></i>Voir AppLog en direct
+    </a>
+    <a href="{{ url_for('trading.index') }}" class="btn btn-sm btn-outline-secondary">
+      <i class="bi bi-graph-up-arrow me-1"></i>Trading Desk
+    </a>
+    <a href="{{ url_for('risk.index') }}" class="btn btn-sm btn-outline-secondary">
+      <i class="bi bi-shield-exclamation me-1"></i>Risk Management
+    </a>
+  </div>
+</div>
+
+{% endblock %}

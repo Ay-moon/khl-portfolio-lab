@@ -1,0 +1,18 @@
+# CommandoQuant - Python dependencies
+# Install with: pip install -r requirements.txt
+
+# Core VaR engine (var_engine.py + demo.py)
+pyodbc>=4.0.39          # SQL Server connectivity (optional — only for live mode)
+openpyxl>=3.1.2         # Excel report generation
+
+# Extended analytics (recommended)
+numpy>=1.24.0           # Vectorized Monte Carlo simulations
+scipy>=1.10.0           # Statistical functions (norm.ppf, etc.)
+pandas>=2.0.0           # Data manipulation, CSV loading
+
+# Excel <-> Python integration (optional — for VBA bridge)
+xlwings>=0.28.0         # VBA <-> Python interop
+
+# Testing
+pytest>=7.4.0
+pytest-cov>=4.1.0

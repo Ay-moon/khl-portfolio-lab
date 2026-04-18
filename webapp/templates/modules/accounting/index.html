@@ -1,0 +1,290 @@
+{% extends "base.html" %}
+{% block title %}Comptabilité — Journal CIB{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="page-icon" style="background:#1a3a5c;"><i class="bi bi-journal-text"></i></div>
+  <div class="flex-grow-1">
+    <h1>Comptabilité — Journal en partie double</h1>
+    <nav aria-label="breadcrumb"><ol class="breadcrumb mb-0">
+      <li class="breadcrumb-item"><a href="{{ url_for('home') }}">Accueil</a></li>
+      <li class="breadcrumb-item active">Comptabilité</li>
+    </ol></nav>
+  </div>
+</div>
+
+<div class="story-block mb-4">
+  <div class="story-title"><i class="bi bi-bank me-2"></i>Contexte métier — Middle / Back Office CIB</div>
+  <p>
+    Chaque transaction génère des <strong>écritures en partie double</strong> selon le plan de comptes CIB interne.
+    Un achat d'actions enregistre simultanément un débit <code>120100 Titres de transaction</code>
+    et un crédit <code>140200 Dettes brokers</code>. Le settlement (dénouement J+2) soldent ensuite ces comptes
+    contre <code>110100 Cash Nostro</code>. Le Back Office vérifie chaque soir que ∑Débits = ∑Crédits.
+  </p>
+</div>
+
+<!-- KPIs -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-3">
+    <div class="metric-card blue">
+      <div class="metric-label">Mouvements (200 derniers)</div>
+      <div class="metric-value">{{ move_count }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="metric-card">
+      <div class="metric-label">Total débits</div>
+      <div class="metric-value" style="font-size:1.05rem;">{{ "{:,.0f}".format(total_debit) }} €</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="metric-card">
+      <div class="metric-label">Total crédits</div>
+      <div class="metric-value" style="font-size:1.05rem;">{{ "{:,.0f}".format(total_credit) }} €</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    {% if balanced %}
+    <div class="metric-card green">
+      <div class="metric-label">Équilibre partie double</div>
+      <div class="metric-value" style="font-size:0.85rem;color:#0d6e3b;">
+        <i class="bi bi-check-circle-fill"></i> ÉQUILIBRÉ
+      </div>
+    </div>
+    {% else %}
+    <div class="metric-card red">
+      <div class="metric-label">Équilibre partie double</div>
+      <div class="metric-value" style="font-size:0.85rem;color:#8b1a1a;">
+        <i class="bi bi-exclamation-triangle-fill"></i> BREAK
+        <span style="font-size:0.72rem;">{{ "{:+,.4f}".format(total_debit - total_credit) }} €</span>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Filtre + action -->
+<div class="khl-card mb-3">
+  <form method="GET" class="d-flex align-items-center gap-3 flex-wrap">
+    <label class="form-label mb-0">Portefeuille :</label>
+    <select name="portfolio_key" class="form-select form-select-sm" style="max-width:260px;"
+            onchange="this.form.submit()">
+      <option value="">Tous les portefeuilles</option>
+      {% for p in portfolios %}
+      <option value="{{ p.key }}" {{ 'selected' if selected_pf == p.key }}>
+        {{ p.code }} — {{ p.name }}
+      </option>
+      {% endfor %}
+    </select>
+    {% if selected_pf %}
+    <a href="{{ url_for('accounting.index') }}" class="btn btn-sm btn-outline-secondary">
+      <i class="bi bi-x"></i> Tout afficher
+    </a>
+    {% endif %}
+    <div class="ms-auto d-flex gap-2">
+      <a href="{{ url_for('trading.index') }}" class="btn btn-sm btn-success">
+        <i class="bi bi-pencil-square me-1"></i>Passer un ordre
+      </a>
+      <a href="{{ url_for('monitoring.index') }}" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-activity me-1"></i>Lancer contrôle EOD
+      </a>
+    </div>
+  </form>
+</div>
+
+<!-- ── Settlements ──────────────────────────────────────────────── -->
+{% if settlements %}
+<div class="khl-card mb-4">
+  <div class="card-title d-flex align-items-center gap-2">
+    <i class="bi bi-hourglass-split me-1"></i>Suivi Settlement
+    <span class="khl-tip" data-bs-toggle="tooltip" data-bs-html="true"
+          data-bs-title="<b>Settlement (dénouement)</b><br>Livraison effective des titres et espèces.<br>Standard marché : <em>J+2 (T+2)</em>.<br>Statuts : PENDING → SETTLED (ou FAILED).">?</span>
+    {% if pending_count > 0 %}
+    <span class="badge bg-warning text-dark ms-1">{{ pending_count }} PENDING</span>
+    {% endif %}
+  </div>
+  <div class="table-responsive">
+    <table class="table khl-table" style="font-size:0.8rem;">
+      <thead>
+        <tr>
+          <th>Portfolio</th><th>Ticker</th><th>Côté</th>
+          <th class="text-end">Qté</th><th class="text-end">Cash attendu</th>
+          <th>Date settle</th><th>Statut</th><th>Mis à jour</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for s in settlements %}
+        <tr>
+          <td><span class="badge bg-light text-dark mono">{{ s.portfolio }}</span></td>
+          <td class="mono fw-bold">{{ s.ticker }}</td>
+          <td>
+            <span class="badge {{ 'badge-ok' if s.side == 'BUY' else 'badge-error' }}">
+              {{ s.side }}
+            </span>
+          </td>
+          <td class="text-end mono">{{ "{:,.0f}".format(s.qty) }}</td>
+          <td class="text-end mono">{{ "{:,.2f}".format(s.cash) }} €</td>
+          <td class="mono">{{ s.settle_dk | string | truncate(8, True, '') }}</td>
+          <td>
+            <span class="badge
+              {% if s.status == 'SETTLED' %}bg-success
+              {% elif s.status == 'PENDING' %}bg-warning text-dark
+              {% elif s.status == 'FAILED'  %}bg-danger
+              {% else %}bg-secondary{% endif %}"
+              style="font-size:0.65rem;">
+              {{ s.status }}
+            </span>
+          </td>
+          <td style="font-size:0.72rem;color:#6c757d;">{{ s.updated }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+<!-- ── Balance des comptes ────────────────────────────────────────── -->
+{% if balance %}
+<div class="khl-card mb-4">
+  <div class="card-title d-flex align-items-center gap-2">
+    <i class="bi bi-bar-chart-steps me-1"></i>Balance des comptes (plan CIB)
+    <span class="khl-tip" data-bs-toggle="tooltip" data-bs-html="true"
+          data-bs-title="<b>Plan de comptes CIB interne</b><br>Ref : docs/12_CONTEXTE_CIBLE_CIB_COMPTA.md<br>Préfixes : <em>11xxxx</em> Cash · <em>12xxxx</em> Titres · <em>14xxxx</em> Brokers · <em>51xxxx</em> Charges">?</span>
+  </div>
+  <div class="table-responsive">
+    <table class="table khl-table" style="font-size:0.8rem;">
+      <thead>
+        <tr>
+          <th>Code</th><th>Libellé</th><th>Nature</th>
+          <th class="text-end">Débits</th>
+          <th class="text-end">Crédits</th>
+          <th class="text-end">Solde net</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for b in balance %}
+        <tr>
+          <td class="mono fw-bold">{{ b.code }}</td>
+          <td>{{ b.label }}</td>
+          <td>
+            <span class="badge
+              {% if b.type == 'ASSET'   %}bg-primary
+              {% elif b.type == 'LIABILITY' %}bg-warning text-dark
+              {% elif b.type == 'EXPENSE'   %}bg-danger
+              {% elif b.type == 'INCOME'    %}bg-success
+              {% else %}bg-secondary{% endif %}"
+              style="font-size:0.6rem;">{{ b.type }}</span>
+          </td>
+          <td class="text-end mono">{{ "{:,.2f}".format(b.debit) }}</td>
+          <td class="text-end mono">{{ "{:,.2f}".format(b.credit) }}</td>
+          <td class="text-end mono fw-bold
+            {{ 'text-success' if b.net > 0 else ('text-danger' if b.net < 0 else '') }}">
+            {{ "{:+,.2f}".format(b.net) }}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+<!-- ── Journal des mouvements ─────────────────────────────────────── -->
+<div class="khl-card mb-4">
+  <div class="card-title"><i class="bi bi-list-ul me-1"></i>Journal des mouvements (200 derniers)</div>
+
+  {% if movements %}
+  <div class="table-responsive">
+    <table class="table khl-table" style="font-size:0.75rem;">
+      <thead>
+        <tr>
+          <th>Horodatage</th>
+          <th>Portfolio</th>
+          <th>Compte</th>
+          <th>Type</th>
+          <th class="text-end">Débit</th>
+          <th class="text-end">Crédit</th>
+          <th>Libellé</th>
+          <th>Corr. ID</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for m in movements %}
+        <tr>
+          <td class="mono" style="white-space:nowrap;">{{ m.ts }}</td>
+          <td><span class="badge bg-light text-dark mono">{{ m.portfolio }}</span></td>
+          <td>
+            <span class="mono fw-bold">{{ m.acc_code }}</span>
+            <span style="color:#6c757d;font-size:0.68rem;"> {{ m.acc_label[:25] }}</span>
+          </td>
+          <td>
+            <span class="badge
+              {% if m.event_type == 'TRADE' %}bg-primary
+              {% elif m.event_type == 'FEE' %}bg-warning text-dark
+              {% elif m.event_type == 'MTM' %}bg-info text-dark
+              {% else %}bg-secondary{% endif %}"
+              style="font-size:0.6rem;">{{ m.event_type }}</span>
+          </td>
+          <td class="text-end mono {{ 'fw-bold text-danger' if m.debit > 0 else 'text-muted' }}">
+            {{ "{:,.2f}".format(m.debit) if m.debit > 0 else '—' }}
+          </td>
+          <td class="text-end mono {{ 'fw-bold text-success' if m.credit > 0 else 'text-muted' }}">
+            {{ "{:,.2f}".format(m.credit) if m.credit > 0 else '—' }}
+          </td>
+          <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"
+              title="{{ m.narrative }}">{{ m.narrative }}</td>
+          <td class="mono" style="font-size:0.65rem;color:#adb5bd;">{{ m.corr_id[:8] if m.corr_id else '—' }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="text-center py-5 text-muted">
+    <i class="bi bi-journal-x" style="font-size:2.5rem;"></i>
+    <p class="mt-3">Aucun mouvement comptable.
+      <a href="{{ url_for('trading.index') }}">Passer un premier ordre</a> pour générer le journal.
+    </p>
+  </div>
+  {% endif %}
+</div>
+
+<!-- ── Historique rapprochements EOD ─────────────────────────────── -->
+{% if reco_history %}
+<div class="khl-card">
+  <div class="card-title d-flex align-items-center gap-2">
+    <i class="bi bi-clipboard2-check me-1"></i>Contrôles de rapprochement EOD
+    <span class="khl-tip" data-bs-toggle="tooltip" data-bs-html="true"
+          data-bs-title="<b>Rapprochement EOD</b><br>Contrôle automatique : ∑Débits = ∑Crédits.<br>Lancé depuis Monitoring → job <em>Contrôle comptable EOD</em>.<br>Statuts : <em>OK</em> / <em>BREAK</em> (écart détecté).">?</span>
+  </div>
+  <div class="table-responsive">
+    <table class="table khl-table" style="font-size:0.8rem;">
+      <thead>
+        <tr><th>Date</th><th>Contrôle</th><th>Statut</th><th class="text-end">Écart</th><th>Détail</th><th>Vérifié</th></tr>
+      </thead>
+      <tbody>
+        {% for r in reco_history %}
+        <tr>
+          <td class="mono">{{ r.date_key }}</td>
+          <td class="mono" style="font-size:0.7rem;">{{ r.control }}</td>
+          <td>
+            <span class="badge {{ 'bg-success' if r.status == 'OK' else ('bg-warning text-dark' if r.status == 'WARNING' else 'bg-danger') }}"
+                  style="font-size:0.65rem;">
+              {{ r.status }}
+            </span>
+          </td>
+          <td class="text-end mono {{ 'text-danger fw-bold' if r.diff != 0 else '' }}">
+            {{ "{:+,.4f}".format(r.diff) if r.diff else '0.0000' }}
+          </td>
+          <td style="font-size:0.72rem;color:#6c757d;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"
+              title="{{ r.comment }}">{{ r.comment }}</td>
+          <td style="font-size:0.68rem;color:#adb5bd;">{{ r.ts }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}

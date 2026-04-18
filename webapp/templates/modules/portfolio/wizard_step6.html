@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% block title %}Wizard — Étape 6 : Résumé{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="page-icon" style="background:#0d6e3b;"><i class="bi bi-check2-circle"></i></div>
+  <div><h1>Résumé & Validation — Étape 6/6</h1></div>
+</div>
+<div class="wizard-steps">
+  {% for i in range(1, 7) %}
+  <div class="wizard-step {{ 'active' if i == step else ('completed' if i < step else '') }}">
+    <div class="step-circle">{% if i < step %}<i class="bi bi-check"></i>{% else %}{{ i }}{% endif %}</div>
+    <div class="step-label">{{ ['Identité','Univers','Stratégie','Contraintes','Exécution','Résumé'][i-1] }}</div>
+  </div>
+  {% endfor %}
+</div>
+<div class="story-block mb-4">
+  <div class="story-title"><i class="bi bi-clipboard-check me-2"></i>Étape 6 — Validation finale avant instanciation</div>
+  <p>
+    Vérifiez les paramètres du portefeuille. Une fois validé, le portefeuille sera
+    <strong>instancié dans la base de données</strong> (table <code>DimPortfolio</code>)
+    et la simulation démarrera si vous l'avez activée.
+    Cette action est <strong>traçée dans AppLog</strong> avec votre identifiant.
+  </p>
+</div>
+<form method="POST">
+  <div class="row g-3">
+    <div class="col-md-6">
+      <div class="khl-card">
+        <div class="card-title"><i class="bi bi-card-text me-1"></i>Identité</div>
+        <table class="table table-sm khl-table mb-0">
+          <tr><td class="text-muted">Code</td><td><strong class="mono">{{ draft.get('portfolio_code','—') }}</strong></td></tr>
+          <tr><td class="text-muted">Nom</td><td>{{ draft.get('portfolio_name','—') }}</td></tr>
+          <tr><td class="text-muted">Devise</td><td>{{ draft.get('base_currency','EUR') }}</td></tr>
+          <tr><td class="text-muted">Capital initial</td><td><strong>{{ "{:,.0f}".format(draft.get('initial_nav',1000000)|float) }} {{ draft.get('base_currency','EUR') }}</strong></td></tr>
+          <tr><td class="text-muted">Profil risque</td><td>{{ draft.get('risk_profile','BALANCED') }}</td></tr>
+          <tr><td class="text-muted">Horizon</td><td>{{ draft.get('horizon','—') }}</td></tr>
+          <tr><td class="text-muted">Client</td><td>{{ draft.get('client_type','—') }}</td></tr>
+        </table>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="khl-card">
+        <div class="card-title"><i class="bi bi-compass me-1"></i>Stratégie</div>
+        <table class="table table-sm khl-table mb-0">
+          <tr><td class="text-muted">Style</td><td>{{ draft.get('management_style','—') }}</td></tr>
+          <tr><td class="text-muted">Stratégie</td><td>{{ draft.get('strategy','—') }}</td></tr>
+          <tr><td class="text-muted">Benchmark</td><td>{{ draft.get('benchmark','—') }}</td></tr>
+          <tr><td class="text-muted">Rééquilibrage</td><td>{{ draft.get('rebalance_freq','—') }}</td></tr>
+          <tr><td class="text-muted">Instruments</td><td>{{ draft.get('selected_tickers','').split(',')|length if draft.get('selected_tickers') else 0 }} sélectionnés</td></tr>
+        </table>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="khl-card">
+        <div class="card-title"><i class="bi bi-sliders me-1"></i>Contraintes</div>
+        <table class="table table-sm khl-table mb-0">
+          <tr><td class="text-muted">Poids max/titre</td><td>{{ draft.get('max_weight_single','10') }}%</td></tr>
+          <tr><td class="text-muted">Poids max/secteur</td><td>{{ draft.get('max_weight_sector','30') }}%</td></tr>
+          <tr><td class="text-muted">Positions max</td><td>{{ draft.get('max_positions','30') }}</td></tr>
+          <tr><td class="text-muted">Réglementation</td><td>{{ draft.get('regulation','—') }}</td></tr>
+          <tr><td class="text-muted">ESG</td><td>{{ draft.get('esg_policy','Aucune') }}</td></tr>
+        </table>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="khl-card">
+        <div class="card-title"><i class="bi bi-gear me-1"></i>Exécution & Simulation</div>
+        <table class="table table-sm khl-table mb-0">
+          <tr><td class="text-muted">Frais courtage</td><td>{{ draft.get('fee_bps','10') }} bps</td></tr>
+          <tr><td class="text-muted">Slippage</td><td>{{ draft.get('slippage_bps','5') }} bps</td></tr>
+          <tr><td class="text-muted">Début simulation</td><td>{{ draft.get('sim_start_date','—') }}</td></tr>
+          <tr><td class="text-muted">Durée</td><td>{{ draft.get('sim_days','60') }} jours ouvrés</td></tr>
+          <tr><td class="text-muted">Auto-simulation</td><td>
+            {% if draft.get('auto_simulate') == 'yes' %}
+            <span class="badge badge-ok">Oui</span>
+            {% else %}
+            <span class="badge badge-warn">Non</span>
+            {% endif %}
+          </td></tr>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="alert alert-warning d-flex align-items-start gap-2 mt-2">
+    <i class="bi bi-exclamation-triangle-fill mt-1"></i>
+    <div>
+      <strong>Attention :</strong> Cette action va créer le portefeuille
+      <strong class="mono">{{ draft.get('portfolio_code','?') }}</strong>
+      dans la base de données <code>SmartAssetAdvicedb</code>.
+      L'opération sera tracée dans <code>AppLog</code>.
+    </div>
+  </div>
+
+  <div class="d-flex justify-content-between mt-2">
+    <a href="{{ url_for('portfolio.wizard_step', step=5) }}" class="btn btn-outline-secondary">
+      <i class="bi bi-arrow-left me-2"></i>Modifier
+    </a>
+    <button type="submit" name="action" value="continue"
+            class="btn btn-success" style="background:#0d6e3b;border-color:#0d6e3b;">
+      <i class="bi bi-check-lg me-2"></i>Valider et passer en revue finale
+    </button>
+  </div>
+</form>
+{% endblock %}

@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}Changelog{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="page-icon" style="background:#5c3a1a;"><i class="bi bi-clock-history"></i></div>
+  <div class="flex-grow-1">
+    <h1>Journal des Modifications</h1>
+    <nav aria-label="breadcrumb"><ol class="breadcrumb mb-0">
+      <li class="breadcrumb-item"><a href="{{ url_for('home') }}">Accueil</a></li>
+      <li class="breadcrumb-item"><a href="{{ url_for('docs.index') }}">Documentation</a></li>
+      <li class="breadcrumb-item active">Changelog</li>
+    </ol></nav>
+  </div>
+</div>
+
+<div class="story-block mb-4">
+  <div class="story-title"><i class="bi bi-info-circle me-2"></i>Principe de traçabilité</div>
+  <p>
+    Chaque nouvelle fonctionnalité ou correction de bug est documentée ici.
+    Les logs applicatifs temps réel sont disponibles dans le module <a href="{{ url_for('monitoring.index') }}">Monitoring</a>.
+  </p>
+</div>
+
+<!-- Changelog code -->
+<div class="khl-card mb-4">
+  <div class="card-title"><i class="bi bi-list-check me-1"></i>Historique des versions</div>
+  <div class="timeline">
+    {% for entry in changelog %}
+    <div class="d-flex gap-3 mb-4">
+      <div style="width:90px;flex-shrink:0;text-align:right;">
+        <div style="font-size:0.72rem;color:#6c757d;">{{ entry.date }}</div>
+        <span class="badge" style="font-size:0.65rem;background:#f0f2f5;color:#495057;">v{{ entry.version }}</span>
+      </div>
+      <div style="position:relative;padding-left:1.5rem;border-left:2px solid {{ '#28a745' if entry.type == 'feature' else '#dc3545' }};">
+        <div style="position:absolute;left:-7px;top:4px;width:12px;height:12px;border-radius:50%;
+                    background:{{ '#28a745' if entry.type == 'feature' else '#dc3545' }};"></div>
+        <div class="d-flex align-items-center gap-2 mb-1">
+          <span class="badge {% if entry.type == 'bugfix' %}badge-error{% else %}badge-ok{% endif %}"
+                style="font-size:0.65rem;">
+            {% if entry.type == 'bugfix' %}
+            <i class="bi bi-bug me-1"></i>BUG FIX
+            {% else %}
+            <i class="bi bi-plus-circle me-1"></i>FEATURE
+            {% endif %}
+          </span>
+          <strong style="font-size:0.9rem;">{{ entry.title }}</strong>
+        </div>
+        <p style="font-size:0.82rem;color:#495057;margin:0;">{{ entry.desc }}</p>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- Logs applicatifs récents -->
+{% if recent_logs %}
+<div class="khl-card">
+  <div class="card-title"><i class="bi bi-terminal me-1"></i>Logs applicatifs récents (AppLog)</div>
+  <div class="log-terminal">
+    {% for log in recent_logs %}
+    <div>
+      <span class="log-ts">{{ log.ts }}</span>
+      <span class="{% if log.level == 'ERROR' %}log-error{% elif log.level == 'WARN' %}log-warn{% else %}log-info{% endif %}">
+        [{{ log.level }}] [{{ log.module }}] {{ log.action }}
+      </span>
+      {% if log.detail %}<span class="text-muted"> — {{ log.detail[:100] }}</span>{% endif %}
+      {% if log.user %}<span style="color:rgba(255,255,255,0.3);"> ({{ log.user }})</span>{% endif %}
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+{% endblock %}

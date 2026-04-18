@@ -1,0 +1,357 @@
+{% extends "base.html" %}
+{% block title %}Cinématique Trade #{{ trade.key }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-icon" style="background:{{ '#0d6efd' if trade.side=='BUY' else '#dc3545' }};">
+    <i class="bi bi-{{ 'graph-up-arrow' if trade.side=='BUY' else 'graph-down-arrow' }}"></i>
+  </div>
+  <div>
+    <h1>
+      <span class="badge {{ 'bg-primary' if trade.side=='BUY' else 'bg-danger' }} me-2">{{ trade.side }}</span>
+      {{ trade.ticker }} — Trade #{{ trade.key }}
+    </h1>
+    <nav aria-label="breadcrumb"><ol class="breadcrumb mb-0">
+      <li class="breadcrumb-item"><a href="{{ url_for('trading.index') }}">Trading Desk</a></li>
+      <li class="breadcrumb-item active">Cinématique #{{ trade.key }}</li>
+    </ol></nav>
+  </div>
+</div>
+
+<div class="story-block mb-3">
+  <div class="story-title"><i class="bi bi-diagram-3 me-2"></i>Cycle de vie d'un ordre — Front → Middle → Back</div>
+  <p class="mb-0">
+    Chaque ordre exécuté déclenche une chaîne d'événements automatiques :
+    <strong>contrôle risque</strong> → <strong>transmission broker</strong> → <strong>confirmation SWIFT</strong>
+    → <strong>dénouement J+2</strong> → <strong>écritures comptables</strong> → <strong>réconciliation EOD</strong>.
+    Toutes les étapes sont tracées avec l'acteur, l'horodatage et la référence SWIFT simulée.
+  </p>
+</div>
+
+<!-- ═══ KPI Header ════════════════════════════════════════════════════════ -->
+<div class="row g-2 mb-3">
+  {% set kpis = [
+    (trade.ticker,         'Instrument',     'tag',             '#0d6efd'),
+    (trade.qty|int,        'Quantité',       'hash',            '#198754'),
+    (trade.price,          'Prix exec.',     'currency-euro',   '#fd7e14'),
+    ("{:,.0f}".format(trade.notional) ~ ' ' ~ trade.currency, 'Notional', 'calculator', '#6f42c1'),
+    (trade.settle_date,    'Settlement J+2', 'calendar-check',  '#20c997'),
+    (last_status or '—',   'Statut actuel',  'activity',        '#0dcaf0'),
+  ] %}
+  {% for val, label, icon, color in kpis %}
+  <div class="col-6 col-md-2">
+    <div class="khl-card text-center py-2" style="border-top:3px solid {{ color }};">
+      <div style="font-size:1.0rem;font-weight:700;color:{{ color }};">{{ val }}</div>
+      <div style="font-size:0.7rem;color:#6c757d;">{{ label }}</div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<div class="row g-3">
+
+  <!-- ═══ COL GAUCHE : Timeline ════════════════════════════════════════════ -->
+  <div class="col-lg-5">
+    <div class="khl-card h-100">
+      <div class="card-title"><i class="bi bi-diagram-3 me-1"></i>Cycle de vie complet</div>
+
+      {% set STATUS_META = {
+        'PRE_TRADE_CHECK':      ('Contrôle pré-trade',    'shield-check',      'success',  'Risque & limites'),
+        'ORDER_PLACED':         ('Ordre créé',            'plus-circle',       'primary',  'Carnet d\'ordres'),
+        'SENT_TO_BROKER':       ('Transmis au broker',    'send',              'primary',  'FIX Protocol'),
+        'BROKER_ACK':           ('Accusé broker',         'check2-circle',     'info',     'FIX ACK'),
+        'MARKET_EXECUTED':      ('Exécuté marché',        'lightning-charge',  'warning',  'Exchange'),
+        'TRADE_CONFIRMED':      ('Confirmation SWIFT',    'envelope-check',    'success',  'MT515'),
+        'PENDING_SETTLEMENT':   ('Règlement en attente',  'hourglass-split',   'warning',  'J+2 DVP'),
+        'SETTLED':              ('Dénouement effectif',   'bank',              'success',  'CSD'),
+        'ACCOUNTING_POSTED':    ('Écritures passées',     'journal-check',     'success',  'Back Office'),
+        'RECONCILED':           ('Réconcilié EOD',        'check-circle-fill', 'success',  'EOD Control'),
+      } %}
+
+      <div class="timeline-container" style="position:relative;">
+        <!-- Ligne verticale -->
+        <div style="position:absolute;left:20px;top:0;bottom:0;width:2px;background:#e9ecef;z-index:0;"></div>
+
+        {% for status in status_order %}
+        {% set meta = STATUS_META.get(status, (status,'circle','secondary','')) %}
+        {% set done = status in completed %}
+        {% set ev = events|selectattr('status','equalto',status)|first %}
+        <div class="d-flex gap-3 mb-3" style="position:relative;z-index:1;">
+          <!-- Dot -->
+          <div style="flex-shrink:0;width:40px;height:40px;border-radius:50%;
+                      background:{{ '#198754' if done else '#e9ecef' }};
+                      display:flex;align-items:center;justify-content:center;
+                      border:2px solid {{ '#198754' if done else '#dee2e6' }};">
+            {% if done %}
+            <i class="bi bi-{{ meta[1] }}" style="color:white;font-size:0.9rem;"></i>
+            {% else %}
+            <span style="color:#adb5bd;font-size:0.75rem;">{{ loop.index }}</span>
+            {% endif %}
+          </div>
+          <!-- Content -->
+          <div style="flex:1;padding-top:4px;">
+            <div class="d-flex justify-content-between align-items-start">
+              <div>
+                <strong style="font-size:0.85rem;color:{{ '#198754' if done else '#6c757d' }};">
+                  {{ meta[0] }}
+                </strong>
+                <span class="badge bg-light text-dark ms-1" style="font-size:0.6rem;">{{ meta[3] }}</span>
+              </div>
+              {% if done and ev %}
+              <small class="text-muted mono" style="font-size:0.68rem;">{{ ev.ts[11:19] }}</small>
+              {% endif %}
+            </div>
+            {% if done and ev %}
+            <div style="font-size:0.75rem;color:#495057;margin-top:2px;">{{ ev.detail }}</div>
+            {% if ev.swift_ref %}
+            <div class="mt-1">
+              <span class="badge" style="background:#e8f4fd;color:#0d6efd;font-size:0.62rem;font-family:monospace;">
+                <i class="bi bi-envelope me-1"></i>{{ ev.swift_ref }}
+              </span>
+            </div>
+            {% endif %}
+            <div style="font-size:0.65rem;color:#adb5bd;">
+              {{ ev.ts[:10] }}
+              {% if ev.actor and ev.actor != '—' %} · {{ ev.actor }}{% endif %}
+              {% if ev.broker and ev.broker != '—' %} · {{ ev.broker }}{% endif %}
+            </div>
+            {% else %}
+            <div style="font-size:0.75rem;color:#adb5bd;font-style:italic;">En attente…</div>
+            {% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ COL DROITE ════════════════════════════════════════════════════════ -->
+  <div class="col-lg-7">
+    <div class="row g-3">
+
+      <!-- Broker & Settlement -->
+      <div class="col-md-6">
+        <div class="khl-card">
+          <div class="card-title"><i class="bi bi-building me-1"></i>Broker / Contrepartie</div>
+          {% if broker %}
+          <div class="d-flex align-items-center gap-3 mb-2">
+            <div style="width:42px;height:42px;border-radius:8px;background:#1a3a5c;
+                        display:flex;align-items:center;justify-content:center;">
+              <i class="bi bi-bank" style="color:white;font-size:1.1rem;"></i>
+            </div>
+            <div>
+              <div style="font-weight:700;font-size:0.9rem;">{{ broker.name }}</div>
+              <div class="mono" style="font-size:0.75rem;color:#6c757d;">BIC : {{ broker.bic }}</div>
+            </div>
+          </div>
+          {% else %}
+          <p class="text-muted" style="font-size:0.8rem;">Aucun broker assigné.</p>
+          {% endif %}
+
+          <hr class="my-2">
+          <div class="card-title" style="font-size:0.78rem;"><i class="bi bi-calendar-check me-1"></i>Settlement J+2</div>
+          {% if trade.settlement %}
+          {% set sett = trade.settlement %}
+          <div class="d-flex justify-content-between" style="font-size:0.82rem;">
+            <span>Statut</span>
+            <span class="badge {{ 'bg-success' if sett.status=='SETTLED' else ('bg-warning text-dark' if sett.status=='PENDING' else 'bg-danger') }}">
+              {{ sett.status }}
+            </span>
+          </div>
+          <div class="d-flex justify-content-between mt-1" style="font-size:0.78rem;">
+            <span class="text-muted">Qté attendue / livrée</span>
+            <span class="mono">{{ sett.exp_qty|int }} / {{ sett.settled_qty|int }}</span>
+          </div>
+          <div class="d-flex justify-content-between mt-1" style="font-size:0.78rem;">
+            <span class="text-muted">Cash attendu / réglé</span>
+            <span class="mono">{{ "{:,.0f}".format(sett.exp_cash) }} / {{ "{:,.0f}".format(sett.settled_cash) }} €</span>
+          </div>
+          <div class="d-flex justify-content-between mt-1" style="font-size:0.78rem;">
+            <span class="text-muted">Date settlement</span>
+            <span class="mono">{{ trade.settle_date }}</span>
+          </div>
+          {% else %}
+          <p class="text-muted" style="font-size:0.8rem;">Données settlement non disponibles.</p>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Messages SWIFT -->
+      <div class="col-md-6">
+        <div class="khl-card">
+          <div class="card-title"><i class="bi bi-envelope-paper me-1"></i>Messages SWIFT</div>
+          {% set SWIFT_DESC = {
+            'MT515': ('Confirmation trade titres',     'Client Confirmation of Purchase/Sale'),
+            'MT541': ('Instruction RvP titres',       'Receive Against Payment (BUY)'),
+            'MT543': ('Instruction DvP titres',       'Deliver Against Payment (SELL)'),
+            'MT544': ('Confirmation réception',       'Receive Free — Confirmation'),
+            'MT546': ('Confirmation livraison',       'Deliver Free — Confirmation'),
+          } %}
+          {% if swift_msgs %}
+          {% for ev in swift_msgs %}
+          {% set sdesc = SWIFT_DESC.get(ev.swift_type, (ev.swift_type, '')) %}
+          <div class="p-2 rounded mb-2" style="background:#f8f9fa;border-left:3px solid #0d6efd;">
+            <div class="d-flex justify-content-between align-items-start">
+              <span class="badge bg-primary" style="font-size:0.65rem;font-family:monospace;">{{ ev.swift_type }}</span>
+              <small class="text-muted mono" style="font-size:0.65rem;">{{ ev.ts[11:19] }}</small>
+            </div>
+            <div style="font-size:0.78rem;font-weight:600;margin-top:2px;">{{ sdesc[0] }}</div>
+            <div class="mono" style="font-size:0.68rem;color:#6c757d;">{{ ev.swift_ref }}</div>
+            <div style="font-size:0.7rem;color:#495057;margin-top:1px;font-style:italic;">{{ sdesc[1] }}</div>
+          </div>
+          {% endfor %}
+          {% else %}
+          <p class="text-muted" style="font-size:0.8rem;">Aucun message SWIFT généré.</p>
+          {% endif %}
+
+          <div style="font-size:0.67rem;color:#adb5bd;margin-top:8px;">
+            <i class="bi bi-info-circle me-1"></i>Simulation SWIFT — format ISO 15022
+          </div>
+        </div>
+      </div>
+
+      <!-- Écritures comptables -->
+      <div class="col-12">
+        <div class="khl-card">
+          <div class="card-title"><i class="bi bi-journal-text me-1"></i>Écritures comptables — Plan CIB</div>
+          {% if accounting %}
+          <table class="table table-sm khl-table mb-0">
+            <thead><tr>
+              <th>Type</th><th>Compte</th><th>Libellé</th>
+              <th class="text-end">Débit (€)</th><th class="text-end">Crédit (€)</th>
+              <th>Narration</th>
+            </tr></thead>
+            <tbody>
+              {% for m in accounting %}
+              <tr>
+                <td><span class="badge bg-light text-dark" style="font-size:0.65rem;">{{ m.event_type }}</span></td>
+                <td class="mono" style="font-size:0.75rem;">{{ m.acc_code }}</td>
+                <td style="font-size:0.75rem;">{{ m.acc_label }}</td>
+                <td class="text-end mono" style="font-size:0.75rem;">
+                  {% if m.debit > 0 %}<strong>{{ "{:,.2f}".format(m.debit) }}</strong>{% else %}—{% endif %}
+                </td>
+                <td class="text-end mono" style="font-size:0.75rem;">
+                  {% if m.credit > 0 %}<strong>{{ "{:,.2f}".format(m.credit) }}</strong>{% else %}—{% endif %}
+                </td>
+                <td style="font-size:0.72rem;color:#6c757d;">{{ m.narrative }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+            <tfoot>
+              <tr style="background:#f8f9fa;">
+                <td colspan="3" style="font-size:0.75rem;font-weight:700;">TOTAL</td>
+                <td class="text-end mono" style="font-size:0.75rem;font-weight:700;">
+                  {{ "{:,.2f}".format(accounting|sum(attribute='debit')) }}
+                </td>
+                <td class="text-end mono" style="font-size:0.75rem;font-weight:700;">
+                  {{ "{:,.2f}".format(accounting|sum(attribute='credit')) }}
+                </td>
+                <td>
+                  {% set diff = (accounting|sum(attribute='debit') - accounting|sum(attribute='credit'))|abs %}
+                  {% if diff < 0.01 %}
+                  <span class="badge bg-success" style="font-size:0.65rem;"><i class="bi bi-check"></i> Équilibré</span>
+                  {% else %}
+                  <span class="badge bg-danger" style="font-size:0.65rem;">Écart {{ "{:,.2f}".format(diff) }}</span>
+                  {% endif %}
+                </td>
+              </tr>
+            </tfoot>
+          </table>
+          {% else %}
+          <p class="text-muted" style="font-size:0.8rem;">Aucune écriture comptable disponible.</p>
+          {% endif %}
+        </div>
+      </div>
+
+      <!-- Graphique timeline Chart.js -->
+      <div class="col-12">
+        <div class="khl-card">
+          <div class="card-title"><i class="bi bi-bar-chart-steps me-1"></i>Phases du workflow (timeline)</div>
+          <canvas id="timelineChart" height="80"></canvas>
+          <div style="font-size:0.68rem;color:#adb5bd;margin-top:4px;text-align:center;">
+            Durée approximative de chaque phase depuis l'exécution (minutes)
+          </div>
+        </div>
+      </div>
+
+    </div><!-- row -->
+  </div><!-- col-lg-7 -->
+
+</div><!-- row global -->
+
+<div class="d-flex justify-content-between mt-3">
+  <a href="{{ url_for('trading.index') }}" class="btn btn-outline-secondary">
+    <i class="bi bi-arrow-left me-2"></i>Retour Trading Desk
+  </a>
+  <a href="{{ url_for('accounting.index') }}" class="btn btn-outline-primary">
+    <i class="bi bi-journal-text me-2"></i>Voir journal comptable
+  </a>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// ── Données pour le graphique timeline ──────────────────────
+// Phases : [label, debut_min, fin_min, couleur]
+const phases = [
+  { label: 'Pré-trade',       start: -2,   end: -1,    color: '#6f42c1' },
+  { label: 'Exécution',       start: -1,   end: 3,     color: '#0d6efd' },
+  { label: 'Confirmation',    start: 3,    end: 31,    color: '#fd7e14' },
+  { label: 'Settlement J+2',  start: 31,   end: 2880,  color: '#198754' },
+  { label: 'Comptabilité',    start: 2880, end: 2885,  color: '#20c997' },
+  { label: 'Réconciliation',  start: 2885, end: 3000,  color: '#6c757d' },
+];
+
+// Marquer les phases complétées
+const completed = {{ completed|list|tojson }};
+const doneMap = {
+  'Pré-trade':      ['PRE_TRADE_CHECK','ORDER_PLACED'].some(s => completed.includes(s)),
+  'Exécution':      ['MARKET_EXECUTED'].some(s => completed.includes(s)),
+  'Confirmation':   ['TRADE_CONFIRMED'].some(s => completed.includes(s)),
+  'Settlement J+2': ['SETTLED'].some(s => completed.includes(s)),
+  'Comptabilité':   ['ACCOUNTING_POSTED'].some(s => completed.includes(s)),
+  'Réconciliation': ['RECONCILED'].some(s => completed.includes(s)),
+};
+
+const ctx = document.getElementById('timelineChart').getContext('2d');
+new Chart(ctx, {
+  type: 'bar',
+  data: {
+    labels: phases.map(p => p.label),
+    datasets: [{
+      label: 'Durée (min)',
+      data: phases.map(p => p.end - p.start),
+      backgroundColor: phases.map(p => doneMap[p.label] ? p.color : p.color + '40'),
+      borderColor: phases.map(p => p.color),
+      borderWidth: 2,
+      borderRadius: 4,
+    }]
+  },
+  options: {
+    indexAxis: 'y',
+    responsive: true,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        callbacks: {
+          label: ctx => {
+            const dur = ctx.raw;
+            if (dur >= 1440) return `~${(dur/1440).toFixed(1)} jours`;
+            if (dur >= 60)   return `~${(dur/60).toFixed(0)} heures`;
+            return `~${dur} minutes`;
+          }
+        }
+      }
+    },
+    scales: {
+      x: {
+        type: 'logarithmic',
+        ticks: { font: { size: 10 } },
+        title: { display: true, text: 'Durée (échelle log — minutes)', font: { size: 10 } }
+      },
+      y: { ticks: { font: { size: 11 } } }
+    }
+  }
+});
+</script>
+{% endblock %}

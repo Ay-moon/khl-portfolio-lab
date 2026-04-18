@@ -1,0 +1,183 @@
+{% extends "base.html" %}
+{% block title %}Tableau de bord{% endblock %}
+
+{% block content %}
+<!-- En-tête personnalisé par rôle -->
+<div class="page-header" style="background:linear-gradient(135deg, {{ role_info.get('color','#1a3a5c') }}15, white);">
+  <div class="page-icon" style="background:{{ role_info.get('color','#1a3a5c') }};">
+    <i class="bi bi-{{ role_info.get('icon','briefcase') }}"></i>
+  </div>
+  <div class="flex-grow-1">
+    <h1>Bonjour, {{ user.full_name or user.username }} 👋</h1>
+    <div class="d-flex align-items-center gap-2 mt-1">
+      <span class="badge" style="background:{{ role_info.get('color','#1a3a5c') }};color:white;font-size:0.7rem;">
+        {{ role_info.get('label', user.role) }}
+      </span>
+      {% if user.department %}
+      <span class="text-muted" style="font-size:0.8rem;">{{ user.department }}</span>
+      {% endif %}
+      <span class="text-muted" style="font-size:0.75rem;">
+        <i class="bi bi-clock me-1"></i>{{ today }}
+      </span>
+    </div>
+  </div>
+  <!-- KPIs rapides -->
+  <div class="d-none d-lg-flex gap-3">
+    <div class="text-center">
+      <div style="font-size:1.4rem;font-weight:700;color:#1a3a5c;">{{ stats.portfolios }}</div>
+      <div style="font-size:0.68rem;color:#6c757d;text-transform:uppercase;letter-spacing:.5px;">Portefeuilles</div>
+    </div>
+    <div class="vr"></div>
+    <div class="text-center">
+      <div style="font-size:1.4rem;font-weight:700;color:#0d6e3b;">{{ stats.securities }}</div>
+      <div style="font-size:0.68rem;color:#6c757d;text-transform:uppercase;letter-spacing:.5px;">Instruments</div>
+    </div>
+    <div class="vr"></div>
+    <div class="text-center">
+      <div style="font-size:1.4rem;font-weight:700;color:#8b1a1a;">{{ stats.trades }}</div>
+      <div style="font-size:0.68rem;color:#6c757d;text-transform:uppercase;letter-spacing:.5px;">Trades</div>
+    </div>
+  </div>
+</div>
+
+<!-- Storytelling du rôle -->
+<div class="story-block mb-4">
+  <div class="story-title">
+    <i class="bi bi-play-circle me-2"></i>Votre rôle aujourd'hui — {{ role_info.get('label','') }}
+  </div>
+  <p>{{ role_info.get('desc','') }}</p>
+</div>
+
+<!-- Modules accessibles -->
+<div class="row g-3 mb-4">
+  {% for mod_id in user_modules %}
+  {% set mod = modules.get(mod_id, {}) %}
+  {% if mod %}
+  <div class="col-sm-6 col-lg-4 col-xl-3">
+    <a href="{{ url_for(mod.route) }}" class="text-decoration-none">
+      <div class="khl-card h-100 module-card"
+           style="border-top:3px solid {{ role_info.get('color','#1a3a5c') }};
+                  cursor:pointer; transition:transform 0.15s, box-shadow 0.15s;">
+        <div class="d-flex align-items-center gap-2 mb-2">
+          <div style="width:36px;height:36px;border-radius:8px;
+                      background:{{ role_info.get('color','#1a3a5c') }}15;
+                      display:flex;align-items:center;justify-content:center;">
+            <i class="bi bi-{{ mod.icon }}" style="color:{{ role_info.get('color','#1a3a5c') }};font-size:1rem;"></i>
+          </div>
+          <strong style="font-size:0.88rem;color:#0d1b2a;">{{ mod.label }}</strong>
+        </div>
+        <p style="font-size:0.75rem;color:#6c757d;margin:0;">
+          {{ module_descriptions.get(mod_id, 'Accéder au module') }}
+        </p>
+        <div class="mt-2 text-end">
+          <span style="font-size:0.72rem;color:{{ role_info.get('color','#1a3a5c') }};">
+            Ouvrir <i class="bi bi-arrow-right"></i>
+          </span>
+        </div>
+      </div>
+    </a>
+  </div>
+  {% endif %}
+  {% endfor %}
+</div>
+
+<!-- Scenario storytelling -->
+<div class="row g-3">
+  <div class="col-lg-7">
+    <div class="khl-card">
+      <div class="card-title">
+        <i class="bi bi-clock-history"></i> Scénarios du jour — Une journée à SG CIB
+      </div>
+      <div class="story-timeline">
+        {% for scenario in daily_scenarios %}
+        <div class="d-flex gap-3 mb-3">
+          <div style="width:50px;flex-shrink:0;text-align:center;">
+            <div style="font-size:0.72rem;font-weight:600;color:#6c757d;">{{ scenario.time }}</div>
+            <div style="width:2px;background:#dee2e6;height:100%;margin:4px auto 0;"></div>
+          </div>
+          <div class="flex-grow-1 pb-2 border-bottom">
+            <div class="d-flex align-items-center gap-2 mb-1">
+              <span class="badge" style="background:#1a3a5c;color:white;font-size:0.65rem;">
+                {{ scenario.actor }}
+              </span>
+              <strong style="font-size:0.82rem;">{{ scenario.action }}</strong>
+            </div>
+            <p style="font-size:0.78rem;color:#495057;margin:0;">{{ scenario.detail }}</p>
+            {% if scenario.data_used %}
+            <div class="mt-1 d-flex flex-wrap gap-1">
+              {% for d in scenario.data_used %}
+              <span style="font-size:0.65rem;background:#f0f2f5;color:#6c757d;
+                           padding:1px 6px;border-radius:3px;font-family:monospace;">{{ d }}</span>
+              {% endfor %}
+            </div>
+            {% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+
+  <div class="col-lg-5">
+    <div class="khl-card">
+      <div class="card-title"><i class="bi bi-database"></i> État de la base de données</div>
+      <table class="table table-sm mb-0 khl-table">
+        <thead>
+          <tr><th>Table</th><th class="text-end">Lignes</th><th>Statut</th></tr>
+        </thead>
+        <tbody>
+          {% for t in db_stats %}
+          <tr>
+            <td class="mono">{{ t.table }}</td>
+            <td class="text-end mono">
+              {% if t.rows is not none %}{{ "{:,}".format(t.rows) }}{% else %}—{% endif %}
+            </td>
+            <td>
+              {% if t.status == 'ok' %}
+              <span class="badge badge-ok"><i class="bi bi-check me-1"></i>OK</span>
+              {% else %}
+              <span class="badge badge-error" title="{{ t.status }}">ERR</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      <div class="mt-2 text-end">
+        <a href="{{ url_for('monitoring.index') }}" class="btn btn-sm btn-outline-secondary"
+           style="font-size:0.75rem;">
+          <i class="bi bi-activity me-1"></i>Monitoring complet
+        </a>
+      </div>
+    </div>
+
+    <!-- Quick actions selon le rôle -->
+    <div class="khl-card">
+      <div class="card-title"><i class="bi bi-lightning-charge"></i> Actions rapides</div>
+      <div class="d-grid gap-2">
+        {% for action in quick_actions %}
+        <a href="{{ action.url }}" class="btn btn-sm btn-outline-secondary text-start"
+           style="font-size:0.82rem;">
+          <i class="bi bi-{{ action.icon }} me-2"></i>{{ action.label }}
+        </a>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.querySelectorAll('.module-card').forEach(card => {
+  card.addEventListener('mouseenter', () => {
+    card.style.transform = 'translateY(-3px)';
+    card.style.boxShadow = '0 6px 20px rgba(0,0,0,0.12)';
+  });
+  card.addEventListener('mouseleave', () => {
+    card.style.transform = '';
+    card.style.boxShadow = '';
+  });
+});
+</script>
+{% endblock %}

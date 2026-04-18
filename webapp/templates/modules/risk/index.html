@@ -1,0 +1,211 @@
+{% extends "base.html" %}
+{% block title %}Risk Management{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="page-icon" style="background:#8b1a1a;"><i class="bi bi-shield-exclamation"></i></div>
+  <div class="flex-grow-1">
+    <h1>Risk Management</h1>
+  </div>
+  <select class="form-select form-select-sm" style="width:auto;"
+          onchange="location.href='/risk/?portfolio='+this.value">
+    {% for p in all_portfolios %}
+    <option value="{{ p.code }}" {{ 'selected' if p.code == portfolio_code else '' }}>{{ p.code }}</option>
+    {% endfor %}
+  </select>
+</div>
+
+<div class="story-block mb-3">
+  <div class="story-title"><i class="bi bi-person-workspace me-2"></i>Contexte métier — Risk Manager</div>
+  <p>
+    Le <strong>Risk Manager</strong> contrôle que le portefeuille reste dans ses limites de risque.
+    La <strong>VaR 95%</strong> est la perte maximale probable sur un jour dans 95% des cas.
+    Le <strong>Drawdown</strong> mesure la perte depuis le dernier plus-haut.
+    Ces indicateurs déclenchent des alertes automatiques si les limites sont franchies.
+  </p>
+</div>
+
+<!-- Alertes -->
+{% if alerts %}
+<div class="mb-3">
+  {% for a in alerts %}
+  <div class="alert {{ 'alert-danger' if a.level == 'BREACH' else 'alert-warning' }} d-flex align-items-center gap-2 py-2 mb-1">
+    <i class="bi bi-{{ 'x-circle-fill' if a.level == 'BREACH' else 'exclamation-triangle-fill' }}"></i>
+    <strong>{{ a.level }}</strong> — {{ a.label }} :
+    <strong>{{ a.val }}</strong> (limite : {{ a.limit }})
+  </div>
+  {% endfor %}
+</div>
+{% endif %}
+
+<!-- KPIs risque -->
+{% if current_risk %}
+
+{# Détection aberrance : VaR hors plage réaliste [-100%, +100%] → données brutes non converties #}
+{% set var_aberrant = current_risk.var95 < -100 or current_risk.var95 > 100 %}
+
+{% if var_aberrant %}
+<div class="alert alert-warning d-flex align-items-center gap-2 mb-3 py-2">
+  <i class="bi bi-exclamation-triangle-fill"></i>
+  <span>
+    <strong>Données VaR incohérentes</strong> — La valeur affichée ({{ current_risk.var95 }}) semble être
+    une <em>perte absolue en devise</em> stockée comme telle dans <code>RiskMetricsDaily.VaR95</code>,
+    non une fraction décimale. Relancez le calcul perf/risk depuis le
+    <a href="{{ url_for('monitoring.index') }}">Monitoring</a> pour recalculer.
+  </span>
+</div>
+{% endif %}
+
+<div class="row g-3 mb-3">
+
+  <div class="col-6 col-md">
+    <div class="metric-card" style="border-left-color:#e8a020;">
+      <div class="metric-label">
+        Volatilité 20j (%)
+        <span class="khl-tip" data-bs-toggle="tooltip" data-bs-html="true" data-bs-placement="bottom"
+              data-bs-title="<b>Volatilité 20 jours</b><br>Écart-type annualisé des rendements journaliers sur 20 séances.<br><em>σ = std(rendements) × √252 × 100</em><br>Seuil warn : 15% — Breach : 20%<br>Une vol &gt;20% signale un portefeuille très agité.">?</span>
+      </div>
+      <div class="metric-value" style="color:#e8a020;">{{ current_risk.vol20d }}</div>
+    </div>
+  </div>
+
+  <div class="col-6 col-md">
+    <div class="metric-card" style="border-left-color:#8b1a1a;">
+      <div class="metric-label">
+        Max Drawdown (%)
+        <span class="khl-tip" data-bs-toggle="tooltip" data-bs-html="true" data-bs-placement="bottom"
+              data-bs-title="<b>Max Drawdown</b><br>Perte maximale depuis le dernier plus-haut de la NAV.<br><em>DD = (NAV_t − NAV_peak) / NAV_peak × 100</em><br>Seuil warn : −10% — Breach : −20%<br>Un drawdown de −20% signifie que le portefeuille a perdu 20% depuis son sommet.">?</span>
+      </div>
+      <div class="metric-value" style="color:#8b1a1a;">{{ current_risk.drawdown }}</div>
+    </div>
+  </div>
+
+  <div class="col-6 col-md">
+    <div class="metric-card" style="border-left-color:#8b1a1a;">
+      <div class="metric-label">
+        VaR 95% (%)
+        <span class="khl-tip" data-bs-toggle="tooltip" data-bs-html="true" data-bs-placement="bottom"
+              data-bs-title="<b>Value at Risk 95%</b><br>Perte maximale probable sur <em>1 jour</em> dans 95% des scénarios.<br><em>Méthode : historique sur 252j</em><br>Seuil warn : −2.5% — Breach : −5%<br>Ex : VaR = −3% → dans 95% des cas, la perte du jour ne dépassera pas 3% de la NAV.{% if var_aberrant %}<br><br><span style='color:#f87171;'>⚠ Valeur aberrante détectée — relancer le calcul.</span>{% endif %}">?</span>
+      </div>
+      <div class="metric-value" style="color:#8b1a1a;">
+        {% if var_aberrant %}
+        <span style="font-size:0.9rem;color:#dc3545;" title="Valeur aberrante">⚠ {{ current_risk.var95 }}</span>
+        {% else %}
+        {{ current_risk.var95 }}
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+  <div class="col-6 col-md">
+    <div class="metric-card" style="border-left-color:#0d6e3b;">
+      <div class="metric-label">
+        Sharpe Ratio
+        <span class="khl-tip" data-bs-toggle="tooltip" data-bs-html="true" data-bs-placement="bottom"
+              data-bs-title="<b>Ratio de Sharpe</b><br>Rendement excédentaire par unité de risque pris.<br><em>Sharpe = (R_p − R_f) / σ_p</em><br>Interprétation : &lt;0 = performance négative / 0–1 = acceptable / &gt;1 = bon / &gt;2 = excellent.<br>Breach si ≤ 0 (le risque n'est pas rémunéré).">?</span>
+      </div>
+      <div class="metric-value" style="color:#0d6e3b;">{{ current_risk.sharpe }}</div>
+    </div>
+  </div>
+
+  <div class="col-6 col-md">
+    <div class="metric-card" style="border-left-color:#1a3a5c;">
+      <div class="metric-label">
+        Bêta
+        <span class="khl-tip" data-bs-toggle="tooltip" data-bs-html="true" data-bs-placement="bottom"
+              data-bs-title="<b>Bêta (β)</b><br>Sensibilité du portefeuille aux mouvements du marché (benchmark).<br><em>β = Cov(R_p, R_m) / Var(R_m)</em><br>β=1 → suit le marché | β&gt;1 → amplifie | β&lt;1 → amortit | β&lt;0 → inverse.<br>Un β=0.9 signifie que si le marché baisse de 10%, le portefeuille perd ~9%.">?</span>
+      </div>
+      <div class="metric-value" style="color:#1a3a5c;">{{ current_risk.beta }}</div>
+    </div>
+  </div>
+
+</div>
+{% endif %}
+
+<div class="row g-3">
+  <div class="col-lg-8">
+    <div class="khl-card">
+      <div class="card-title"><i class="bi bi-graph-down me-1"></i>Évolution des métriques de risque</div>
+      {% if risk_history %}
+      <canvas id="riskChart" height="220"></canvas>
+      {% else %}
+      <p class="text-center text-muted py-4">
+        Aucune donnée.
+        <a href="{{ url_for('monitoring.index') }}">Lancez le calcul perf/risk.</a>
+      </p>
+      {% endif %}
+    </div>
+  </div>
+  <div class="col-lg-4">
+    <div class="khl-card">
+      <div class="card-title"><i class="bi bi-thermometer-half me-1"></i>Heat Map — Concentration</div>
+      {% if positions %}
+      <div id="heatmap">
+        {% for p in positions[:15] %}
+        {% set intensity = [(p.weight / 20), 1]|min %}
+        <div class="d-flex align-items-center gap-2 mb-1">
+          <div style="font-size:0.75rem;width:65px;text-align:right;font-family:monospace;">
+            {{ p.ticker[:10] }}
+          </div>
+          <div style="flex:1;height:22px;background:linear-gradient(to right,
+                      rgba(26,58,92,{{ intensity }}), rgba(232,160,32,{{ intensity }}));
+                      border-radius:3px;" title="{{ p.weight }}%"></div>
+          <div style="font-size:0.72rem;width:35px;">{{ "%.1f"|format(p.weight) }}%</div>
+          <div style="font-size:0.7rem;width:55px;text-align:right;
+                      color:{{ '#0d6e3b' if p.pnl >= 0 else '#8b1a1a' }};">
+            {{ "{:+,.0f}".format(p.pnl) }}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <p class="text-muted" style="font-size:0.8rem;">Aucune position disponible.</p>
+      {% endif %}
+    </div>
+
+    <div class="khl-card">
+      <div class="card-title"><i class="bi bi-list-check me-1"></i>Limites de risque</div>
+      <table class="table table-sm khl-table mb-0">
+        {% for key, lim in limits.items() %}
+        {% set val = current_risk.get(key, None) %}
+        <tr>
+          <td style="font-size:0.75rem;">{{ lim.label }}</td>
+          <td class="text-end mono">
+            {% if val is not none %}
+            <span style="color:{% if key in ('drawdown','var95') %}{% if val <= lim.breach %}#8b1a1a{% elif val <= lim.warn %}#856404{% else %}#0d6e3b{% endif %}{% else %}{% if val >= lim.breach and key != 'sharpe' %}#8b1a1a{% else %}#0d6e3b{% endif %}{% endif %};">
+              <strong>{{ val }}</strong>
+            </span>
+            {% else %}—{% endif %}
+          </td>
+          <td style="font-size:0.7rem;color:#6c757d;">lim: {{ lim.breach }}</td>
+        </tr>
+        {% endfor %}
+      </table>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{% if risk_history %}
+<script>
+const rh = {{ risk_history|tojson }};
+new Chart(document.getElementById('riskChart'), {
+  type: 'line',
+  data: {
+    labels: rh.map(d => d.date),
+    datasets: [
+      { label: 'Vol 20j (%)', data: rh.map(d => d.vol20d), borderColor:'#e8a020', fill:false, tension:0.3, pointRadius:2 },
+      { label: 'Drawdown (%)', data: rh.map(d => d.drawdown), borderColor:'#8b1a1a', fill:false, tension:0.3, pointRadius:2 },
+      { label: 'VaR 95% (%)', data: rh.map(d => d.var95), borderColor:'#4a1a7a', borderDash:[4,4], fill:false, tension:0.3, pointRadius:0 },
+    ]
+  },
+  options: {
+    responsive: true,
+    interaction: { mode:'index', intersect:false },
+    plugins: { legend: { labels: { font:{ size:10 } } } },
+    scales: { y: { grid:{ color:'#f0f2f5' } }, x: { grid:{ display:false } } }
+  }
+});
+</script>
+{% endif %}
+{% endblock %}

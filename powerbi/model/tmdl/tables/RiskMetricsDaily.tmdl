@@ -1,0 +1,68 @@
+/// Daily risk metrics per portfolio
+table RiskMetricsDaily
+	lineageTag: 02df05b4-65d5-4146-8636-8ab278ca97d5
+
+	column RiskKey
+		dataType: int64
+		isHidden
+		lineageTag: 7ec0afa9-110f-44fb-acfc-07a63f414801
+		summarizeBy: none
+		sourceColumn: RiskKey
+
+	column DateKey
+		dataType: int64
+		isHidden
+		lineageTag: a54eebb2-61b0-4729-a1aa-4d37560dfdae
+		summarizeBy: none
+		sourceColumn: DateKey
+
+	column PortfolioKey
+		dataType: int64
+		isHidden
+		lineageTag: 229658d3-88d9-4605-b14a-c9a574d31d32
+		summarizeBy: none
+		sourceColumn: PortfolioKey
+
+	column Volatility20d
+		dataType: decimal
+		formatString: 0.00%
+		lineageTag: e7c00e36-709a-4511-bbe0-a5b86bf644e2
+		summarizeBy: none
+		sourceColumn: Volatility20d
+
+	column MaxDrawdown
+		dataType: decimal
+		formatString: 0.00%
+		lineageTag: bba0ccb3-ef92-4ec5-9b96-02216df68958
+		summarizeBy: none
+		sourceColumn: MaxDrawdown
+
+	column VaR95
+		dataType: decimal
+		formatString: #,##0.00
+		lineageTag: bbad0e40-eb4f-403d-86ab-e8d812ba316e
+		summarizeBy: none
+		sourceColumn: VaR95
+
+	column Beta
+		dataType: decimal
+		formatString: 0.00
+		lineageTag: bb810732-e5e4-4194-b53c-c5200d6ebf10
+		summarizeBy: none
+		sourceColumn: Beta
+
+	column SharpeRatio
+		dataType: decimal
+		formatString: 0.00
+		lineageTag: f319a7ca-0ec7-41e3-ab3f-11c25f428634
+		summarizeBy: none
+		sourceColumn: SharpeRatio
+
+	partition Risk_Import = m
+		mode: directQuery
+		source =
+				let
+				    Source = Sql.Database("PERSO-AJE-DELL\BFASERVER01", "SmartAssetAdvicedb"),
+				    result = Value.NativeQuery(Source, "SELECT * FROM [dbo].[RiskMetricsDaily]", null, [EnableFolding=true])
+				in  result
+

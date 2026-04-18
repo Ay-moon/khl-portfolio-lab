@@ -1,0 +1,365 @@
+{% extends "base.html" %}
+{% block title %}Trading Desk{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="page-icon" style="background:#0d6e3b;"><i class="bi bi-graph-up-arrow"></i></div>
+  <div class="flex-grow-1">
+    <h1>Trading Desk</h1>
+    <nav aria-label="breadcrumb"><ol class="breadcrumb mb-0">
+      <li class="breadcrumb-item"><a href="{{ url_for('home') }}">Accueil</a></li>
+      <li class="breadcrumb-item active">Trading</li>
+    </ol></nav>
+  </div>
+</div>
+
+<div class="story-block mb-4">
+  <div class="story-title"><i class="bi bi-person-workspace me-2"></i>Contexte métier — Trader / Sales</div>
+  <p>
+    Le <strong>Trading Desk</strong> est le cœur opérationnel d'une banque CIB.
+    Les traders exécutent les ordres des gérants de portefeuille (buy-side) ou tradent pour compte propre (proprietary trading).
+    Chaque ordre a un <strong>prix d'exécution</strong>, des <strong>frais</strong> et un <strong>slippage</strong>
+    (écart entre le prix demandé et le prix obtenu).
+    Le P&L intraday mesure la performance de la journée en temps réel.
+  </p>
+</div>
+
+<!-- ══ FORMULAIRE SAISIE D'ORDRE ══════════════════════════════ -->
+{% if session.role in ('TRADER','ADMIN') %}
+<div class="khl-card mb-4" id="order-panel">
+  <div class="card-title d-flex align-items-center gap-2">
+    <i class="bi bi-pencil-square me-1"></i>Passer un ordre
+    <span class="khl-tip" data-bs-toggle="tooltip" data-bs-html="true"
+          data-bs-title="<b>Saisie manuelle d'ordre</b><br>Enregistre l'ordre dans le carnet (dbo.Orders), crée le trade dans FactTrades et génère les <em>écritures comptables</em> en partie double (JournalEntries).">?</span>
+    <button class="btn btn-sm btn-outline-secondary ms-auto" type="button"
+            data-bs-toggle="collapse" data-bs-target="#order-form-body">
+      <i class="bi bi-chevron-down"></i>
+    </button>
+  </div>
+
+  <div class="collapse show" id="order-form-body">
+    <div class="story-block mb-3" style="font-size:0.8rem;">
+      <i class="bi bi-info-circle me-1"></i>
+      En salle des marchés, le Trader saisit ici ses ordres après décision du gérant.
+      Chaque ordre est <strong>immédiatement exécuté</strong> (simulation), archivé dans le carnet,
+      intégré à FactTrades et généré en <strong>partie double</strong> dans le journal comptable.
+    </div>
+
+    <form method="POST" action="{{ url_for('trading.order_new') }}">
+      <div class="row g-3">
+
+        <div class="col-md-3">
+          <label class="form-label">
+            Portefeuille
+            <span class="khl-tip" data-bs-toggle="tooltip" data-bs-html="true"
+                  data-bs-title="<b>Portefeuille</b><br>Le portefeuille sur lequel l'ordre est imputé. L'Asset Manager décide, le Trader exécute.">?</span>
+          </label>
+          <select name="portfolio_key" class="form-select form-select-sm" required>
+            <option value="">-- Choisir --</option>
+            {% for p in portfolios %}
+            <option value="{{ p.key }}">{{ p.code }} — {{ p.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+
+        <div class="col-md-2">
+          <label class="form-label">
+            Ticker
+            <span class="khl-tip" data-bs-toggle="tooltip" data-bs-html="true"
+                  data-bs-title="<b>Ticker</b><br>Code STOOQ ou Bloomberg. Ex : <code>CDI.US</code>, <code>MC.FR</code>, <code>^SPX</code>.<br>Créé automatiquement dans DimSecurity si absent.">?</span>
+          </label>
+          <input type="text" name="ticker" class="form-control form-control-sm mono" required
+                 placeholder="ex: MC.FR" style="text-transform:uppercase;">
+        </div>
+
+        <div class="col-md-2">
+          <label class="form-label">Côté</label>
+          <div class="d-flex gap-2 mt-1">
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="side" value="BUY" id="side-buy" checked>
+              <label class="form-check-label text-success fw-bold" for="side-buy">BUY</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="side" value="SELL" id="side-sell">
+              <label class="form-check-label text-danger fw-bold" for="side-sell">SELL</label>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-1">
+          <label class="form-label">
+            Quantité
+            <span class="khl-tip" data-bs-toggle="tooltip"
+                  data-bs-title="Nombre de titres à acheter ou vendre.">?</span>
+          </label>
+          <input type="number" name="qty" class="form-control form-control-sm mono"
+                 required min="1" step="1" placeholder="100">
+        </div>
+
+        <div class="col-md-2">
+          <label class="form-label">
+            Prix exec. (€)
+            <span class="khl-tip" data-bs-toggle="tooltip" data-bs-html="true"
+                  data-bs-title="<b>Prix d'exécution</b><br>Prix auquel l'ordre est exécuté. En simulation, utiliser le dernier cours connu.<br><em>Notional = Qté × Prix</em>">?</span>
+          </label>
+          <input type="number" name="price" class="form-control form-control-sm mono"
+                 required min="0.0001" step="0.0001" placeholder="150.25">
+        </div>
+
+        <div class="col-md-1">
+          <label class="form-label">
+            Frais (bps)
+            <span class="khl-tip" data-bs-toggle="tooltip" data-bs-html="true"
+                  data-bs-title="<b>Frais de courtage</b><br>En points de base. 10 bps = 0.10% du notional.<br><em>Fee = Notional × bps / 10000</em>">?</span>
+          </label>
+          <input type="number" name="fee_bps" class="form-control form-control-sm mono"
+                 value="10" min="0" step="1">
+        </div>
+
+        <div class="col-md-1">
+          <label class="form-label">Type</label>
+          <select name="order_type" class="form-select form-select-sm">
+            <option value="MARKET">MARKET</option>
+            <option value="LIMIT">LIMIT</option>
+          </select>
+        </div>
+
+      </div>
+
+      <div class="row g-3 mt-1">
+        <div class="col-md-8">
+          <label class="form-label">Notes (optionnel)</label>
+          <input type="text" name="notes" class="form-control form-control-sm"
+                 placeholder="ex: Arbitrage pair, rééquilibrage sectoriel...">
+        </div>
+        <div class="col-md-4 d-flex align-items-end gap-2">
+          <button type="submit" class="btn btn-success btn-sm flex-grow-1">
+            <i class="bi bi-check2-circle me-1"></i>Valider l'ordre
+          </button>
+          {% if session.role == 'ADMIN' %}
+          <a href="{{ url_for('accounting.index') }}" class="btn btn-outline-secondary btn-sm">
+            <i class="bi bi-journal-text me-1"></i>Journal
+          </a>
+          {% endif %}
+        </div>
+      </div>
+    </form>
+  </div>
+</div>
+{% endif %}
+
+<!-- KPIs -->
+<div class="row g-3 mb-4">
+  <div class="col-6 col-md-3">
+    <div class="metric-card blue">
+      <div class="metric-label">Total Trades</div>
+      <div class="metric-value">{{ trades|length }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="metric-card green">
+      <div class="metric-label">BUY orders</div>
+      <div class="metric-value">{{ buy_count }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="metric-card red">
+      <div class="metric-label">SELL orders</div>
+      <div class="metric-value">{{ sell_count }}</div>
+    </div>
+  </div>
+  <div class="col-6 col-md-3">
+    <div class="metric-card">
+      <div class="metric-label">Notional total</div>
+      <div class="metric-value" style="font-size:1.2rem;">{{ "{:,.0f}".format(total_notional) }}</div>
+      <div class="metric-delta text-muted" style="font-size:0.7rem;">
+        dont {{ "{:,.0f}".format(total_fees) }} frais+slippage
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="khl-card">
+  <div class="card-title"><i class="bi bi-table me-1"></i>Carnet des trades exécutés (100 derniers)</div>
+
+  <!-- Légende storytelling -->
+  <div class="row g-2 mb-3">
+    <div class="col">
+      <div class="p-2 bg-light rounded" style="font-size:0.75rem;">
+        <strong>Notional</strong> = Qté × Prix exécuté<br>
+        <span class="text-muted">Montant brut de la transaction</span>
+      </div>
+    </div>
+    <div class="col">
+      <div class="p-2 bg-light rounded" style="font-size:0.75rem;">
+        <strong>Fee</strong> = Frais de courtage<br>
+        <span class="text-muted">bps × notional</span>
+      </div>
+    </div>
+    <div class="col">
+      <div class="p-2 bg-light rounded" style="font-size:0.75rem;">
+        <strong>Slippage</strong> = Impact de marché<br>
+        <span class="text-muted">Coût d'exécution réelle vs théorique</span>
+      </div>
+    </div>
+    <div class="col">
+      <div class="p-2 bg-light rounded" style="font-size:0.75rem;">
+        <strong>Coût total</strong> = Fee + Slippage<br>
+        <span class="text-muted">Impact réel sur la performance</span>
+      </div>
+    </div>
+  </div>
+
+  {% if trades %}
+  <div class="table-responsive">
+    <table class="table khl-table">
+      <thead>
+        <tr>
+          <th>Date</th><th>Portfolio</th><th>Ticker</th>
+          <th>Côté</th><th class="text-end">Quantité</th>
+          <th class="text-end">Prix exec.</th><th class="text-end">Notional</th>
+          <th class="text-end">Fee</th><th class="text-end">Coût total</th>
+          <th>Statut</th><th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% set STATUS_LABEL = {
+          'PRE_TRADE_CHECK': ('Contrôle', 'secondary'),
+          'ORDER_PLACED': ('Créé', 'secondary'),
+          'SENT_TO_BROKER': ('Transmis', 'info'),
+          'BROKER_ACK': ('ACK', 'info'),
+          'MARKET_EXECUTED': ('Exécuté', 'warning'),
+          'TRADE_CONFIRMED': ('Confirmé', 'primary'),
+          'PENDING_SETTLEMENT': ('J+2 Att.', 'warning'),
+          'SETTLED': ('Réglé', 'success'),
+          'ACCOUNTING_POSTED': ('Comptab.', 'success'),
+          'RECONCILED': ('Réconcilié', 'success'),
+        } %}
+        {% for t in trades %}
+        <tr>
+          <td class="mono">{{ t.date }}</td>
+          <td><span class="badge bg-light text-dark mono">{{ t.portfolio }}</span></td>
+          <td class="mono"><strong>{{ t.ticker }}</strong></td>
+          <td>
+            <span class="badge {{ 'badge-ok' if t.side == 'BUY' else 'badge-error' }}">
+              <i class="bi bi-{{ 'arrow-up' if t.side == 'BUY' else 'arrow-down' }}"></i>
+              {{ t.side }}
+            </span>
+          </td>
+          <td class="text-end mono">{{ "{:,}".format(t.qty) }}</td>
+          <td class="text-end mono">{{ "{:,.4f}".format(t.price) }}</td>
+          <td class="text-end mono"><strong>{{ "{:,.2f}".format(t.notional) }}</strong></td>
+          <td class="text-end mono text-danger">{{ "{:,.2f}".format(t.fee) }}</td>
+          <td class="text-end mono text-danger">
+            <strong>{{ "{:,.2f}".format(t.fee + t.slippage) }}</strong>
+          </td>
+          <td>
+            {% if t.lifecycle_status %}
+            {% set sl = STATUS_LABEL.get(t.lifecycle_status, (t.lifecycle_status, 'secondary')) %}
+            <span class="badge bg-{{ sl[1] }}" style="font-size:0.62rem;">{{ sl[0] }}</span>
+            {% else %}
+            <span class="text-muted" style="font-size:0.7rem;">—</span>
+            {% endif %}
+          </td>
+          <td>
+            {% if t.trade_key %}
+            <a href="{{ url_for('trading.trade_lifecycle', trade_key=t.trade_key) }}"
+               class="btn btn-sm btn-outline-primary"
+               style="font-size:0.68rem;padding:2px 8px;"
+               data-bs-toggle="tooltip" data-bs-title="Voir la cinématique complète de ce trade">
+              <i class="bi bi-diagram-3"></i>
+            </a>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="text-center py-4 text-muted">
+    <i class="bi bi-inbox" style="font-size:2rem;"></i>
+    <p class="mt-2">Aucun trade en base. Lancez une simulation depuis le
+      <a href="{{ url_for('monitoring.index') }}">Monitoring</a>.
+    </p>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Outils du Trader -->
+<div class="khl-card">
+  <div class="card-title d-flex align-items-center gap-2">
+    <span><i class="bi bi-box-arrow-up-right me-1"></i>Outils du Trader</span>
+    <span class="khl-tip" data-bs-toggle="tooltip" data-bs-html="true"
+          data-bs-title="<b>Outils du Trader</b><br>En salle des marchés, le Trader dispose d'outils Excel/VBA connectés à la base pour :<br>• Pricer des instruments (options, swaps)<br>• Calculer l'impact marché avant un ordre<br>• Générer des blotters d'exécution<br><br>Ces fichiers sont téléchargeables ici et s'ouvrent dans Excel. Ils se connectent à <code>SmartAssetAdvicedb</code> via ODBC (même Windows Auth que le portail).">?</span>
+  </div>
+
+  <div class="story-block mb-3" style="font-size:0.8rem;">
+    <strong><i class="bi bi-person-workspace me-1"></i>Comment le Trader interagit avec ce portail :</strong>
+    <ol class="mb-0 mt-1" style="padding-left:1.2rem;">
+      <li>Il consulte le <strong>carnet des trades</strong> (tableau ci-dessus) pour vérifier ses exécutions du jour.</li>
+      <li>Il télécharge un <strong>outil Excel/VBA</strong> pour pricer ou préparer ses ordres hors-ligne.</li>
+      <li>Il accède au <strong>Risk</strong> pour vérifier que ses positions respectent la VaR limite avant tout nouvel ordre.</li>
+      <li>En fin de journée, il consulte le <strong>P&L intraday</strong> et le reporting <strong>Power BI</strong>.</li>
+    </ol>
+  </div>
+
+  <div class="row g-3">
+
+    {# ── Fichiers Excel / VBA (filtrés par rôle côté serveur) ── #}
+    {% if vba_tools %}
+    {% for tool in vba_tools %}
+    <div class="col-md-4">
+      <div class="p-3 border rounded h-100" style="border-left:4px solid {{ tool.color }} !important;">
+        <i class="bi bi-{{ tool.icon }}" style="font-size:1.5rem;color:{{ tool.color }};"></i>
+        <h6 class="mt-2 mb-1">{{ tool.label }}</h6>
+        <p style="font-size:0.78rem;color:#6c757d;">{{ tool.desc }}</p>
+        <a href="{{ url_for('trading.download_vba', tool_id=tool.id) }}"
+           class="btn btn-sm {{ 'btn-primary' if tool.open_inplace else 'btn-success' }}"
+           style="font-size:0.75rem;background:{{ tool.color if tool.open_inplace else '' }};border-color:{{ tool.color if tool.open_inplace else '' }};">
+          {% if tool.open_inplace %}
+          <i class="bi bi-box-arrow-up-right me-1"></i>Ouvrir dans Excel
+          {% else %}
+          <i class="bi bi-download me-1"></i>Télécharger
+          {% endif %}
+        </a>
+        <div style="font-size:0.65rem;color:#adb5bd;margin-top:0.4rem;">
+          <i class="bi bi-lock me-1"></i>Accès : {{ tool.roles | join(' · ') }}
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+    {% else %}
+    <div class="col-12">
+      <p class="text-muted" style="font-size:0.82rem;">
+        <i class="bi bi-info-circle me-1"></i>
+        Aucun fichier Excel/VBA disponible pour votre rôle, ou les fichiers ne sont pas encore déposés
+        dans le répertoire <code>docs/</code> du projet.
+      </p>
+    </div>
+    {% endif %}
+
+    <div class="col-md-4">
+      <div class="p-3 border rounded h-100">
+        <i class="bi bi-calculator text-primary" style="font-size:1.5rem;"></i>
+        <h6 class="mt-2 mb-1">Calculateur VaR</h6>
+        <p style="font-size:0.78rem;color:#6c757d;">Calcul de la Value at Risk historique et paramétrique.</p>
+        <a href="{{ url_for('risk.index') }}" class="btn btn-sm btn-outline-primary" style="font-size:0.75rem;">
+          Accéder au Risk
+        </a>
+      </div>
+    </div>
+
+    <div class="col-md-4">
+      <div class="p-3 border rounded h-100">
+        <i class="bi bi-bar-chart-line text-warning" style="font-size:1.5rem;"></i>
+        <h6 class="mt-2 mb-1">Power BI — P&amp;L Report</h6>
+        <p style="font-size:0.78rem;color:#6c757d;">Reporting visuel du P&L et des positions sur Power BI.</p>
+        <a href="{{ url_for('performance.powerbi') }}" class="btn btn-sm btn-outline-warning" style="font-size:0.75rem;">
+          Accéder Power BI
+        </a>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

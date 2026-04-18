@@ -1,0 +1,618 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% block title %}KHL Bank{% endblock %} — KHL Bank CIB Platform</title>
+
+  <!-- Bootstrap 5 CDN — aucune installation requise -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Bootstrap Icons CDN -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+
+  <style>
+    /* ── KHL Bank Design System ────────────────────────────── */
+    :root {
+      --khl-navy:       #0d1b2a;
+      --khl-blue:       #1a3a5c;
+      --khl-accent:     #e8a020;
+      --khl-green:      #0d6e3b;
+      --khl-red:        #8b1a1a;
+      --khl-gray:       #f8f9fa;
+      --khl-border:     #dee2e6;
+      --khl-text:       #212529;
+      --khl-muted:      #6c757d;
+      --khl-sidebar-w:  240px;
+      --khl-header-h:   60px;
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #f0f2f5;
+      color: var(--khl-text);
+      min-height: 100vh;
+      margin: 0;
+    }
+
+    /* ── HEADER ─────────────────────────────────────────────── */
+    .khl-header {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+      height: var(--khl-header-h);
+      background: var(--khl-navy);
+      display: flex; align-items: center;
+      padding: 0 1.5rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.4);
+    }
+    .khl-header .logo {
+      display: flex; align-items: center; gap: 0.6rem;
+      text-decoration: none;
+    }
+    .khl-header .logo-icon {
+      width: 34px; height: 34px;
+      background: var(--khl-accent);
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 14px; color: var(--khl-navy);
+    }
+    .khl-header .logo-text {
+      color: white; font-weight: 700; font-size: 1rem; letter-spacing: 0.5px;
+    }
+    .khl-header .logo-sub {
+      color: var(--khl-accent); font-size: 0.65rem;
+      font-weight: 500; letter-spacing: 1px; text-transform: uppercase;
+    }
+    .khl-header .header-right {
+      margin-left: auto; display: flex; align-items: center; gap: 1rem;
+    }
+    .khl-header .env-badge {
+      background: var(--khl-accent); color: var(--khl-navy);
+      font-size: 0.65rem; font-weight: 700;
+      padding: 2px 8px; border-radius: 3px;
+      letter-spacing: 1px; text-transform: uppercase;
+    }
+    .khl-header .user-chip {
+      display: flex; align-items: center; gap: 0.5rem;
+      background: rgba(255,255,255,0.1);
+      border-radius: 20px; padding: 4px 12px 4px 4px;
+      cursor: pointer; text-decoration: none;
+    }
+    .khl-header .user-avatar {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: var(--khl-accent);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 11px; font-weight: 700; color: var(--khl-navy);
+    }
+    .khl-header .user-name { color: white; font-size: 0.8rem; font-weight: 500; }
+    .khl-header .user-role {
+      color: rgba(255,255,255,0.5); font-size: 0.7rem;
+      display: block; line-height: 1;
+    }
+
+    /* ── SIDEBAR ────────────────────────────────────────────── */
+    .khl-sidebar {
+      position: fixed; top: var(--khl-header-h); left: 0; bottom: 0;
+      width: var(--khl-sidebar-w);
+      background: var(--khl-blue);
+      overflow-y: auto; z-index: 900;
+      padding: 1rem 0;
+      transition: transform 0.3s;
+    }
+    .khl-sidebar .sidebar-section {
+      padding: 0.5rem 1rem 0.25rem;
+      font-size: 0.6rem; font-weight: 700;
+      color: rgba(255,255,255,0.35);
+      text-transform: uppercase; letter-spacing: 1.5px;
+    }
+    .khl-sidebar .nav-item a {
+      display: flex; align-items: center; gap: 0.7rem;
+      padding: 0.55rem 1.2rem;
+      color: rgba(255,255,255,0.75);
+      text-decoration: none; font-size: 0.85rem; font-weight: 500;
+      border-left: 3px solid transparent;
+      transition: all 0.15s;
+    }
+    .khl-sidebar .nav-item a:hover {
+      background: rgba(255,255,255,0.08);
+      color: white;
+      border-left-color: rgba(255,255,255,0.3);
+    }
+    .khl-sidebar .nav-item a.active {
+      background: rgba(232,160,32,0.15);
+      color: var(--khl-accent);
+      border-left-color: var(--khl-accent);
+    }
+    .khl-sidebar .nav-item a i { font-size: 1rem; width: 20px; text-align: center; }
+    .khl-sidebar .sidebar-divider {
+      margin: 0.5rem 1.2rem;
+      border-color: rgba(255,255,255,0.1);
+    }
+
+    /* ── MAIN CONTENT ───────────────────────────────────────── */
+    .khl-main {
+      margin-left: var(--khl-sidebar-w);
+      margin-top: var(--khl-header-h);
+      min-height: calc(100vh - var(--khl-header-h));
+      padding: 1.5rem 2rem;
+    }
+
+    /* ── PAGE HEADER ────────────────────────────────────────── */
+    .page-header {
+      background: white;
+      border-radius: 10px;
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1.5rem;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+      display: flex; align-items: center; gap: 1rem;
+    }
+    .page-header .page-icon {
+      width: 44px; height: 44px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.3rem; color: white;
+    }
+    .page-header h1 { font-size: 1.3rem; font-weight: 700; margin: 0; }
+    .page-header .breadcrumb { margin: 0; font-size: 0.75rem; }
+
+    /* ── CARDS ──────────────────────────────────────────────── */
+    .khl-card {
+      background: white; border-radius: 10px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+      padding: 1.25rem;
+      margin-bottom: 1.25rem;
+    }
+    .khl-card .card-title {
+      font-size: 0.85rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.5px;
+      color: var(--khl-muted); margin-bottom: 1rem;
+      display: flex; align-items: center; gap: 0.5rem;
+    }
+
+    /* ── METRIC CARDS ───────────────────────────────────────── */
+    .metric-card {
+      background: white; border-radius: 10px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+      padding: 1.25rem 1.5rem;
+      border-left: 4px solid var(--khl-accent);
+    }
+    .metric-card .metric-label {
+      font-size: 0.7rem; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.5px;
+      color: var(--khl-muted);
+    }
+    .metric-card .metric-value {
+      font-size: 1.6rem; font-weight: 700; line-height: 1.2;
+      color: var(--khl-navy);
+    }
+    .metric-card .metric-delta {
+      font-size: 0.78rem; font-weight: 500;
+    }
+    .metric-card.green { border-left-color: var(--khl-green); }
+    .metric-card.red   { border-left-color: var(--khl-red); }
+    .metric-card.blue  { border-left-color: var(--khl-blue); }
+
+    /* ── TABLES ─────────────────────────────────────────────── */
+    .khl-table {
+      font-size: 0.82rem; width: 100%;
+    }
+    .khl-table th {
+      background: #f8f9fa;
+      font-size: 0.7rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.5px;
+      color: var(--khl-muted);
+      border-bottom: 2px solid var(--khl-border) !important;
+      padding: 0.6rem 0.75rem;
+    }
+    .khl-table td { padding: 0.55rem 0.75rem; vertical-align: middle; }
+    .khl-table tbody tr:hover { background: #f8f9fa; }
+    .khl-table .mono { font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; }
+
+    /* ── STATUS BADGES ──────────────────────────────────────── */
+    .badge-ok      { background:#d4edda; color:#155724; }
+    .badge-warn    { background:#fff3cd; color:#856404; }
+    .badge-error   { background:#f8d7da; color:#721c24; }
+    .badge-running { background:#cce5ff; color:#004085; }
+    .badge-role    {
+      font-size: 0.65rem; font-weight: 700; padding: 2px 8px;
+      border-radius: 3px; text-transform: uppercase; letter-spacing: 0.5px;
+    }
+
+    /* ── FLASH MESSAGES ─────────────────────────────────────── */
+    .flash-container { position: sticky; top: 0; z-index: 800; }
+
+    /* ── FORMS ──────────────────────────────────────────────── */
+    .form-label { font-size: 0.82rem; font-weight: 600; color: #495057; }
+    .form-hint  { font-size: 0.72rem; color: var(--khl-muted); }
+    .form-section-title {
+      font-size: 0.8rem; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.5px;
+      color: var(--khl-blue); border-bottom: 2px solid var(--khl-accent);
+      padding-bottom: 0.4rem; margin: 1.5rem 0 1rem;
+    }
+
+    /* ── WIZARD STEPS ───────────────────────────────────────── */
+    .wizard-steps {
+      display: flex; align-items: center;
+      margin-bottom: 2rem; padding: 1.25rem 1.5rem;
+      background: white; border-radius: 10px;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    }
+    .wizard-step {
+      display: flex; align-items: center;
+      flex: 1; position: relative;
+    }
+    .wizard-step:not(:last-child)::after {
+      content: '';
+      position: absolute; left: 36px; width: calc(100% - 36px);
+      height: 2px; background: var(--khl-border); top: 18px; z-index: 0;
+    }
+    .wizard-step.completed::after { background: var(--khl-green); }
+    .wizard-step.active::after    { background: var(--khl-border); }
+    .step-circle {
+      width: 36px; height: 36px; border-radius: 50%;
+      background: var(--khl-border); color: var(--khl-muted);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 0.85rem; z-index: 1;
+      flex-shrink: 0;
+    }
+    .wizard-step.active   .step-circle { background: var(--khl-blue); color: white; }
+    .wizard-step.completed .step-circle { background: var(--khl-green); color: white; }
+    .step-label { font-size: 0.7rem; font-weight: 600; color: var(--khl-muted); margin-left: 0.5rem; }
+    .wizard-step.active .step-label    { color: var(--khl-blue); }
+    .wizard-step.completed .step-label { color: var(--khl-green); }
+
+    /* ── STORYTELLING BLOCKS ────────────────────────────────── */
+    .story-block {
+      border-left: 4px solid var(--khl-accent);
+      background: #fffbf0; padding: 1rem 1.25rem;
+      border-radius: 0 8px 8px 0; margin-bottom: 1rem;
+    }
+    .story-block .story-title {
+      font-size: 0.8rem; font-weight: 700; color: #856404;
+      text-transform: uppercase; letter-spacing: 0.5px;
+    }
+    .story-block p { font-size: 0.85rem; margin-bottom: 0; color: #495057; }
+
+    /* ── LOG TERMINAL ───────────────────────────────────────── */
+    .log-terminal {
+      background: #0d1b2a; color: #a8d8a8;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.75rem; padding: 1rem;
+      border-radius: 8px; max-height: 350px;
+      overflow-y: auto; line-height: 1.6;
+    }
+    .log-terminal .log-info  { color: #a8d8a8; }
+    .log-terminal .log-warn  { color: #ffc107; }
+    .log-terminal .log-error { color: #f87171; }
+    .log-terminal .log-sql   { color: #60a5fa; }
+    .log-terminal .log-ts    { color: rgba(255,255,255,0.35); }
+
+    /* ── RESPONSIVE (mobile) ────────────────────────────────── */
+    @media (max-width: 768px) {
+      .khl-sidebar { transform: translateX(-100%); }
+      .khl-sidebar.open { transform: translateX(0); }
+      .khl-main { margin-left: 0; padding: 1rem; }
+    }
+
+    /* ── UTILITIES ──────────────────────────────────────────── */
+    .text-navy  { color: var(--khl-navy) !important; }
+    .text-accent{ color: var(--khl-accent) !important; }
+    .bg-navy    { background: var(--khl-navy) !important; }
+    .cursor-pointer { cursor: pointer; }
+    .border-accent { border-color: var(--khl-accent) !important; }
+    .fw-600 { font-weight: 600; }
+
+    /* ── TOOLTIP SYSTÈME KHL ────────────────────────────────── */
+    /* Activation via data-bs-toggle="tooltip" data-bs-title="..." */
+    /* Tooltip HTML riche : ajouter data-bs-html="true"           */
+    .tooltip-inner {
+      max-width: 300px;
+      text-align: left;
+      font-size: 0.78rem;
+      line-height: 1.5;
+      background: var(--khl-navy);
+      border-radius: 6px;
+      padding: 0.5rem 0.75rem;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+    }
+    .tooltip.bs-tooltip-auto[data-popper-placement^=top] .tooltip-arrow::before,
+    .tooltip.bs-tooltip-top .tooltip-arrow::before {
+      border-top-color: var(--khl-navy);
+    }
+    .tooltip.bs-tooltip-auto[data-popper-placement^=bottom] .tooltip-arrow::before,
+    .tooltip.bs-tooltip-bottom .tooltip-arrow::before {
+      border-bottom-color: var(--khl-navy);
+    }
+    .tooltip.bs-tooltip-auto[data-popper-placement^=left] .tooltip-arrow::before,
+    .tooltip.bs-tooltip-start .tooltip-arrow::before {
+      border-left-color: var(--khl-navy);
+    }
+    .tooltip.bs-tooltip-auto[data-popper-placement^=right] .tooltip-arrow::before,
+    .tooltip.bs-tooltip-end .tooltip-arrow::before {
+      border-right-color: var(--khl-navy);
+    }
+    /* Icône aide inline */
+    .khl-tip {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 16px; height: 16px; border-radius: 50%;
+      background: var(--khl-blue); color: white;
+      font-size: 10px; font-weight: 700;
+      cursor: help; margin-left: 4px;
+      vertical-align: middle; flex-shrink: 0;
+    }
+    .khl-tip:hover { background: var(--khl-accent); color: var(--khl-navy); }
+  </style>
+
+  {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+<!-- ══════════════════════════════════════════════════════
+     HEADER
+══════════════════════════════════════════════════════ -->
+<header class="khl-header">
+  <a href="{{ url_for('home') }}" class="logo">
+    <div class="logo-icon">KHL</div>
+    <div>
+      <div class="logo-text">KHL Bank</div>
+      <div class="logo-sub">CIB · Asset Management · Risk</div>
+    </div>
+  </a>
+
+  <div class="header-right">
+    <span class="env-badge">FORMATION</span>
+
+    {% if session.user_id %}
+    <div class="dropdown">
+      <a class="user-chip dropdown-toggle" data-bs-toggle="dropdown">
+        <div class="user-avatar">
+          {{ (session.username or 'U')[:2].upper() }}
+        </div>
+        <div>
+          <div class="user-name">{{ session.username }}</div>
+          <span class="user-role">
+            {% set role_info = roles.get(session.role, {}) %}
+            {{ role_info.get('label', session.role) }}
+          </span>
+        </div>
+      </a>
+      <ul class="dropdown-menu dropdown-menu-end mt-1" style="font-size:0.85rem;">
+        <li><a class="dropdown-item" href="{{ url_for('auth.profile') }}">
+          <i class="bi bi-person me-2"></i>Mon profil
+        </a></li>
+        <li><hr class="dropdown-divider"></li>
+        <li><a class="dropdown-item text-danger" href="{{ url_for('auth.logout') }}">
+          <i class="bi bi-box-arrow-right me-2"></i>Déconnexion
+        </a></li>
+      </ul>
+    </div>
+    {% endif %}
+  </div>
+</header>
+
+<!-- ══════════════════════════════════════════════════════
+     SIDEBAR (visible uniquement si connecté)
+══════════════════════════════════════════════════════ -->
+{% if session.user_id %}
+{% set _role_info = roles.get(session.role, {}) %}
+{% set _office    = _role_info.get('office', '') %}
+{% set _off_colors = {'Front Office':'#0d6e3b','Middle Office':'#8b1a1a','Back Office':'#1a3a5c','Système':'#2c2c2c'} %}
+{% set _off_badges = {'Front Office':'FRONT','Middle Office':'MIDDLE','Back Office':'BACK','Système':'ADMIN'} %}
+{% set _off_color  = _off_colors.get(_office, '#1a3a5c') %}
+{% set _off_badge  = _off_badges.get(_office, '') %}
+
+<nav class="khl-sidebar">
+
+  <!-- Identité utilisateur + office badge -->
+  <div style="padding:0.8rem 1rem 0.5rem; border-bottom:1px solid rgba(255,255,255,0.1);">
+    <div style="font-size:0.6rem;font-weight:700;letter-spacing:1.2px;
+                text-transform:uppercase;color:rgba(255,255,255,0.4);margin-bottom:0.2rem;">
+      Connecté en tant que
+    </div>
+    <div style="font-size:0.82rem;font-weight:600;color:white;line-height:1.3;">
+      {{ session.get('username','') }}
+    </div>
+    <div style="margin-top:0.3rem;">
+      <span style="background:{{ _off_color }};color:white;padding:2px 8px;
+                   border-radius:4px;font-size:0.6rem;font-weight:700;letter-spacing:0.8px;
+                   text-transform:uppercase;">
+        {{ _off_badge }}
+      </span>
+      <span style="font-size:0.7rem;color:rgba(255,255,255,0.55);margin-left:5px;">
+        {{ _role_info.get('label', session.role) }}
+      </span>
+    </div>
+  </div>
+
+  <div class="sidebar-section mt-2">Navigation</div>
+  <ul class="nav flex-column">
+    <li class="nav-item">
+      <a href="{{ url_for('home') }}"
+         class="{{ 'active' if request.endpoint == 'home' else '' }}">
+        <i class="bi bi-house"></i> Tableau de bord
+      </a>
+    </li>
+  </ul>
+
+  {% set user_modules = roles.get(session.role, {}).get('modules', []) %}
+
+  {# ── FRONT OFFICE ───────────────────────────────────── #}
+  {% if 'portfolio' in user_modules or 'trading' in user_modules or 'quant' in user_modules %}
+  <div class="sidebar-section mt-2" style="display:flex;align-items:center;justify-content:space-between;">
+    <span>Front Office</span>
+    <span style="background:#0d6e3b;color:white;padding:1px 6px;border-radius:3px;
+                 font-size:0.55rem;font-weight:700;letter-spacing:0.8px;">FRONT</span>
+  </div>
+  <ul class="nav flex-column">
+    {% if 'portfolio' in user_modules %}
+    <li class="nav-item">
+      <a href="{{ url_for('portfolio.index') }}"
+         class="{{ 'active' if 'portfolio' in (request.endpoint or '') else '' }}">
+        <i class="bi bi-pie-chart"></i> Création Portefeuille
+      </a>
+    </li>
+    {% endif %}
+    {% if 'trading' in user_modules %}
+    <li class="nav-item">
+      <a href="{{ url_for('trading.index') }}"
+         class="{{ 'active' if request.endpoint == 'trading.index' else '' }}">
+        <i class="bi bi-graph-up-arrow"></i> Trading Desk
+      </a>
+    </li>
+    {% endif %}
+    {% if 'quant' in user_modules %}
+    <li class="nav-item">
+      <a href="{{ url_for('quant.index') }}"
+         class="{{ 'active' if 'quant' in (request.endpoint or '') else '' }}">
+        <i class="bi bi-cpu"></i> Quant / Data Lab
+      </a>
+    </li>
+    {% endif %}
+  </ul>
+  {% endif %}
+
+  {# ── MIDDLE OFFICE ──────────────────────────────────── #}
+  {% if 'risk' in user_modules or 'performance' in user_modules or 'alm' in user_modules %}
+  <div class="sidebar-section mt-2" style="display:flex;align-items:center;justify-content:space-between;">
+    <span>Middle Office</span>
+    <span style="background:#8b1a1a;color:white;padding:1px 6px;border-radius:3px;
+                 font-size:0.55rem;font-weight:700;letter-spacing:0.8px;">MIDDLE</span>
+  </div>
+  <ul class="nav flex-column">
+    {% if 'risk' in user_modules %}
+    <li class="nav-item">
+      <a href="{{ url_for('risk.index') }}"
+         class="{{ 'active' if 'risk' in (request.endpoint or '') else '' }}">
+        <i class="bi bi-shield-exclamation"></i> Risk Management
+      </a>
+    </li>
+    {% endif %}
+    {% if 'performance' in user_modules %}
+    <li class="nav-item">
+      <a href="{{ url_for('performance.index') }}"
+         class="{{ 'active' if request.endpoint == 'performance.index' else '' }}">
+        <i class="bi bi-trophy"></i> Performance
+      </a>
+    </li>
+    {% endif %}
+    {% if 'alm' in user_modules %}
+    <li class="nav-item">
+      <a href="{{ url_for('alm.index') }}"
+         class="{{ 'active' if 'alm' in (request.endpoint or '') else '' }}">
+        <i class="bi bi-bank"></i> ALM
+      </a>
+    </li>
+    {% endif %}
+  </ul>
+  {% endif %}
+
+  {# ── BACK OFFICE ────────────────────────────────────── #}
+  {% if 'accounting' in user_modules or 'monitoring' in user_modules or 'powerbi' in user_modules %}
+  <div class="sidebar-section mt-2" style="display:flex;align-items:center;justify-content:space-between;">
+    <span>Back Office</span>
+    <span style="background:#1a3a5c;color:white;padding:1px 6px;border-radius:3px;
+                 font-size:0.55rem;font-weight:700;letter-spacing:0.8px;">BACK</span>
+  </div>
+  <ul class="nav flex-column">
+    {% if 'accounting' in user_modules %}
+    <li class="nav-item">
+      <a href="{{ url_for('accounting.index') }}"
+         class="{{ 'active' if 'accounting' in (request.endpoint or '') else '' }}">
+        <i class="bi bi-journal-text"></i> Comptabilité
+      </a>
+    </li>
+    {% endif %}
+    {% if 'monitoring' in user_modules or session.role == 'ADMIN' %}
+    <li class="nav-item">
+      <a href="{{ url_for('monitoring.index') }}"
+         class="{{ 'active' if 'monitoring' in (request.endpoint or '') else '' }}">
+        <i class="bi bi-activity"></i> Monitoring Technique
+      </a>
+    </li>
+    {% endif %}
+    {% if 'powerbi' in user_modules %}
+    <li class="nav-item">
+      <a href="{{ url_for('performance.powerbi') }}"
+         class="{{ 'active' if 'powerbi' in (request.endpoint or '') else '' }}">
+        <i class="bi bi-bar-chart-line"></i> Power BI Reports
+      </a>
+    </li>
+    {% endif %}
+    {% if session.role == 'ADMIN' %}
+    <li class="nav-item">
+      <a href="{{ url_for('auth.admin_users') }}"
+         class="{{ 'active' if 'admin_users' in (request.endpoint or '') else '' }}">
+        <i class="bi bi-people"></i> Gestion Utilisateurs
+      </a>
+    </li>
+    {% endif %}
+  </ul>
+  {% endif %}
+
+  <hr class="sidebar-divider">
+  <div class="sidebar-section">Aide</div>
+  <ul class="nav flex-column">
+    <li class="nav-item">
+      <a href="{{ url_for('docs.index') }}"
+         class="{{ 'active' if 'docs' in (request.endpoint or '') else '' }}">
+        <i class="bi bi-book"></i> Documentation
+      </a>
+    </li>
+  </ul>
+
+</nav>
+{% endif %}
+
+<!-- ══════════════════════════════════════════════════════
+     MAIN CONTENT
+══════════════════════════════════════════════════════ -->
+<main class="khl-main {% if not session.user_id %}ms-0{% endif %}">
+
+  <!-- Flash messages -->
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+    <div class="flash-container mb-3">
+      {% for cat, msg in messages %}
+      <div class="alert alert-{{ 'success' if cat == 'success' else ('warning' if cat == 'warning' else ('danger' if cat == 'danger' else 'info')) }} alert-dismissible fade show mb-1" role="alert">
+        <i class="bi bi-{{ 'check-circle' if cat == 'success' else ('exclamation-triangle' if cat == 'warning' else ('x-circle' if cat == 'danger' else 'info-circle')) }} me-2"></i>
+        {{ msg }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+  {% endwith %}
+
+  {% block content %}{% endblock %}
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+<script>
+// ── Système Tooltip KHL — initialisation globale Bootstrap 5 ──
+// Usage dans les templates :
+//   <span data-bs-toggle="tooltip" data-bs-title="Votre explication">element</span>
+//   <span data-bs-toggle="tooltip" data-bs-html="true" data-bs-title="<b>Titre</b><br>Détail">
+//   Icône aide : <span class="khl-tip" data-bs-toggle="tooltip" data-bs-title="...">?</span>
+document.addEventListener('DOMContentLoaded', function () {
+  document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(function (el) {
+    new bootstrap.Tooltip(el, {
+      html: el.dataset.bsHtml === 'true',
+      trigger: 'hover focus',
+      delay: { show: 180, hide: 80 },
+      placement: el.dataset.bsPlacement || 'top',
+    });
+  });
+});
+
+// Auto-refresh optionnel pour monitoring
+function autoRefresh(seconds) {
+  setTimeout(() => location.reload(), seconds * 1000);
+}
+</script>
+
+{% block extra_js %}{% endblock %}
+</body>
+</html>

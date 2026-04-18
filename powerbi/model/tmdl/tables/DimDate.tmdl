@@ -1,0 +1,73 @@
+/// Date dimension — grain: one row per calendar day
+table DimDate
+	lineageTag: c7e5cf33-0637-4dd7-8204-b52312d11a6d
+	dataCategory: Time
+
+	column DateKey
+		dataType: int64
+		isHidden
+		lineageTag: 7aa861bb-f102-49be-8859-30c365ef5338
+		summarizeBy: none
+		sourceColumn: DateKey
+
+	column FullDate
+		dataType: dateTime
+		isUnique
+		formatString: yyyy-MM-dd
+		lineageTag: 5d6121a8-37e2-4697-b0e9-583e1a12d7da
+		dataCategory: Date
+		summarizeBy: none
+		sourceColumn: FullDate
+
+	column CalendarYear
+		dataType: int64
+		lineageTag: 10c2d97e-7e9c-46f0-b2ce-ffacc71d1177
+		summarizeBy: none
+		sourceColumn: CalendarYear
+
+	column CalendarMonth
+		dataType: int64
+		lineageTag: 8f00e9a1-1d26-4094-abf6-a441c2484547
+		summarizeBy: none
+		sourceColumn: CalendarMonth
+
+	column CalendarDay
+		dataType: int64
+		lineageTag: a225d831-134f-4136-bf20-b7bbd58cf8c7
+		summarizeBy: none
+		sourceColumn: CalendarDay
+
+	column MonthName
+		dataType: string
+		lineageTag: f9293d32-a339-445e-a03a-e5e8eda35219
+		summarizeBy: none
+		sourceColumn: MonthName
+		sortByColumn: CalendarMonth
+
+	column QuarterNumber
+		dataType: int64
+		lineageTag: b5db163f-c5c8-42a6-ab47-152476b22e07
+		summarizeBy: none
+		sourceColumn: QuarterNumber
+
+	column WeekOfYear
+		dataType: int64
+		lineageTag: 9525aeb3-b0a2-4dd0-bda6-e5a915987ba0
+		summarizeBy: none
+		sourceColumn: WeekOfYear
+
+	column IsMonthEnd
+		dataType: boolean
+		lineageTag: ba032bf2-37e1-423b-8ef8-b9752dd37dd7
+		summarizeBy: none
+		sourceColumn: IsMonthEnd
+
+	partition DimDate_Import = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Database("PERSO-AJE-DELL\BFASERVER01", "SmartAssetAdvicedb",
+				                 [Query="SELECT * FROM [dbo].[DimDate]"]
+				             )
+				in  Source
+

@@ -1,0 +1,145 @@
+{% extends "base.html" %}
+{% block title %}Wizard — Étape 3 : Stratégie{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="page-icon" style="background:#1a3a5c;"><i class="bi bi-compass"></i></div>
+  <div><h1>Stratégie de Gestion — Étape 3/6</h1></div>
+</div>
+<div class="wizard-steps">
+  {% for i in range(1, 7) %}
+  <div class="wizard-step {{ 'active' if i == step else ('completed' if i < step else '') }}">
+    <div class="step-circle">{% if i < step %}<i class="bi bi-check"></i>{% else %}{{ i }}{% endif %}</div>
+    <div class="step-label">{{ ['Identité','Univers','Stratégie','Contraintes','Exécution','Résumé'][i-1] }}</div>
+  </div>
+  {% endfor %}
+</div>
+<div class="story-block mb-4">
+  <div class="story-title"><i class="bi bi-lightbulb me-2"></i>Étape 3 — Style et stratégie de gestion</div>
+  <p>
+    Le style de gestion définit <em>comment</em> vous prenez vos décisions d'investissement.
+    En gestion <strong>active</strong>, le gérant cherche à battre le marché (alpha).
+    En gestion <strong>passive</strong>, on réplique un indice à moindre coût.
+    Les stratégies quantitatives utilisent des modèles algorithmiques (momentum, mean-reversion, facteurs).
+  </p>
+</div>
+<form method="POST">
+  <div class="khl-card">
+    <div class="form-section-title">
+      <i class="bi bi-diagram-3 me-2"></i>Style de gestion
+      <span class="khl-tip" data-bs-toggle="tooltip" data-bs-html="true"
+            data-bs-title="<b>Style = comment vous prenez les décisions</b><br>
+              <b>Active</b> : le gérant choisit les titres (stock picking)<br>
+              <b>Passive</b> : on réplique un indice, moins de frais<br>
+              <b>Quant</b> : algorithme décide automatiquement<br>
+              <b>Alternative</b> : stratégies non corrélées aux marchés (hedge fund)">?</span>
+    </div>
+    <div class="row g-3 mb-3">
+      {% for style, label, desc in [
+        ('ACTIVE','Gestion Active','Sélection discrétionnaire de titres. Objectif : surperformer le benchmark.'),
+        ('PASSIVE','Gestion Passive (ETF)','Réplication d\'un indice. Frais réduits, tracking error faible.'),
+        ('QUANT','Gestion Quantitative','Modèle algorithmique : momentum, facteurs, machine learning.'),
+        ('ALT','Alternative / Absolute Return','Long/short, arbitrage, stratégies décorrélées des marchés.'),
+      ] %}
+      <div class="col-md-6">
+        <div class="p-3 border rounded cursor-pointer strat-card
+                    {{ 'border-primary bg-light' if draft.get('management_style') == style else '' }}"
+             onclick="document.getElementById('mgmt_style').value='{{ style }}'; highlightCard(this, '.strat-card')">
+          <strong style="font-size:0.88rem;">{{ label }}</strong>
+          <p style="font-size:0.75rem;color:#6c757d;margin:0.3rem 0 0;">{{ desc }}</p>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    <input type="hidden" name="management_style" id="mgmt_style" value="{{ draft.get('management_style','ACTIVE') }}">
+
+    <div class="form-section-title">
+      <i class="bi bi-arrows-angle-expand me-2"></i>Stratégie d'allocation
+      <span class="khl-tip" data-bs-toggle="tooltip" data-bs-html="true"
+            data-bs-title="<b>Règle de décision sur les poids des actifs</b><br>
+              <b>Rotation</b> : tourne selon le cycle économique<br>
+              <b>Momentum</b> : achète ce qui monte, vend ce qui baisse<br>
+              <b>Value</b> : cherche les titres sous-évalués<br>
+              <b>Equal Weight</b> : même poids pour tout le monde<br>
+              <b>Min Variance</b> : minimise la volatilité globale<br>
+              <b>Risk Parity</b> : égalise la contribution au risque">?</span>
+    </div>
+    <div class="row g-3 mb-3">
+      {% for strat, label, desc in [
+        ('ROTATION','Rotation sectorielle','Sous-pondère/surpondère les secteurs selon le cycle économique.'),
+        ('MOMENTUM','Momentum','Achète les titres récemment performants, vend les retardataires.'),
+        ('VALUE','Value Investing','Achète des titres sous-évalués par le marché (P/E, P/B bas).'),
+        ('GROWTH','Growth','Investit dans des sociétés à forte croissance des bénéfices.'),
+        ('EQUAL_WEIGHT','Equal Weight','Poids identiques pour tous les instruments. Simple, diversifié.'),
+        ('MIN_VAR','Minimum Variance','Optimisation portefeuille : minimise la volatilité globale.'),
+        ('RISK_PARITY','Risk Parity','Égalise la contribution au risque de chaque actif.'),
+        ('BENCHMARK_TRACK','Benchmark Tracking','Réplique le benchmark avec tolérance de tracking error.'),
+      ] %}
+      <div class="col-md-6 col-lg-4">
+        <div class="p-2 border rounded cursor-pointer strat2-card
+                    {{ 'border-primary bg-light' if draft.get('strategy') == strat else '' }}"
+             onclick="document.getElementById('strategy').value='{{ strat }}'; highlightCard(this, '.strat2-card')">
+          <strong style="font-size:0.82rem;">{{ label }}</strong>
+          <p style="font-size:0.7rem;color:#6c757d;margin:0.2rem 0 0;">{{ desc }}</p>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    <input type="hidden" name="strategy" id="strategy" value="{{ draft.get('strategy','ROTATION') }}">
+
+    <div class="form-section-title"><i class="bi bi-bullseye me-2"></i>Benchmark de référence</div>
+    <!-- Tooltips inline sur les champs benchmark -->
+    <div class="row g-3">
+      <div class="col-md-6">
+        <label class="form-label">
+          Indice de référence
+          <span class="khl-tip" data-bs-toggle="tooltip" data-bs-html="true"
+                data-bs-title="<b>Benchmark = mètre-étalon de la performance</b><br>Le portefeuille sera comparé à cet indice pour mesurer l'<em>alpha</em> (surperformance).<br>Ex : battre le CAC 40 de 2% par an est l'objectif d'un gérant actions France.">?</span>
+        </label>
+        <select name="benchmark" class="form-select">
+          {% for b in ['^SPX — S&P 500','^DJI — Dow Jones','^NDQ — NASDAQ 100','^CAC — CAC 40','^DAX — DAX 40','^UKX — FTSE 100','^NKX — Nikkei 225','Aucun benchmark'] %}
+          <option value="{{ b }}" {{ 'selected' if draft.get('benchmark') == b else '' }}>{{ b }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">
+          Tracking error max (%)
+          <span class="khl-tip" data-bs-toggle="tooltip" data-bs-html="true"
+                data-bs-title="<b>Tracking Error (TE)</b><br>Écart-type des rendements différentiels portefeuille vs benchmark.<br>TE = 0% → réplication parfaite.<br>TE = 5% → le gérant s'éloigne significativement du benchmark.<br>Les UCITS exigent souvent TE &lt; 10%.">?</span>
+        </label>
+        <input type="number" name="max_te" class="form-control"
+               value="{{ draft.get('max_te','5') }}" min="0" max="30" step="0.5">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label">
+          Fréquence de rééquilibrage
+          <span class="khl-tip" data-bs-toggle="tooltip" data-bs-html="true"
+                data-bs-title="<b>Rebalancing frequency</b><br>Fréquence à laquelle les poids sont remis à leur cible.<br><b>Quotidien</b> : coûteux en frais, précis.<br><b>Mensuel</b> : bon compromis.<br><b>Sur signal</b> : déclenché par un événement (seuil de dérive, signal quant).">?</span>
+        </label>
+        <select name="rebalance_freq" class="form-select">
+          {% for f in ['Quotidien','Hebdomadaire','Mensuel','Trimestriel','Annuel','Sur signal'] %}
+          <option value="{{ f }}" {{ 'selected' if draft.get('rebalance_freq') == f else '' }}>{{ f }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <div class="d-flex justify-content-between">
+    <a href="{{ url_for('portfolio.wizard_step', step=2) }}" class="btn btn-outline-secondary">
+      <i class="bi bi-arrow-left me-2"></i>Précédent
+    </a>
+    <button type="submit" class="btn btn-primary" style="background:#1a3a5c;border-color:#1a3a5c;">
+      Suivant — Contraintes <i class="bi bi-arrow-right ms-2"></i>
+    </button>
+  </div>
+</form>
+{% endblock %}
+{% block extra_js %}
+<script>
+function highlightCard(el, selector) {
+  document.querySelectorAll(selector).forEach(c => c.classList.remove('border-primary','bg-light'));
+  el.classList.add('border-primary','bg-light');
+}
+</script>
+{% endblock %}

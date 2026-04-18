@@ -1,0 +1,64 @@
+/// Portfolio master
+table DimPortfolio
+	lineageTag: c69c10cb-a69f-4fd8-a35a-03b36539fa27
+
+	column PortfolioKey
+		dataType: int64
+		isHidden
+		lineageTag: 3517a387-d550-4285-bd85-e1f696fd15e8
+		summarizeBy: none
+		sourceColumn: PortfolioKey
+
+	column PortfolioCode
+		dataType: string
+		lineageTag: f3f525b7-f3df-4d73-8345-f5d7719c1b04
+		summarizeBy: none
+		sourceColumn: PortfolioCode
+
+	column PortfolioName
+		dataType: string
+		lineageTag: c36deded-d49c-467c-9e8b-e696f5f83cd6
+		summarizeBy: none
+		sourceColumn: PortfolioName
+
+	column BaseCurrency
+		dataType: string
+		lineageTag: 012dd83f-9534-4fed-9c3f-5ed1eb6921f2
+		summarizeBy: none
+		sourceColumn: BaseCurrency
+
+	column RiskProfile
+		dataType: string
+		lineageTag: 09f9fc67-d8de-460d-b1c2-668c204d942b
+		summarizeBy: none
+		sourceColumn: RiskProfile
+
+	column InceptionDate
+		dataType: dateTime
+		formatString: yyyy-MM-dd
+		lineageTag: 14b75903-a7ec-4430-bb6f-091d86e43000
+		summarizeBy: none
+		sourceColumn: InceptionDate
+
+	column IsActive
+		dataType: boolean
+		lineageTag: 347d1309-7896-40a0-a60b-05fdc611ceac
+		summarizeBy: none
+		sourceColumn: IsActive
+
+	column CreatedAt
+		dataType: dateTime
+		isHidden
+		lineageTag: 966cbed2-82c7-48f2-96ad-ec6d8ae75f1b
+		summarizeBy: none
+		sourceColumn: CreatedAt
+
+	partition DimPortfolio_Import = m
+		mode: import
+		source =
+				let
+				    Source = Sql.Database("PERSO-AJE-DELL\BFASERVER01", "SmartAssetAdvicedb",
+				                 [Query="SELECT * FROM [dbo].[DimPortfolio]"]
+				             )
+				in  Source
+

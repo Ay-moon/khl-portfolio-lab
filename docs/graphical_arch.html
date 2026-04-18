@@ -1,0 +1,1227 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KHL Bank CIB — Architecture Graphique</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#0a1220;color:#e2e8f0;line-height:1.6;font-size:14px}
+a{color:#e8a020;text-decoration:none}
+code{font-family:'Cascadia Code','Consolas',monospace;font-size:.82em;background:#0d1e36;padding:1px 5px;border-radius:3px;color:#4ade80}
+
+/* ── LAYOUT ─────────────────────────────────────────── */
+.layout{display:flex;min-height:100vh}
+.sidebar{width:234px;min-width:234px;background:#040d1a;position:sticky;top:0;height:100vh;overflow-y:auto;flex-shrink:0;border-right:1px solid #1a3050}
+.main{flex:1;overflow-x:hidden}
+
+/* ── SIDEBAR ────────────────────────────────────────── */
+.sidebar-logo{padding:20px 16px 12px;border-bottom:1px solid #1a3050}
+.sidebar-logo .khl{font-size:1.25rem;font-weight:800;color:#e8a020;letter-spacing:1px}
+.sidebar-logo .sub{font-size:.58rem;color:#3a5070;text-transform:uppercase;letter-spacing:2px;margin-top:3px}
+.sidebar-sec{padding:12px 16px 3px;font-size:.56rem;font-weight:700;color:#3a5070;text-transform:uppercase;letter-spacing:2px}
+.sidebar a{display:block;padding:6px 16px;color:#7a9ab8;font-size:.75rem;border-left:3px solid transparent;transition:all .15s}
+.sidebar a:hover,.sidebar a.active{color:#e8a020;border-left-color:#e8a020;background:rgba(232,160,32,.05);text-decoration:none}
+
+/* ── HERO ───────────────────────────────────────────── */
+.hero{background:linear-gradient(135deg,#040d1a 0%,#0a1a2e 60%,#122040 100%);padding:52px 56px 42px;border-bottom:2px solid #e8a020;position:relative;overflow:hidden}
+.hero::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at 75% 50%,rgba(232,160,32,.06) 0%,transparent 55%);pointer-events:none}
+.hero h1{font-size:2rem;font-weight:800;color:#fff;line-height:1.2;position:relative}
+.hero h1 span{color:#e8a020}
+.hero p{font-size:.88rem;color:#7a9ab8;max-width:660px;margin-top:.7rem;position:relative}
+.hero .tags{display:flex;gap:8px;flex-wrap:wrap;margin-top:1.1rem;position:relative}
+.tag{font-size:.62rem;font-weight:700;padding:3px 10px;border-radius:3px;text-transform:uppercase;letter-spacing:.5px}
+
+/* ── CONTENT ────────────────────────────────────────── */
+.content{padding:44px 56px;max-width:1280px}
+.section{margin-bottom:76px}
+.section-title{font-size:1.15rem;font-weight:800;color:#fff;margin-bottom:.3rem;display:flex;align-items:center;gap:10px}
+.section-title::before{content:'';width:4px;height:20px;background:#e8a020;border-radius:2px;flex-shrink:0}
+.section-desc{color:#4a6888;font-size:.8rem;margin-bottom:1.5rem;padding-left:14px}
+.diagram-bg{background:#060e1c;border:1px solid #152030;border-radius:14px;padding:28px;position:relative}
+.divider{height:1px;background:linear-gradient(90deg,transparent,#152030 30%,#152030 70%,transparent);margin:64px 0}
+
+/* ── GEAR SPIN ──────────────────────────────────────── */
+@keyframes gear-cw{to{transform:rotate(360deg)}}
+@keyframes gear-ccw{to{transform:rotate(-360deg)}}
+.gear-cw{animation:gear-cw 5s linear infinite;transform-origin:50% 50%;transform-box:fill-box}
+.gear-ccw{animation:gear-ccw 4s linear infinite;transform-origin:50% 50%;transform-box:fill-box}
+
+/* ── PIPE FLOW ──────────────────────────────────────── */
+@keyframes flow-packet{0%{offset-distance:0%;opacity:0}10%{opacity:1}90%{opacity:1}100%{offset-distance:100%;opacity:0}}
+.pkt{animation:flow-packet var(--dur,1.8s) ease-in-out infinite;animation-delay:var(--d,0s)}
+
+/* ── NODE PULSE ─────────────────────────────────────── */
+@keyframes node-pulse{0%,100%{box-shadow:0 0 0 0 var(--pc,rgba(74,222,128,.4))}50%{box-shadow:0 0 0 10px transparent}}
+
+/* ── FADE UP ─────────────────────────────────────────── */
+.fade-up{opacity:0;transform:translateY(22px);transition:opacity .6s ease,transform .6s ease}
+.fade-up.vis{opacity:1;transform:translateY(0)}
+
+/* ── KPI ROW ─────────────────────────────────────────── */
+.kpi-row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:26px}
+.kpi{background:#0a1628;border:1px solid #1a3050;border-radius:10px;padding:12px 18px;display:flex;align-items:center;gap:12px;flex:1;min-width:150px;transition:all .3s}
+.kpi:hover{border-color:#e8a020;transform:translateY(-2px)}
+.kpi-n{font-size:1.7rem;font-weight:800;color:#e8a020;font-variant-numeric:tabular-nums;line-height:1}
+.kpi-l{font-size:.63rem;color:#4a6888;line-height:1.4;margin-top:2px}
+
+/* ── ARCHITECTURE FLOW (S1) ─────────────────────────── */
+.arch-grid{display:grid;grid-template-columns:200px 80px 1fr 80px 200px;align-items:center;gap:0;min-height:420px}
+.src-col,.out-col{display:flex;flex-direction:column;gap:14px}
+.node-card{background:#0a1628;border:1px solid #1a3050;border-radius:9px;padding:11px 13px;display:flex;align-items:center;gap:10px;transition:all .3s;cursor:default}
+.node-card:hover{border-color:var(--nc,#4ade80);transform:translateX(var(--tx,4px));box-shadow:0 0 18px rgba(74,222,128,.1)}
+.node-lbl{font-size:.78rem;font-weight:700;color:var(--nc,#e2e8f0)}
+.node-sub{font-size:.62rem;color:#4a6888}
+.center-col{display:flex;flex-direction:column;align-items:center;gap:14px;padding:0 16px}
+
+/* Platform central box */
+.platform{background:linear-gradient(160deg,#0c1e3a 0%,#132848 100%);border:2px solid #e8a020;border-radius:14px;padding:24px 20px;text-align:center;width:100%;position:relative;box-shadow:0 0 60px rgba(232,160,32,.08)}
+.platform::before{content:'';position:absolute;inset:-2px;border-radius:14px;background:linear-gradient(135deg,rgba(232,160,32,.15),transparent 50%);pointer-events:none}
+.platform .p-name{font-size:.95rem;font-weight:800;color:#e8a020;margin:6px 0 2px}
+.platform .p-sub{font-size:.62rem;color:#4a6888;text-transform:uppercase;letter-spacing:1px;margin-bottom:14px}
+.chip-cloud{display:flex;flex-wrap:wrap;gap:3px;justify-content:center}
+.chip{font-size:.56rem;padding:2px 6px;border-radius:3px;font-family:'Cascadia Code','Consolas',monospace}
+.c-gold{background:#2a1a04;color:#e8a020}
+.c-green{background:#041a0a;color:#4ade80}
+.c-blue{background:#04101a;color:#60a5fa}
+.c-purple{background:#100420;color:#a78bfa}
+
+/* CQ box */
+.cq-box{background:#0a0820;border:1px solid #6030a0;border-radius:8px;padding:13px;text-align:center;width:100%}
+
+/* Pipe connectors (SVG inline arrows) */
+.pipe-col{display:flex;flex-direction:column;justify-content:center;align-items:center;gap:46px}
+
+/* ── MODULE MAP (S2) ────────────────────────────────── */
+.office-row{margin-bottom:18px}
+.off-bar{display:flex;align-items:center;gap:8px;padding:7px 12px;border-radius:6px;margin-bottom:10px}
+.off-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.off-name{font-size:.68rem;font-weight:700;text-transform:uppercase;letter-spacing:2px}
+.mod-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:10px}
+.mod-card{background:#0a1628;border:1px solid #152030;border-radius:10px;padding:16px;position:relative;overflow:hidden;cursor:default;transition:all .3s}
+.mod-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--ac,#4ade80);border-radius:10px 10px 0 0}
+.mod-card:hover{transform:translateY(-4px);box-shadow:0 10px 32px rgba(0,0,0,.4);border-color:var(--ac,#4ade80)}
+.mod-head{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.mod-name{font-size:.85rem;font-weight:700;color:#fff}
+.mod-route{font-family:monospace;font-size:.6rem;color:#4a6888;margin-bottom:6px}
+.mod-list{list-style:none;padding:0}
+.mod-list li{font-size:.68rem;color:#7a9ab8;padding:2px 0 2px 10px;position:relative}
+.mod-list li::before{content:'▸';position:absolute;left:0;color:var(--ac,#4ade80);font-size:.66rem}
+.mod-badge{display:inline-block;font-size:.57rem;padding:2px 7px;border-radius:3px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-top:8px;background:var(--bg,#1a4030);color:var(--ac,#4ade80)}
+
+/* ── LIFECYCLE (S3) ──────────────────────────────────── */
+.lc-phase-bar{display:grid;grid-template-columns:2fr 3fr 5fr;gap:4px;margin-bottom:9px}
+.lc-ph{text-align:center;padding:6px;border-radius:4px;font-size:.58rem;font-weight:700;text-transform:uppercase;letter-spacing:1px}
+.lc-grid{display:grid;grid-template-columns:repeat(10,1fr);gap:5px;margin-bottom:14px}
+.lc-step{background:#080f1c;border:1px solid #152030;border-radius:8px;padding:10px 5px;text-align:center;opacity:.35;transition:all .45s}
+.lc-step.lit{opacity:1;border-color:var(--sc,#4ade80);box-shadow:0 0 16px rgba(74,222,128,.2)}
+.lc-step.lit .lc-svg-ico{animation:bounce-ico .35s ease}
+@keyframes bounce-ico{50%{transform:scale(1.25)}}
+.lc-step-name{font-weight:700;color:#fff;font-size:.58rem;line-height:1.3;margin-bottom:2px}
+.lc-actor{color:#4a6888;font-size:.55rem}
+.lc-ref{display:inline-block;font-size:.5rem;padding:1px 4px;border-radius:2px;background:#0d1e36;color:#60a5fa;font-family:monospace;margin-top:3px}
+.lc-progress{height:3px;background:#152030;border-radius:3px;margin-top:4px;overflow:hidden}
+.lc-bar{height:100%;background:linear-gradient(90deg,#4ade80,#fbbf24,#93c5fd);width:0;transition:width .25s}
+.btn-play{background:#0a1628;border:1px solid #2a4060;color:#60a5fa;padding:6px 16px;border-radius:6px;font-size:.74rem;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:all .2s;margin-bottom:16px;font-family:inherit}
+.btn-play:hover{background:#152030;border-color:#3a6080;color:#93c5fd}
+
+/* ── PIPELINE (S4) ──────────────────────────────────── */
+.pl-flow{display:grid;grid-template-columns:1fr 56px 1fr 56px 1fr 56px 1fr;gap:0;align-items:start}
+.pl-layer{border-radius:10px;overflow:hidden}
+.pl-hdr{padding:9px 12px;text-align:center;border-bottom:1px solid rgba(255,255,255,.06)}
+.pl-hdr-t{font-size:.6rem;font-weight:700;text-transform:uppercase;letter-spacing:2px}
+.pl-body{padding:12px;display:flex;flex-direction:column;gap:7px}
+.pl-item{background:rgba(0,0,0,.3);border-radius:6px;padding:8px 10px;font-size:.66rem}
+.pl-chips{display:flex;flex-wrap:wrap;gap:3px;margin-top:3px}
+.pl-conn{display:flex;flex-direction:column;align-items:center;justify-content:start;padding-top:44px;gap:2px}
+.pl-conn-lbl{font-size:.5rem;color:#4a6888;font-weight:600;text-align:center;line-height:1.3;max-width:50px}
+
+/* ── ROLE TABLE (S5) ─────────────────────────────────── */
+.role-tbl{width:100%;border-collapse:collapse;font-size:.68rem}
+.role-tbl th{padding:8px 10px;background:#040d1a;color:#4a6888;font-weight:700;text-transform:uppercase;font-size:.58rem;letter-spacing:.5px;border-bottom:1px solid #152030;text-align:center;white-space:nowrap}
+.role-tbl th.mc{text-align:left;min-width:130px}
+.role-tbl td{padding:6px 10px;border-bottom:1px solid #060e1c;text-align:center;vertical-align:middle}
+.role-tbl tr:hover td{background:rgba(232,160,32,.025)}
+.role-tbl td.mn{text-align:left;font-weight:600;color:#c2d0e0}
+.r-front td{background:rgba(74,222,128,.02)}
+.r-mid td{background:rgba(252,165,165,.02)}
+.r-back td{background:rgba(147,197,253,.02)}
+
+/* ── CHARTS (S6) ─────────────────────────────────────── */
+.charts-row{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.chart-box{background:#080f1c;border:1px solid #152030;border-radius:10px;padding:18px}
+.chart-title{font-size:.76rem;font-weight:700;color:#7a9ab8;margin-bottom:12px;display:flex;align-items:center;gap:7px}
+.chart-canvas{position:relative;height:200px}
+</style>
+</head>
+<body>
+
+<!-- ═══ SVG ICON DEFS ════════════════════════════════════ -->
+<svg style="display:none" xmlns="http://www.w3.org/2000/svg">
+<defs>
+
+  <!-- DATABASE CYLINDER -->
+  <symbol id="I-db" viewBox="0 0 100 120">
+    <ellipse cx="50" cy="22" rx="46" ry="16" fill="currentColor" opacity=".65"/>
+    <rect x="4" y="22" width="92" height="76" fill="currentColor" opacity=".18"/>
+    <line x1="4"  y1="22"  x2="4"  y2="98" stroke="currentColor" stroke-opacity=".55" stroke-width="1.5"/>
+    <line x1="96" y1="22"  x2="96" y2="98" stroke="currentColor" stroke-opacity=".55" stroke-width="1.5"/>
+    <ellipse cx="50" cy="50" rx="46" ry="16" fill="none" stroke="currentColor" stroke-opacity=".25" stroke-width="1.5"/>
+    <ellipse cx="50" cy="74" rx="46" ry="16" fill="none" stroke="currentColor" stroke-opacity=".25" stroke-width="1.5"/>
+    <ellipse cx="50" cy="98" rx="46" ry="16" fill="currentColor" opacity=".55"/>
+    <path d="M14 17 Q50 7 86 17" stroke="white" stroke-width="2.5" fill="none" opacity=".35" stroke-linecap="round"/>
+  </symbol>
+
+  <!-- 8-TOOTH GEAR -->
+  <symbol id="I-gear" viewBox="0 0 100 100">
+    <path fill-rule="evenodd" fill="currentColor" opacity=".85"
+      d="M50,6 L62,20 L81,19 L80,38 L94,50 L80,62 L81,81 L62,80 L50,94 L38,80 L19,81 L20,62 L6,50 L20,38 L19,19 L38,20 Z"/>
+    <circle cx="50" cy="50" r="16" fill="#0a1220"/>
+    <circle cx="50" cy="50" r="7"  fill="currentColor" opacity=".5"/>
+  </symbol>
+
+  <!-- 6-TOOTH GEAR (smaller, counter-rotates) -->
+  <symbol id="I-gear-sm" viewBox="0 0 100 100">
+    <path fill-rule="evenodd" fill="currentColor" opacity=".75"
+      d="M50,8 L65,22 L85,28 L80,50 L85,72 L65,78 L50,92 L35,78 L15,72 L20,50 L15,28 L35,22 Z"/>
+    <circle cx="50" cy="50" r="14" fill="#0a1220"/>
+    <circle cx="50" cy="50" r="6"  fill="currentColor" opacity=".45"/>
+  </symbol>
+
+  <!-- SERVER RACK -->
+  <symbol id="I-server" viewBox="0 0 80 100">
+    <rect x="3" y="2" width="74" height="96" rx="6" fill="currentColor" opacity=".12" stroke="currentColor" stroke-opacity=".55" stroke-width="2"/>
+    <rect x="9" y="12" width="62" height="15" rx="3" fill="currentColor" opacity=".28"/>
+    <circle cx="60" cy="19" r="4" fill="#4ade80"><animate attributeName="opacity" values="1;.25;1" dur="1.6s" repeatCount="indefinite"/></circle>
+    <rect x="13" y="16" width="30" height="7" rx="2" fill="currentColor" opacity=".4"/>
+    <rect x="9" y="32" width="62" height="15" rx="3" fill="currentColor" opacity=".28"/>
+    <circle cx="60" cy="39" r="4" fill="#4ade80"><animate attributeName="opacity" values="1;.25;1" dur="1.6s" begin=".5s" repeatCount="indefinite"/></circle>
+    <rect x="13" y="36" width="30" height="7" rx="2" fill="currentColor" opacity=".4"/>
+    <rect x="9" y="52" width="62" height="15" rx="3" fill="currentColor" opacity=".28"/>
+    <circle cx="60" cy="59" r="4" fill="#fbbf24"><animate attributeName="opacity" values="1;.35;1" dur=".9s" begin=".3s" repeatCount="indefinite"/></circle>
+    <rect x="13" y="56" width="30" height="7" rx="2" fill="currentColor" opacity=".4"/>
+    <rect x="9" y="72" width="62" height="15" rx="3" fill="currentColor" opacity=".28"/>
+    <circle cx="60" cy="79" r="4" fill="#4ade80"><animate attributeName="opacity" values="1;.25;1" dur="2s" begin="1s" repeatCount="indefinite"/></circle>
+    <rect x="13" y="76" width="20" height="7" rx="2" fill="currentColor" opacity=".4"/>
+  </symbol>
+
+  <!-- USER (person) -->
+  <symbol id="I-user" viewBox="0 0 60 75">
+    <circle cx="30" cy="18" r="15" fill="currentColor" opacity=".8"/>
+    <path d="M2 70 Q2 42 30 42 Q58 42 58 70" fill="currentColor" opacity=".6"/>
+  </symbol>
+
+  <!-- USERS (group) -->
+  <symbol id="I-users" viewBox="0 0 80 75">
+    <circle cx="54" cy="19" r="12" fill="currentColor" opacity=".45"/>
+    <path d="M32 70 Q32 48 54 48 Q76 48 76 70" fill="currentColor" opacity=".35"/>
+    <circle cx="26" cy="19" r="14" fill="currentColor" opacity=".88"/>
+    <path d="M2 70 Q2 44 26 44 Q50 44 50 70" fill="currentColor" opacity=".65"/>
+  </symbol>
+
+  <!-- BAR CHART + TREND -->
+  <symbol id="I-chart" viewBox="0 0 80 70">
+    <line x1="8" y1="6" x2="8" y2="62" stroke="currentColor" stroke-opacity=".45" stroke-width="2"/>
+    <line x1="8" y1="62" x2="76" y2="62" stroke="currentColor" stroke-opacity=".45" stroke-width="2"/>
+    <rect x="14" y="38" width="11" height="24" rx="2" fill="currentColor" opacity=".55"/>
+    <rect x="30" y="22" width="11" height="40" rx="2" fill="currentColor" opacity=".75"/>
+    <rect x="46" y="30" width="11" height="32" rx="2" fill="currentColor" opacity=".65"/>
+    <rect x="62" y="14" width="11" height="48" rx="2" fill="currentColor" opacity=".9"/>
+    <polyline points="19,34 35,18 51,26 67,10" fill="none" stroke="white" stroke-width="2" stroke-opacity=".5" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="67" cy="10" r="3" fill="white" opacity=".55"/>
+  </symbol>
+
+  <!-- SHIELD (risk) -->
+  <symbol id="I-shield" viewBox="0 0 80 90">
+    <path d="M40 4 L74 18 L74 46 Q74 72 40 86 Q6 72 6 46 L6 18 Z"
+          fill="currentColor" opacity=".18" stroke="currentColor" stroke-opacity=".75" stroke-width="2.5"/>
+    <polyline points="22,44 34,57 58,31" fill="none" stroke="white" stroke-width="5" stroke-opacity=".75" stroke-linecap="round" stroke-linejoin="round"/>
+  </symbol>
+
+  <!-- LIGHTNING (trading) -->
+  <symbol id="I-lightning" viewBox="0 0 50 86">
+    <path d="M30 4 L8 48 L22 48 L20 82 L44 36 L30 36 Z" fill="currentColor" opacity=".88"/>
+  </symbol>
+
+  <!-- WAVE (ALM) -->
+  <symbol id="I-wave" viewBox="0 0 80 50">
+    <path d="M4 34 Q16 14 28 34 Q40 54 52 34 Q64 14 76 34"
+          fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" opacity=".8"/>
+    <path d="M4 20 Q16  0 28 20 Q40 40 52 20 Q64  0 76 20"
+          fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" opacity=".35"/>
+  </symbol>
+
+  <!-- LEDGER (accounting) -->
+  <symbol id="I-ledger" viewBox="0 0 60 76">
+    <rect x="6" y="3" width="48" height="70" rx="4" fill="currentColor" opacity=".16" stroke="currentColor" stroke-opacity=".7" stroke-width="2"/>
+    <rect x="6" y="3" width="12" height="70" rx="4" fill="currentColor" opacity=".28"/>
+    <line x1="22" y1="22" x2="48" y2="22" stroke="currentColor" stroke-opacity=".45" stroke-width="1.5"/>
+    <line x1="22" y1="32" x2="48" y2="32" stroke="currentColor" stroke-opacity=".45" stroke-width="1.5"/>
+    <line x1="22" y1="42" x2="48" y2="42" stroke="currentColor" stroke-opacity=".45" stroke-width="1.5"/>
+    <line x1="22" y1="52" x2="48" y2="52" stroke="currentColor" stroke-opacity=".45" stroke-width="1.5"/>
+    <line x1="22" y1="62" x2="48" y2="62" stroke="currentColor" stroke-opacity=".45" stroke-width="1.5"/>
+    <line x1="34" y1="18" x2="34" y2="66" stroke="currentColor" stroke-opacity=".25" stroke-width="1"/>
+  </symbol>
+
+  <!-- MONITOR (monitoring) -->
+  <symbol id="I-monitor" viewBox="0 0 80 68">
+    <rect x="2" y="2" width="76" height="48" rx="5" fill="currentColor" opacity=".14" stroke="currentColor" stroke-opacity=".65" stroke-width="2"/>
+    <rect x="11" y="30" width="8" height="12" rx="1" fill="currentColor" opacity=".45"/>
+    <rect x="23" y="20" width="8" height="22" rx="1" fill="currentColor" opacity=".65"/>
+    <rect x="35" y="24" width="8" height="18" rx="1" fill="currentColor" opacity=".55"/>
+    <rect x="47" y="14" width="8" height="28" rx="1" fill="currentColor" opacity=".75"/>
+    <rect x="59" y="22" width="8" height="20" rx="1" fill="currentColor" opacity=".55"/>
+    <polyline points="15,28 27,18 39,22 51,12 67,20" fill="none" stroke="#4ade80" stroke-width="1.8" stroke-opacity=".85" stroke-linecap="round" stroke-linejoin="round"/>
+    <line x1="40" y1="50" x2="40" y2="62" stroke="currentColor" stroke-opacity=".65" stroke-width="3"/>
+    <line x1="22" y1="62" x2="58" y2="62" stroke="currentColor" stroke-opacity=".65" stroke-width="3" stroke-linecap="round"/>
+  </symbol>
+
+  <!-- BOOK (docs) -->
+  <symbol id="I-book" viewBox="0 0 68 78">
+    <rect x="16" y="4" width="48" height="68" rx="3" fill="currentColor" opacity=".08" stroke="currentColor" stroke-opacity=".25" stroke-width="1.5"/>
+    <rect x="10" y="3" width="48" height="70" rx="4" fill="currentColor" opacity=".14" stroke="currentColor" stroke-opacity=".4" stroke-width="1.5"/>
+    <rect x="4" y="3" width="48" height="72" rx="4" fill="currentColor" opacity=".2" stroke="currentColor" stroke-opacity=".7" stroke-width="2"/>
+    <rect x="4" y="3" width="14" height="72" rx="4" fill="currentColor" opacity=".28"/>
+    <line x1="22" y1="22" x2="46" y2="22" stroke="currentColor" stroke-opacity=".45" stroke-width="1.5"/>
+    <line x1="22" y1="32" x2="46" y2="32" stroke="currentColor" stroke-opacity=".45" stroke-width="1.5"/>
+    <line x1="22" y1="42" x2="46" y2="42" stroke="currentColor" stroke-opacity=".45" stroke-width="1.5"/>
+    <line x1="22" y1="52" x2="38" y2="52" stroke="currentColor" stroke-opacity=".45" stroke-width="1.5"/>
+  </symbol>
+
+  <!-- GLOBE (API) -->
+  <symbol id="I-globe" viewBox="0 0 80 80">
+    <circle cx="40" cy="40" r="34" fill="none" stroke="currentColor" stroke-width="2.5" opacity=".7"/>
+    <path d="M8 40 Q40 28 72 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-opacity=".35"/>
+    <path d="M8 40 Q40 52 72 40" fill="none" stroke="currentColor" stroke-width="1.5" stroke-opacity=".35"/>
+    <ellipse cx="40" cy="40" rx="18" ry="34" fill="none" stroke="currentColor" stroke-width="1.5" stroke-opacity=".35"/>
+    <line x1="6" y1="40" x2="74" y2="40" stroke="currentColor" stroke-width="1.5" stroke-opacity=".28"/>
+  </symbol>
+
+  <!-- EXCEL / SPREADSHEET -->
+  <symbol id="I-excel" viewBox="0 0 64 76">
+    <path d="M6 4 L48 4 L58 14 L58 72 L6 72 Z"
+          fill="currentColor" opacity=".14" stroke="currentColor" stroke-opacity=".65" stroke-width="2"/>
+    <path d="M48 4 L48 14 L58 14" fill="none" stroke="currentColor" stroke-opacity=".45" stroke-width="1.5"/>
+    <line x1="6" y1="30" x2="58" y2="30" stroke="currentColor" stroke-opacity=".28" stroke-width="1"/>
+    <line x1="6" y1="44" x2="58" y2="44" stroke="currentColor" stroke-opacity=".28" stroke-width="1"/>
+    <line x1="6" y1="58" x2="58" y2="58" stroke="currentColor" stroke-opacity=".28" stroke-width="1"/>
+    <line x1="26" y1="22" x2="26" y2="68" stroke="currentColor" stroke-opacity=".28" stroke-width="1"/>
+    <line x1="42" y1="22" x2="42" y2="68" stroke="currentColor" stroke-opacity=".28" stroke-width="1"/>
+    <path d="M14 18 L24 32 M24 18 L14 32" stroke="#4ade80" stroke-width="3" stroke-linecap="round" opacity=".8"/>
+  </symbol>
+
+  <!-- ARROWS (for pipe connections) -->
+  <marker id="arr-gold" markerWidth="9" markerHeight="7" refX="7" refY="3.5" orient="auto">
+    <polygon points="0 0,9 3.5,0 7" fill="#e8a020"/>
+  </marker>
+  <marker id="arr-green" markerWidth="9" markerHeight="7" refX="7" refY="3.5" orient="auto">
+    <polygon points="0 0,9 3.5,0 7" fill="#4ade80"/>
+  </marker>
+  <marker id="arr-purple" markerWidth="9" markerHeight="7" refX="7" refY="3.5" orient="auto">
+    <polygon points="0 0,9 3.5,0 7" fill="#a78bfa"/>
+  </marker>
+  <marker id="arr-blue" markerWidth="9" markerHeight="7" refX="7" refY="3.5" orient="auto">
+    <polygon points="0 0,9 3.5,0 7" fill="#60a5fa"/>
+  </marker>
+</defs>
+</svg>
+
+<!-- ═══ LAYOUT ════════════════════════════════════════════ -->
+<div class="layout">
+
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="khl">KHL Bank CIB</div>
+    <div class="sub">Architecture · Dynamique</div>
+  </div>
+  <div class="sidebar-sec">Diagrammes</div>
+  <a href="#s1">01 — Centralisation</a>
+  <a href="#s2">02 — Modules par office</a>
+  <a href="#s3">03 — Cinématique trade</a>
+  <a href="#s4">04 — Pipeline de données</a>
+  <a href="#s5">05 — Matrice des rôles</a>
+  <a href="#s6">06 — Tableau de bord</a>
+  <div class="sidebar-sec">Liens</div>
+  <a href="index.html">← Doc. technique</a>
+</aside>
+
+<div class="main">
+<div class="hero">
+  <h1>Architecture <span>Graphique</span><br>KHL Bank CIB Platform</h1>
+  <p>Flux de données · Modules métier · Cinématique d'un trade · Pipeline SQL · Cloisonnement Front / Middle / Back Office</p>
+  <div class="tags">
+    <span class="tag" style="background:#0a2a10;color:#4ade80">Front Office</span>
+    <span class="tag" style="background:#2a0a0a;color:#fca5a5">Middle Office</span>
+    <span class="tag" style="background:#0a102a;color:#93c5fd">Back Office</span>
+    <span class="tag" style="background:#1a0a2a;color:#a78bfa">Quant Lab</span>
+  </div>
+</div>
+
+<div class="content">
+
+<!-- ═══════════════════════════════════════════════════════
+     S1 — CENTRALISATION DES DONNÉES
+════════════════════════════════════════════════════════ -->
+<div class="section fade-up" id="s1">
+  <div class="section-title">01 — Centralisation des données</div>
+  <p class="section-desc">Flux de bout en bout : sources brutes → Gold Layer <code>KHLWorldInvest</code> → cas d'usage métier.</p>
+
+  <div class="kpi-row">
+    <div class="kpi"><svg width="36" height="44" style="color:#e8a020;flex-shrink:0"><use href="#I-db" width="36" height="44"/></svg><div><div class="kpi-n" data-target="61608">0</div><div class="kpi-l">tickers indexés<br>stg_ticker_lookup</div></div></div>
+    <div class="kpi"><svg width="34" height="34" style="color:#4ade80;flex-shrink:0" class="gear-cw"><use href="#I-gear" width="34" height="34"/></svg><div><div class="kpi-n" data-target="10">0</div><div class="kpi-l">blueprints Flask<br>modules métier</div></div></div>
+    <div class="kpi"><svg width="34" height="34" style="color:#fbbf24;flex-shrink:0"><use href="#I-lightning" width="34" height="34"/></svg><div><div class="kpi-n" data-target="10">0</div><div class="kpi-l">statuts lifecycle<br>par trade</div></div></div>
+    <div class="kpi"><svg width="34" height="42" style="color:#fca5a5;flex-shrink:0"><use href="#I-users" width="34" height="42"/></svg><div><div class="kpi-n" data-target="7">0</div><div class="kpi-l">rôles métier<br>cloisonnés</div></div></div>
+    <div class="kpi"><svg width="36" height="44" style="color:#60a5fa;flex-shrink:0"><use href="#I-server" width="36" height="44"/></svg><div><div class="kpi-n" data-target="25">0</div><div class="kpi-l">comptes CIB<br>plan normé</div></div></div>
+  </div>
+
+  <div class="diagram-bg">
+    <div class="arch-grid">
+
+      <!-- ── SOURCES ── -->
+      <div class="src-col">
+        <div style="font-size:.58rem;font-weight:700;color:#3a5070;text-transform:uppercase;letter-spacing:2px;text-align:center;margin-bottom:4px">Sources</div>
+
+        <div class="node-card" style="--nc:#60a5fa;--tx:5px">
+          <svg width="32" height="38" style="color:#60a5fa;flex-shrink:0"><use href="#I-db" width="32" height="38"/></svg>
+          <div><div class="node-lbl">SQL Server</div><div class="node-sub">KHLWorldInvest · Windows Auth</div></div>
+        </div>
+        <div class="node-card" style="--nc:#e8a020;--tx:5px">
+          <svg width="30" height="36" style="color:#e8a020;flex-shrink:0"><use href="#I-db" width="30" height="36"/></svg>
+          <div><div class="node-lbl">Staging Layer</div><div class="node-sub">stg.* · 60 000 lignes prix</div></div>
+        </div>
+        <div class="node-card" style="--nc:#fbbf24;--tx:5px">
+          <svg width="30" height="30" style="color:#fbbf24;flex-shrink:0"><use href="#I-globe" width="30" height="30"/></svg>
+          <div><div class="node-lbl">Boursorama</div><div class="node-sub">Prix marchés temps réel</div></div>
+        </div>
+        <div class="node-card" style="--nc:#a78bfa;--tx:5px">
+          <svg width="30" height="30" style="color:#a78bfa;flex-shrink:0"><use href="#I-globe" width="30" height="30"/></svg>
+          <div><div class="node-lbl">STOOQ API</div><div class="node-sub">Historique quant multi-tickers</div></div>
+        </div>
+        <div class="node-card" style="--nc:#f0abfc;--tx:5px">
+          <svg width="28" height="34" style="color:#f0abfc;flex-shrink:0"><use href="#I-excel" width="28" height="34"/></svg>
+          <div><div class="node-lbl">Excel / VBA</div><div class="node-sub">CommandoQuant.xlsm</div></div>
+        </div>
+      </div>
+
+      <!-- ── ANIMATED PIPES LEFT ── -->
+      <div class="pipe-col">
+        <!-- 5 horizontal pipes with flowing packets -->
+        <svg width="72" height="20" style="overflow:visible" viewBox="0 0 72 20">
+          <line x1="2" y1="10" x2="60" y2="10" stroke="#1a3050" stroke-width="3" stroke-linecap="round"/>
+          <path id="p-h1" d="M2,10 L60,10"/>
+          <circle r="4" fill="#60a5fa" opacity=".85" style="offset-path:path('M2,10 L60,10');offset-distance:0%" class="pkt" style="--dur:1.8s;--d:0s"><animateMotion dur="1.8s" repeatCount="indefinite" path="M2,10 L60,10"/></circle>
+          <polygon points="58,6 70,10 58,14" fill="#60a5fa"/>
+        </svg>
+        <svg width="72" height="20" style="overflow:visible" viewBox="0 0 72 20">
+          <line x1="2" y1="10" x2="60" y2="10" stroke="#1a3050" stroke-width="3" stroke-linecap="round"/>
+          <circle r="4" fill="#e8a020" opacity=".85"><animateMotion dur="2.2s" repeatCount="indefinite" begin="0.5s" path="M2,10 L60,10"/></circle>
+          <polygon points="58,6 70,10 58,14" fill="#e8a020"/>
+        </svg>
+        <svg width="72" height="20" style="overflow:visible" viewBox="0 0 72 20">
+          <line x1="2" y1="10" x2="60" y2="10" stroke="#1a3050" stroke-width="3" stroke-linecap="round"/>
+          <circle r="4" fill="#fbbf24" opacity=".85"><animateMotion dur="1.6s" repeatCount="indefinite" begin="1s" path="M2,10 L60,10"/></circle>
+          <polygon points="58,6 70,10 58,14" fill="#fbbf24"/>
+        </svg>
+        <svg width="72" height="20" style="overflow:visible" viewBox="0 0 72 20">
+          <line x1="2" y1="10" x2="60" y2="10" stroke="#1a3050" stroke-width="3" stroke-linecap="round"/>
+          <circle r="4" fill="#a78bfa" opacity=".85"><animateMotion dur="2s" repeatCount="indefinite" begin="1.5s" path="M2,10 L60,10"/></circle>
+          <polygon points="58,6 70,10 58,14" fill="#a78bfa"/>
+        </svg>
+        <svg width="72" height="20" style="overflow:visible" viewBox="0 0 72 20">
+          <line x1="2" y1="10" x2="60" y2="10" stroke="#1a3050" stroke-width="3" stroke-linecap="round"/>
+          <circle r="4" fill="#f0abfc" opacity=".85"><animateMotion dur="1.9s" repeatCount="indefinite" begin="0.8s" path="M2,10 L60,10"/></circle>
+          <polygon points="58,6 70,10 58,14" fill="#f0abfc"/>
+        </svg>
+      </div>
+
+      <!-- ── CENTER PLATFORM ── -->
+      <div class="center-col">
+        <div class="platform">
+          <!-- Two gears spinning (processing) -->
+          <div style="display:flex;align-items:center;justify-content:center;gap:-8px;margin-bottom:4px">
+            <svg width="42" height="42" style="color:#e8a020" class="gear-cw"><use href="#I-gear" width="42" height="42"/></svg>
+            <svg width="30" height="30" style="color:#fbbf24;margin-left:-8px" class="gear-ccw"><use href="#I-gear-sm" width="30" height="30"/></svg>
+          </div>
+          <!-- Big DB icon -->
+          <svg width="60" height="72" style="color:#e8a020;margin:0 auto;display:block"><use href="#I-db" width="60" height="72"/></svg>
+          <div class="p-name">KHLWorldInvest</div>
+          <div class="p-sub">SQL Server · Gold Layer · Windows Auth</div>
+          <div class="chip-cloud">
+            <span class="chip c-gold">DimPortfolio</span>
+            <span class="chip c-gold">DimSecurity</span>
+            <span class="chip c-gold">DimBroker</span>
+            <span class="chip c-green">FactTrades</span>
+            <span class="chip c-green">FactTradeLifecycle</span>
+            <span class="chip c-green">FactPriceHistory</span>
+            <span class="chip c-blue">FactAccountingEvent</span>
+            <span class="chip c-blue">FactAccountingMovement</span>
+            <span class="chip c-blue">FactSettlementMovement</span>
+            <span class="chip c-purple">AppUsers</span>
+            <span class="chip c-purple">AppSettings</span>
+            <span class="chip c-purple">AppLog</span>
+          </div>
+        </div>
+        <!-- V connector to CommandoQuant -->
+        <svg width="20" height="36" style="overflow:visible;display:block;margin:0 auto">
+          <line x1="10" y1="2" x2="10" y2="28" stroke="#6030a0" stroke-width="2"/>
+          <circle r="3.5" fill="#a78bfa"><animateMotion dur="1.4s" repeatCount="indefinite" path="M10,2 L10,28"/></circle>
+          <polygon points="5,26 10,36 15,26" fill="#a78bfa"/>
+        </svg>
+        <div class="cq-box">
+          <svg width="36" height="44" style="color:#a78bfa;display:block;margin:0 auto 4px"><use href="#I-db" width="36" height="44"/></svg>
+          <div style="color:#a78bfa;font-weight:700;font-size:.8rem;margin-bottom:3px">CommandoQuant</div>
+          <div style="font-size:.6rem;color:#4a6888;margin-bottom:7px">Options · Grecs · VaR dérivés</div>
+          <div style="display:flex;gap:3px;justify-content:center;flex-wrap:wrap">
+            <span class="chip c-purple">tbl_Greeks</span>
+            <span class="chip c-purple">ImpliedVol</span>
+            <span class="chip c-purple">var_engine.py</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ── ANIMATED PIPES RIGHT ── -->
+      <div class="pipe-col" style="gap:56px">
+        <svg width="72" height="20" style="overflow:visible" viewBox="0 0 72 20">
+          <line x1="2" y1="10" x2="60" y2="10" stroke="#1a3050" stroke-width="3" stroke-linecap="round"/>
+          <circle r="4" fill="#4ade80" opacity=".85"><animateMotion dur="2s" repeatCount="indefinite" begin="0.3s" path="M2,10 L60,10"/></circle>
+          <polygon points="58,6 70,10 58,14" fill="#4ade80"/>
+        </svg>
+        <svg width="72" height="20" style="overflow:visible" viewBox="0 0 72 20">
+          <line x1="2" y1="10" x2="60" y2="10" stroke="#1a3050" stroke-width="3" stroke-linecap="round"/>
+          <circle r="4" fill="#fbbf24" opacity=".85"><animateMotion dur="1.7s" repeatCount="indefinite" begin="0.9s" path="M2,10 L60,10"/></circle>
+          <polygon points="58,6 70,10 58,14" fill="#fbbf24"/>
+        </svg>
+        <svg width="72" height="20" style="overflow:visible" viewBox="0 0 72 20">
+          <line x1="2" y1="10" x2="60" y2="10" stroke="#1a3050" stroke-width="3" stroke-linecap="round"/>
+          <circle r="4" fill="#fca5a5" opacity=".85"><animateMotion dur="2.1s" repeatCount="indefinite" begin="1.3s" path="M2,10 L60,10"/></circle>
+          <polygon points="58,6 70,10 58,14" fill="#fca5a5"/>
+        </svg>
+        <svg width="72" height="20" style="overflow:visible" viewBox="0 0 72 20">
+          <line x1="2" y1="10" x2="60" y2="10" stroke="#1a3050" stroke-width="3" stroke-linecap="round"/>
+          <circle r="4" fill="#a78bfa" opacity=".85"><animateMotion dur="1.8s" repeatCount="indefinite" begin="0.6s" path="M2,10 L60,10"/></circle>
+          <polygon points="58,6 70,10 58,14" fill="#a78bfa"/>
+        </svg>
+      </div>
+
+      <!-- ── USE CASES ── -->
+      <div class="out-col">
+        <div style="font-size:.58rem;font-weight:700;color:#3a5070;text-transform:uppercase;letter-spacing:2px;text-align:center;margin-bottom:4px">Cas d'usage</div>
+
+        <div class="node-card" style="--nc:#4ade80;--tx:-5px">
+          <svg width="30" height="26" style="color:#4ade80;flex-shrink:0"><use href="#I-chart" width="30" height="26"/></svg>
+          <div><div class="node-lbl">Portfolio Management</div><div class="node-sub">Allocation · PnL · Retail/Institutionnel</div></div>
+        </div>
+        <div class="node-card" style="--nc:#fbbf24;--tx:-5px">
+          <svg width="26" height="44" style="color:#fbbf24;flex-shrink:0"><use href="#I-lightning" width="26" height="44"/></svg>
+          <div><div class="node-lbl">Trading Desk</div><div class="node-sub">Ordres · SWIFT · DVP J+2</div></div>
+        </div>
+        <div class="node-card" style="--nc:#fca5a5;--tx:-5px">
+          <svg width="30" height="34" style="color:#fca5a5;flex-shrink:0"><use href="#I-shield" width="30" height="34"/></svg>
+          <div><div class="node-lbl">Risk & ALM</div><div class="node-sub">VaR · Sharpe · LCR/NSFR</div></div>
+        </div>
+        <div class="node-card" style="--nc:#a78bfa;--tx:-5px">
+          <svg width="32" height="32" style="color:#a78bfa;flex-shrink:0"><use href="#I-chart" width="32" height="32"/></svg>
+          <div><div class="node-lbl">Quant & Analytics</div><div class="node-sub">Backtesting · Greeks · Power BI</div></div>
+        </div>
+      </div>
+
+    </div><!-- arch-grid -->
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- ═══════════════════════════════════════════════════════
+     S2 — MODULES PAR OFFICE
+════════════════════════════════════════════════════════ -->
+<div class="section fade-up" id="s2">
+  <div class="section-title">02 — Architecture des modules</div>
+  <p class="section-desc">10 blueprints Flask cloisonnés par office. Chaque module a ses propres routes, templates et décorateurs <code>@role_required</code>.</p>
+
+  <div class="diagram-bg">
+
+    <!-- FRONT OFFICE -->
+    <div class="office-row">
+      <div class="off-bar" style="background:rgba(74,222,128,.06);border-left:3px solid #4ade80">
+        <div class="off-dot" style="background:#4ade80;box-shadow:0 0 8px #4ade80"></div>
+        <span class="off-name" style="color:#4ade80">Front Office</span>
+        <span style="font-size:.68rem;color:#4a6888;margin-left:6px">— Décision et Exécution de marché</span>
+      </div>
+      <div class="mod-grid">
+        <div class="mod-card" style="--ac:#4ade80">
+          <div class="mod-head">
+            <svg width="32" height="26" style="color:#4ade80"><use href="#I-chart" width="32" height="26"/></svg>
+            <div><div class="mod-name">Portfolio Management</div><div class="mod-route">/portfolio</div></div>
+          </div>
+          <ul class="mod-list">
+            <li>Wizard création 6 étapes</li>
+            <li>Mode Retail (500 €) / Institutionnel</li>
+            <li>PnL latent + snapshots quotidiens</li>
+            <li>Starter kit 5 ETF débutant</li>
+          </ul>
+          <span class="mod-badge" style="--bg:#0a2a15;--ac:#4ade80">ASSET_MANAGER · QUANT</span>
+        </div>
+        <div class="mod-card" style="--ac:#fbbf24">
+          <div class="mod-head">
+            <svg width="22" height="40" style="color:#fbbf24"><use href="#I-lightning" width="22" height="40"/></svg>
+            <div><div class="mod-name">Trading Desk</div><div class="mod-route">/trading</div></div>
+          </div>
+          <ul class="mod-list">
+            <li>Carnet d'ordres BUY / SELL</li>
+            <li>Lifecycle 10 étapes horodatées</li>
+            <li>SWIFT MT515/541/543/544/546</li>
+            <li>CommandoQuant.xlsm os.startfile()</li>
+          </ul>
+          <span class="mod-badge" style="--bg:#2a1a00;--ac:#fbbf24">TRADER · ADMIN (ordre exclusif)</span>
+        </div>
+        <div class="mod-card" style="--ac:#a78bfa">
+          <div class="mod-head">
+            <svg width="30" height="30" style="color:#a78bfa"><use href="#I-globe" width="30" height="30"/></svg>
+            <div><div class="mod-name">Quant / Data Lab</div><div class="mod-route">/quant</div></div>
+          </div>
+          <ul class="mod-list">
+            <li>Explorateur STOOQ multi-tickers</li>
+            <li>Backtesting momentum/mean-rev</li>
+            <li>Grecs options via var_engine.py</li>
+            <li>Légende ^ indice · 6L forex · .US</li>
+          </ul>
+          <span class="mod-badge" style="--bg:#1a0a3a;--ac:#a78bfa">QUANT · DATA_ANALYST</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- MIDDLE OFFICE -->
+    <div class="office-row">
+      <div class="off-bar" style="background:rgba(252,165,165,.04);border-left:3px solid #fca5a5">
+        <div class="off-dot" style="background:#fca5a5;box-shadow:0 0 8px #fca5a5"></div>
+        <span class="off-name" style="color:#fca5a5">Middle Office</span>
+        <span style="font-size:.68rem;color:#4a6888;margin-left:6px">— Contrôle indépendant des risques</span>
+      </div>
+      <div class="mod-grid">
+        <div class="mod-card" style="--ac:#fca5a5">
+          <div class="mod-head">
+            <svg width="28" height="32" style="color:#fca5a5"><use href="#I-shield" width="28" height="32"/></svg>
+            <div><div class="mod-name">Risk Management</div><div class="mod-route">/risk</div></div>
+          </div>
+          <ul class="mod-list">
+            <li>VaR 95% / 99% méthode historique</li>
+            <li>Volatilité annualisée, Sharpe Ratio</li>
+            <li>Max Drawdown, Beta vs benchmark</li>
+            <li>Alertes si breach limite</li>
+          </ul>
+          <span class="mod-badge" style="--bg:#2a0a0a;--ac:#fca5a5">RISK_ANALYST · TRADER · ASSET_MGR</span>
+        </div>
+        <div class="mod-card" style="--ac:#fb923c">
+          <div class="mod-head">
+            <svg width="30" height="26" style="color:#fb923c"><use href="#I-chart" width="30" height="26"/></svg>
+            <div><div class="mod-name">Performance</div><div class="mod-route">/performance</div></div>
+          </div>
+          <ul class="mod-list">
+            <li>PnL latent et réalisé par portefeuille</li>
+            <li>Attribution par classe d'actif</li>
+            <li>IRR, TWRR, MWRR</li>
+            <li>Power BI embed (AppSettings)</li>
+          </ul>
+          <span class="mod-badge" style="--bg:#2a0e00;--ac:#fb923c">RISK_ANALYST · ASSET_MGR · ALM_OFFICER</span>
+        </div>
+        <div class="mod-card" style="--ac:#34d399">
+          <div class="mod-head">
+            <svg width="32" height="20" style="color:#34d399"><use href="#I-wave" width="32" height="20"/></svg>
+            <div><div class="mod-name">ALM</div><div class="mod-route">/alm</div></div>
+          </div>
+          <ul class="mod-list">
+            <li>Gap de liquidité par bucket temporel</li>
+            <li>Duration Macaulay et modifiée</li>
+            <li>LCR, NSFR — ratios Bâle III</li>
+            <li>Alertes breaches réglementaires</li>
+          </ul>
+          <span class="mod-badge" style="--bg:#002a14;--ac:#34d399">ALM_OFFICER · RISK_ANALYST</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- BACK OFFICE -->
+    <div class="office-row">
+      <div class="off-bar" style="background:rgba(147,197,253,.04);border-left:3px solid #93c5fd">
+        <div class="off-dot" style="background:#93c5fd;box-shadow:0 0 8px #93c5fd"></div>
+        <span class="off-name" style="color:#93c5fd">Back Office</span>
+        <span style="font-size:.68rem;color:#4a6888;margin-left:6px">— Comptabilisation et opérations</span>
+      </div>
+      <div class="mod-grid">
+        <div class="mod-card" style="--ac:#93c5fd">
+          <div class="mod-head">
+            <svg width="28" height="36" style="color:#93c5fd"><use href="#I-ledger" width="28" height="36"/></svg>
+            <div><div class="mod-name">Comptabilité CIB</div><div class="mod-route">/accounting</div></div>
+          </div>
+          <ul class="mod-list">
+            <li>Journal en partie double (25 comptes)</li>
+            <li>FactAccountingEvent + Movement</li>
+            <li>FactSettlementMovement PENDING J+2</li>
+            <li>Réconciliation EOD Débit = Crédit</li>
+          </ul>
+          <span class="mod-badge" style="--bg:#001028;--ac:#93c5fd">DATA_ANALYST · COMPTABLE · RISK_ANALYST</span>
+        </div>
+        <div class="mod-card" style="--ac:#60a5fa">
+          <div class="mod-head">
+            <svg width="34" height="30" style="color:#60a5fa"><use href="#I-monitor" width="34" height="30"/></svg>
+            <div><div class="mod-name">Monitoring</div><div class="mod-route">/monitoring</div></div>
+          </div>
+          <ul class="mod-list">
+            <li>AppLog — 50 derniers événements</li>
+            <li>Stats tables SQL Server temps réel</li>
+            <li>Jobs : build_ticker_lookup, demo_users</li>
+            <li>Lancement scripts d'exploitation</li>
+          </ul>
+          <span class="mod-badge" style="--bg:#000e20;--ac:#60a5fa">ADMIN · DATA_ANALYST</span>
+        </div>
+        <div class="mod-card" style="--ac:#e2e8f0">
+          <div class="mod-head">
+            <svg width="30" height="36" style="color:#94a3b8"><use href="#I-book" width="30" height="36"/></svg>
+            <div><div class="mod-name">Documentation</div><div class="mod-route">/docs</div></div>
+          </div>
+          <ul class="mod-list">
+            <li>Wiki interne — workflows métier</li>
+            <li>Matrice rôles / modules</li>
+            <li>Cycle de vie transaction complet</li>
+            <li>Changelog auto depuis AppLog</li>
+          </ul>
+          <span class="mod-badge" style="--bg:#0a0a18;--ac:#94a3b8">Tous les utilisateurs connectés</span>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- ═══════════════════════════════════════════════════════
+     S3 — CINÉMATIQUE D'UN TRADE
+════════════════════════════════════════════════════════ -->
+<div class="section fade-up" id="s3">
+  <div class="section-title">03 — Cinématique d'un trade</div>
+  <p class="section-desc">10 statuts auto-générés à chaque <code>order_new()</code>, stockés dans <code>FactTradeLifecycle</code> avec références SWIFT ISO 15022.</p>
+
+  <div class="diagram-bg">
+    <button class="btn-play" id="btn-play" onclick="playLC()">▶ Lancer l'animation</button>
+
+    <div class="lc-phase-bar">
+      <div class="lc-ph" style="background:rgba(74,222,128,.08);border:1px solid rgba(74,222,128,.2);color:#4ade80">
+        <svg width="14" height="14" style="color:#4ade80;vertical-align:middle"><use href="#I-user" width="14" height="14"/></svg>
+        Pré-Trade
+      </div>
+      <div class="lc-ph" style="background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.2);color:#fbbf24">
+        <svg width="10" height="18" style="color:#fbbf24;vertical-align:middle"><use href="#I-lightning" width="10" height="18"/></svg>
+        Exécution marché
+      </div>
+      <div class="lc-ph" style="background:rgba(147,197,253,.08);border:1px solid rgba(147,197,253,.2);color:#93c5fd">
+        <svg width="16" height="18" style="color:#93c5fd;vertical-align:middle"><use href="#I-ledger" width="16" height="18"/></svg>
+        Post-Trade — Règlement &amp; Comptabilisation
+      </div>
+    </div>
+
+    <div class="lc-grid" id="lc-grid">
+      <div class="lc-step" style="--sc:#4ade80" data-i="0">
+        <div class="lc-svg-ico" style="display:flex;justify-content:center;margin-bottom:4px">
+          <svg width="28" height="28" style="color:#4ade80"><use href="#I-shield" width="28" height="28"/></svg>
+        </div>
+        <div class="lc-step-name">PRE TRADE CHECK</div><div class="lc-actor">Risk Engine</div><div class="lc-ref">T−2min</div>
+      </div>
+      <div class="lc-step" style="--sc:#4ade80" data-i="1">
+        <div class="lc-svg-ico" style="display:flex;justify-content:center;margin-bottom:4px">
+          <svg width="26" height="26" style="color:#4ade80"><use href="#I-user" width="26" height="26"/></svg>
+        </div>
+        <div class="lc-step-name">ORDER PLACED</div><div class="lc-actor">Trader</div><div class="lc-ref">T−1min</div>
+      </div>
+      <div class="lc-step" style="--sc:#fbbf24" data-i="2">
+        <div class="lc-svg-ico" style="display:flex;justify-content:center;margin-bottom:4px">
+          <svg width="18" height="34" style="color:#fbbf24"><use href="#I-lightning" width="18" height="34"/></svg>
+        </div>
+        <div class="lc-step-name">SENT TO BROKER</div><div class="lc-actor">OMS</div><div class="lc-ref">T−30s</div>
+      </div>
+      <div class="lc-step" style="--sc:#fbbf24" data-i="3">
+        <div class="lc-svg-ico" style="display:flex;justify-content:center;margin-bottom:4px">
+          <svg width="28" height="28" style="color:#fbbf24"><use href="#I-server" width="28" height="28"/></svg>
+        </div>
+        <div class="lc-step-name">BROKER ACK</div><div class="lc-actor">Broker CIB</div><div class="lc-ref">T+1m23s</div>
+      </div>
+      <div class="lc-step" style="--sc:#fbbf24" data-i="4">
+        <div class="lc-svg-ico" style="display:flex;justify-content:center;margin-bottom:4px">
+          <svg width="18" height="34" style="color:#e8a020"><use href="#I-lightning" width="18" height="34"/></svg>
+        </div>
+        <div class="lc-step-name">MARKET EXECUTED</div><div class="lc-actor">Marché</div><div class="lc-ref">T+2m45s</div>
+      </div>
+      <div class="lc-step" style="--sc:#93c5fd" data-i="5">
+        <div class="lc-svg-ico" style="display:flex;justify-content:center;margin-bottom:4px">
+          <svg width="26" height="26" style="color:#93c5fd"><use href="#I-globe" width="26" height="26"/></svg>
+        </div>
+        <div class="lc-step-name">TRADE CONFIRMED</div><div class="lc-actor">Broker</div><div class="lc-ref">MT515</div>
+      </div>
+      <div class="lc-step" style="--sc:#93c5fd" data-i="6">
+        <div class="lc-svg-ico" style="display:flex;justify-content:center;margin-bottom:4px">
+          <svg width="32" height="44" style="color:#60a5fa"><use href="#I-db" width="32" height="44"/></svg>
+        </div>
+        <div class="lc-step-name">PENDING SETTLE</div><div class="lc-actor">Middle Office</div><div class="lc-ref">MT541/543</div>
+      </div>
+      <div class="lc-step" style="--sc:#60a5fa" data-i="7">
+        <div class="lc-svg-ico" style="display:flex;justify-content:center;margin-bottom:4px">
+          <svg width="32" height="32" style="color:#60a5fa"><use href="#I-server" width="32" height="32"/></svg>
+        </div>
+        <div class="lc-step-name">SETTLED DVP</div><div class="lc-actor">Dépositaire</div><div class="lc-ref">MT544/546</div>
+      </div>
+      <div class="lc-step" style="--sc:#a78bfa" data-i="8">
+        <div class="lc-svg-ico" style="display:flex;justify-content:center;margin-bottom:4px">
+          <svg width="26" height="32" style="color:#a78bfa"><use href="#I-ledger" width="26" height="32"/></svg>
+        </div>
+        <div class="lc-step-name">ACCOUNTING POSTED</div><div class="lc-actor">Back Office</div><div class="lc-ref">J+2 09:05</div>
+      </div>
+      <div class="lc-step" style="--sc:#4ade80" data-i="9">
+        <div class="lc-svg-ico" style="display:flex;justify-content:center;margin-bottom:4px">
+          <svg width="28" height="32" style="color:#4ade80"><use href="#I-shield" width="28" height="32"/></svg>
+        </div>
+        <div class="lc-step-name">RECONCILED</div><div class="lc-actor">Contrôle EOD</div><div class="lc-ref">17:00</div>
+      </div>
+    </div>
+
+    <div class="lc-progress"><div class="lc-bar" id="lc-bar"></div></div>
+
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-top:18px">
+      <div style="background:#080f1c;border:1px solid #152030;border-radius:8px;padding:13px">
+        <div style="font-size:.6rem;font-weight:700;color:#4a6888;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;display:flex;align-items:center;gap:6px">
+          <svg width="20" height="25" style="color:#60a5fa"><use href="#I-server" width="20" height="25"/></svg>
+          Brokers CIB simulés
+        </div>
+        <div style="display:flex;flex-wrap:wrap;gap:3px">
+          <span class="chip c-blue">BNP Paribas</span><span class="chip c-blue">Société Générale</span>
+          <span class="chip c-blue">Goldman Sachs</span><span class="chip c-blue">JPMorgan</span>
+          <span class="chip c-blue">Bank of America</span><span class="chip c-blue">Exane BNP</span>
+        </div>
+        <div style="font-size:.6rem;color:#4a6888;margin-top:7px">Assignation round-robin · BIC SWIFT inclus</div>
+      </div>
+      <div style="background:#080f1c;border:1px solid #152030;border-radius:8px;padding:13px">
+        <div style="font-size:.6rem;font-weight:700;color:#4a6888;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;display:flex;align-items:center;gap:6px">
+          <svg width="20" height="20" style="color:#60a5fa"><use href="#I-globe" width="20" height="20"/></svg>
+          SWIFT ISO 15022
+        </div>
+        <div style="display:flex;flex-direction:column;gap:4px;font-size:.67rem">
+          <div><span class="chip c-green">MT515</span> Trade confirmation</div>
+          <div><span class="chip c-blue">MT541</span> Receive against payment</div>
+          <div><span class="chip c-blue">MT543</span> Deliver against payment</div>
+          <div><span class="chip c-purple">MT544</span> Receive free</div>
+          <div><span class="chip c-purple">MT546</span> Deliver free</div>
+        </div>
+      </div>
+      <div style="background:#080f1c;border:1px solid #152030;border-radius:8px;padding:13px">
+        <div style="font-size:.6rem;font-weight:700;color:#4a6888;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px;display:flex;align-items:center;gap:6px">
+          <svg width="18" height="18" style="color:#fbbf24;display:inline"><use href="#I-gear" width="18" height="18"/></svg>
+          Règles de gestion
+        </div>
+        <div style="font-size:.67rem;color:#7a9ab8;display:flex;flex-direction:column;gap:3px">
+          <div>• Pre-trade check max_order_notional</div>
+          <div>• Settlement DVP J+2 à 09:00</div>
+          <div>• Comptabilisation J+2 à 09:05</div>
+          <div>• Réconciliation EOD 17:00</div>
+          <div>• correlation_id pour audit complet</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- ═══════════════════════════════════════════════════════
+     S4 — PIPELINE DE DONNÉES
+════════════════════════════════════════════════════════ -->
+<div class="section fade-up" id="s4">
+  <div class="section-title">04 — Pipeline de données</div>
+  <p class="section-desc">4 couches de transformation. Chaque ETL est idempotent (<code>IF OBJECT_ID IS NULL</code>) et tracé dans <code>AppLog</code>.</p>
+
+  <div class="diagram-bg">
+    <div class="pl-flow">
+
+      <!-- Layer 1 -->
+      <div class="pl-layer" style="background:#08101e;border:1px solid rgba(96,165,250,.2)">
+        <div class="pl-hdr" style="background:rgba(96,165,250,.1)">
+          <div style="display:flex;justify-content:center;margin-bottom:4px">
+            <svg width="36" height="44" style="color:#60a5fa"><use href="#I-db" width="36" height="44"/></svg>
+          </div>
+          <div class="pl-hdr-t" style="color:#60a5fa">① Sources</div>
+          <div style="font-size:.58rem;color:#4a6888">Données brutes</div>
+        </div>
+        <div class="pl-body">
+          <div class="pl-item" style="border-left:2px solid #fbbf24">
+            <div style="color:#fbbf24;font-weight:700;font-size:.65rem;margin-bottom:3px;display:flex;align-items:center;gap:4px">
+              <svg width="14" height="14" style="color:#fbbf24"><use href="#I-globe" width="14" height="14"/></svg> Boursorama
+            </div>
+            <div class="pl-chips"><span class="chip c-blue">stg_bourso_price_history</span></div>
+            <div style="font-size:.58rem;color:#4a6888;margin-top:2px">~60 000 lignes · prix marchés</div>
+          </div>
+          <div class="pl-item" style="border-left:2px solid #a78bfa">
+            <div style="color:#a78bfa;font-weight:700;font-size:.65rem;margin-bottom:3px;display:flex;align-items:center;gap:4px">
+              <svg width="14" height="16" style="color:#a78bfa"><use href="#I-excel" width="14" height="16"/></svg> Excel VBA
+            </div>
+            <div class="pl-chips"><span class="chip c-purple">tbl_Greeks</span></div>
+          </div>
+          <div class="pl-item" style="border-left:2px solid #4ade80">
+            <div style="color:#4ade80;font-weight:700;font-size:.65rem;margin-bottom:3px;display:flex;align-items:center;gap:4px">
+              <svg width="14" height="14" style="color:#4ade80"><use href="#I-globe" width="14" height="14"/></svg> STOOQ API
+            </div>
+            <div class="pl-chips"><span class="chip c-green">fetch live</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Connector 1→2 -->
+      <div class="pl-conn">
+        <svg width="50" height="80" style="overflow:visible" viewBox="0 0 50 80">
+          <line x1="25" y1="4" x2="25" y2="68" stroke="#1a3050" stroke-width="2.5"/>
+          <circle r="4" fill="#e8a020" opacity=".9"><animateMotion dur="1.4s" repeatCount="indefinite" path="M25,4 L25,68"/></circle>
+          <polygon points="19,65 25,78 31,65" fill="#e8a020"/>
+        </svg>
+        <div class="pl-conn-lbl">build_ticker_lookup.py</div>
+      </div>
+
+      <!-- Layer 2 -->
+      <div class="pl-layer" style="background:#100e02;border:1px solid rgba(232,160,32,.2)">
+        <div class="pl-hdr" style="background:rgba(232,160,32,.1)">
+          <div style="display:flex;justify-content:center;margin-bottom:4px">
+            <svg width="34" height="34" style="color:#e8a020" class="gear-cw"><use href="#I-gear" width="34" height="34"/></svg>
+          </div>
+          <div class="pl-hdr-t" style="color:#e8a020">② Lookup</div>
+          <div style="font-size:.58rem;color:#4a6888">Agrégation pré-calculée</div>
+        </div>
+        <div class="pl-body">
+          <div class="pl-item" style="border-left:2px solid #e8a020">
+            <div style="color:#e8a020;font-weight:700;font-size:.65rem">stg_ticker_lookup</div>
+            <div style="color:#4ade80;font-size:.62rem;font-weight:700">61 608 tickers · 1 ligne/ticker</div>
+            <div style="color:#4ade80;font-size:.6rem;margin-top:2px">2–5s → &lt;100ms</div>
+          </div>
+          <div class="pl-item" style="border-left:2px solid #4a6888">
+            <div style="color:#7a9ab8;font-weight:700;font-size:.65rem">Fallback GROUP BY</div>
+            <div style="font-size:.6rem;color:#4a6888">Auto-détection · transparent Flask</div>
+            <div class="pl-chips"><span class="chip c-gold">api_securities()</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Connector 2→3 -->
+      <div class="pl-conn">
+        <svg width="50" height="80" style="overflow:visible" viewBox="0 0 50 80">
+          <line x1="25" y1="4" x2="25" y2="68" stroke="#1a3050" stroke-width="2.5"/>
+          <circle r="4" fill="#4ade80" opacity=".9"><animateMotion dur="1.6s" repeatCount="indefinite" begin=".4s" path="M25,4 L25,68"/></circle>
+          <polygon points="19,65 25,78 31,65" fill="#4ade80"/>
+        </svg>
+        <div class="pl-conn-lbl">load_factprice_from_stg.py</div>
+      </div>
+
+      <!-- Layer 3 -->
+      <div class="pl-layer" style="background:#020e06;border:1px solid rgba(74,222,128,.2)">
+        <div class="pl-hdr" style="background:rgba(74,222,128,.08)">
+          <div style="display:flex;justify-content:center;margin-bottom:4px">
+            <svg width="36" height="44" style="color:#4ade80"><use href="#I-db" width="36" height="44"/></svg>
+          </div>
+          <div class="pl-hdr-t" style="color:#4ade80">③ Gold Layer</div>
+          <div style="font-size:.58rem;color:#4a6888">Facts + Dimensions</div>
+        </div>
+        <div class="pl-body">
+          <div class="pl-item" style="border-left:2px solid #e8a020">
+            <div style="color:#e8a020;font-size:.63rem;font-weight:700;margin-bottom:3px">Dimensions</div>
+            <div class="pl-chips">
+              <span class="chip c-gold">DimPortfolio</span><span class="chip c-gold">DimSecurity</span>
+              <span class="chip c-gold">DimBroker</span><span class="chip c-gold">DimDate</span>
+            </div>
+          </div>
+          <div class="pl-item" style="border-left:2px solid #4ade80">
+            <div style="color:#4ade80;font-size:.63rem;font-weight:700;margin-bottom:3px">Faits Marché</div>
+            <div class="pl-chips">
+              <span class="chip c-green">FactTrades</span><span class="chip c-green">FactTradeLifecycle</span>
+              <span class="chip c-green">FactPriceHistory</span><span class="chip c-green">FactPortfolioSnapshot</span>
+            </div>
+          </div>
+          <div class="pl-item" style="border-left:2px solid #60a5fa">
+            <div style="color:#60a5fa;font-size:.63rem;font-weight:700;margin-bottom:3px">Faits Comptables</div>
+            <div class="pl-chips">
+              <span class="chip c-blue">FactAccountingEvent</span><span class="chip c-blue">FactAccountingMovement</span>
+              <span class="chip c-blue">FactSettlementMovement</span><span class="chip c-blue">FactReconciliationControl</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Connector 3→4 -->
+      <div class="pl-conn">
+        <svg width="50" height="80" style="overflow:visible" viewBox="0 0 50 80">
+          <line x1="25" y1="4" x2="25" y2="68" stroke="#1a3050" stroke-width="2.5"/>
+          <circle r="4" fill="#a78bfa" opacity=".9"><animateMotion dur="1.8s" repeatCount="indefinite" begin=".8s" path="M25,4 L25,68"/></circle>
+          <polygon points="19,65 25,78 31,65" fill="#a78bfa"/>
+        </svg>
+        <div class="pl-conn-lbl">Flask routes.py</div>
+      </div>
+
+      <!-- Layer 4 -->
+      <div class="pl-layer" style="background:#080210;border:1px solid rgba(167,139,250,.2)">
+        <div class="pl-hdr" style="background:rgba(167,139,250,.08)">
+          <div style="display:flex;justify-content:center;margin-bottom:4px">
+            <svg width="30" height="26" style="color:#a78bfa"><use href="#I-chart" width="30" height="26"/></svg>
+          </div>
+          <div class="pl-hdr-t" style="color:#a78bfa">④ Analytics</div>
+          <div style="font-size:.58rem;color:#4a6888">KPIs &amp; Reporting</div>
+        </div>
+        <div class="pl-body">
+          <div class="pl-item" style="border-left:2px solid #fca5a5">
+            <div style="color:#fca5a5;font-weight:700;font-size:.63rem;display:flex;align-items:center;gap:4px">
+              <svg width="14" height="16" style="color:#fca5a5"><use href="#I-shield" width="14" height="16"/></svg> Risk KPIs
+            </div>
+            <div style="font-size:.6rem;color:#4a6888;margin-top:2px">VaR · Sharpe · Drawdown · Beta</div>
+          </div>
+          <div class="pl-item" style="border-left:2px solid #fb923c">
+            <div style="color:#fb923c;font-weight:700;font-size:.63rem;display:flex;align-items:center;gap:4px">
+              <svg width="14" height="12" style="color:#fb923c"><use href="#I-chart" width="14" height="12"/></svg> Performance
+            </div>
+            <div style="font-size:.6rem;color:#4a6888;margin-top:2px">PnL latent/réalisé · IRR · Attribution</div>
+          </div>
+          <div class="pl-item" style="border-left:2px solid #34d399">
+            <div style="color:#34d399;font-weight:700;font-size:.63rem;display:flex;align-items:center;gap:4px">
+              <svg width="14" height="9" style="color:#34d399"><use href="#I-wave" width="14" height="9"/></svg> ALM
+            </div>
+            <div style="font-size:.6rem;color:#4a6888;margin-top:2px">Gap liquidité · Duration · LCR/NSFR</div>
+          </div>
+          <div class="pl-item" style="border-left:2px solid #60a5fa">
+            <div style="color:#60a5fa;font-weight:700;font-size:.63rem;display:flex;align-items:center;gap:4px">
+              <svg width="14" height="14" style="color:#60a5fa"><use href="#I-monitor" width="14" height="14"/></svg> Power BI
+            </div>
+            <div style="font-size:.6rem;color:#4a6888;margin-top:2px">Embed iframe · URL AppSettings</div>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- pl-flow -->
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- ═══════════════════════════════════════════════════════
+     S5 — MATRICE RÔLES
+════════════════════════════════════════════════════════ -->
+<div class="section fade-up" id="s5">
+  <div class="section-title">05 — Matrice des rôles</div>
+  <p class="section-desc">Cloisonnement Front / Middle / Back — défini dans <code>config.py → ROLES</code>, appliqué par <code>@role_required()</code> sur chaque route.</p>
+
+  <div class="diagram-bg" style="padding:18px;overflow-x:auto">
+    <table class="role-tbl">
+      <thead>
+        <tr>
+          <th class="mc">Module</th>
+          <th style="color:#4ade80">
+            <svg width="16" height="20" style="color:#4ade80;vertical-align:middle"><use href="#I-user" width="16" height="20"/></svg> TRADER
+          </th>
+          <th style="color:#4ade80">
+            <svg width="16" height="20" style="color:#4ade80;vertical-align:middle"><use href="#I-user" width="16" height="20"/></svg> ASSET_MGR
+          </th>
+          <th style="color:#a78bfa">
+            <svg width="16" height="20" style="color:#a78bfa;vertical-align:middle"><use href="#I-user" width="16" height="20"/></svg> QUANT
+          </th>
+          <th style="color:#fca5a5">
+            <svg width="16" height="20" style="color:#fca5a5;vertical-align:middle"><use href="#I-user" width="16" height="20"/></svg> RISK_ANALYST
+          </th>
+          <th style="color:#34d399">
+            <svg width="16" height="20" style="color:#34d399;vertical-align:middle"><use href="#I-user" width="16" height="20"/></svg> ALM_OFFICER
+          </th>
+          <th style="color:#93c5fd">
+            <svg width="16" height="20" style="color:#93c5fd;vertical-align:middle"><use href="#I-user" width="16" height="20"/></svg> COMPTABLE
+          </th>
+          <th style="color:#93c5fd">
+            <svg width="16" height="20" style="color:#93c5fd;vertical-align:middle"><use href="#I-user" width="16" height="20"/></svg> DATA_ANALYST
+          </th>
+          <th style="color:#e8a020">
+            <svg width="20" height="20" style="color:#e8a020;vertical-align:middle" class="gear-cw"><use href="#I-gear" width="20" height="20"/></svg> ADMIN
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="r-front"><td class="mn"><svg width="14" height="12" style="color:#4ade80;vertical-align:middle;margin-right:4px"><use href="#I-chart" width="14" height="12"/></svg>Portfolio</td><td>—</td><td>✅</td><td>✅</td><td>—</td><td>—</td><td>—</td><td>—</td><td>✅</td></tr>
+        <tr class="r-front"><td class="mn"><svg width="10" height="18" style="color:#fbbf24;vertical-align:middle;margin-right:4px"><use href="#I-lightning" width="10" height="18"/></svg>Trading (lecture)</td><td>✅</td><td>—</td><td>✅</td><td>—</td><td>—</td><td>—</td><td>—</td><td>✅</td></tr>
+        <tr class="r-front"><td class="mn"><svg width="10" height="18" style="color:#fbbf24;vertical-align:middle;margin-right:4px"><use href="#I-lightning" width="10" height="18"/></svg>Saisie d'ordre</td>
+          <td style="color:#fbbf24;font-weight:700">⚡ excl.</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td style="color:#fbbf24;font-weight:700">⚡ excl.</td></tr>
+        <tr class="r-front"><td class="mn"><svg width="14" height="14" style="color:#a78bfa;vertical-align:middle;margin-right:4px"><use href="#I-globe" width="14" height="14"/></svg>Quant Lab</td><td>—</td><td>—</td><td>✅</td><td>—</td><td>—</td><td>—</td><td>✅</td><td>✅</td></tr>
+        <tr class="r-mid"><td class="mn"><svg width="12" height="14" style="color:#fca5a5;vertical-align:middle;margin-right:4px"><use href="#I-shield" width="12" height="14"/></svg>Risk</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td><td>—</td><td>—</td><td>✅</td></tr>
+        <tr class="r-mid"><td class="mn"><svg width="14" height="12" style="color:#fb923c;vertical-align:middle;margin-right:4px"><use href="#I-chart" width="14" height="12"/></svg>Performance</td><td>—</td><td>✅</td><td>—</td><td>✅</td><td>✅</td><td>—</td><td>✅</td><td>✅</td></tr>
+        <tr class="r-mid"><td class="mn"><svg width="14" height="9" style="color:#34d399;vertical-align:middle;margin-right:4px"><use href="#I-wave" width="14" height="9"/></svg>ALM</td><td>—</td><td>—</td><td>—</td><td>✅</td><td>✅</td><td>—</td><td>—</td><td>✅</td></tr>
+        <tr class="r-back"><td class="mn"><svg width="12" height="14" style="color:#93c5fd;vertical-align:middle;margin-right:4px"><use href="#I-ledger" width="12" height="14"/></svg>Accounting</td><td>—</td><td>—</td><td>—</td><td>✅</td><td>—</td><td>✅</td><td>✅</td><td>✅</td></tr>
+        <tr class="r-back"><td class="mn"><svg width="14" height="12" style="color:#60a5fa;vertical-align:middle;margin-right:4px"><use href="#I-monitor" width="14" height="12"/></svg>Monitoring</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td>✅</td><td>✅</td></tr>
+        <tr><td class="mn"><svg width="12" height="14" style="color:#94a3b8;vertical-align:middle;margin-right:4px"><use href="#I-book" width="12" height="14"/></svg>Docs / Wiki</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td><td>✅</td></tr>
+      </tbody>
+    </table>
+    <div style="display:flex;gap:14px;margin-top:10px;font-size:.6rem;color:#4a6888;flex-wrap:wrap">
+      <span>✅ Accès complet</span>
+      <span style="color:#fbbf24">⚡ Exclusif TRADER + ADMIN (saisie ordre)</span>
+      <span style="background:rgba(74,222,128,.1);color:#4ade80;padding:1px 7px;border-radius:3px">FRONT</span>
+      <span style="background:rgba(252,165,165,.1);color:#fca5a5;padding:1px 7px;border-radius:3px">MIDDLE</span>
+      <span style="background:rgba(147,197,253,.1);color:#93c5fd;padding:1px 7px;border-radius:3px">BACK</span>
+    </div>
+  </div>
+</div>
+
+<div class="divider"></div>
+
+<!-- ═══════════════════════════════════════════════════════
+     S6 — TABLEAU DE BORD
+════════════════════════════════════════════════════════ -->
+<div class="section fade-up" id="s6">
+  <div class="section-title">06 — Tableau de bord de la plateforme</div>
+  <p class="section-desc">Métriques clés : répartition des modules, tables SQL, timing lifecycle et couverture des rôles.</p>
+
+  <div class="charts-row">
+    <div class="chart-box">
+      <div class="chart-title"><svg width="16" height="14" style="color:#4ade80"><use href="#I-chart" width="16" height="14"/></svg> Modules par office</div>
+      <div class="chart-canvas"><canvas id="ch1"></canvas></div>
+    </div>
+    <div class="chart-box">
+      <div class="chart-title"><svg width="16" height="20" style="color:#60a5fa"><use href="#I-db" width="16" height="20"/></svg> Tables SQL par couche</div>
+      <div class="chart-canvas"><canvas id="ch2"></canvas></div>
+    </div>
+    <div class="chart-box">
+      <div class="chart-title"><svg width="14" height="18" style="color:#fbbf24"><use href="#I-lightning" width="14" height="18"/></svg> Durée cumulée lifecycle (min, log)</div>
+      <div class="chart-canvas"><canvas id="ch3"></canvas></div>
+    </div>
+    <div class="chart-box">
+      <div class="chart-title"><svg width="16" height="20" style="color:#e8a020"><use href="#I-users" width="16" height="20"/></svg> Modules accessibles par rôle</div>
+      <div class="chart-canvas"><canvas id="ch4"></canvas></div>
+    </div>
+  </div>
+</div>
+
+</div><!-- content -->
+</div><!-- main -->
+</div><!-- layout -->
+
+<script>
+/* ── Counters ──────────────────────────────────────────── */
+function animCount(el, tgt, dur=1500) {
+  const t0 = performance.now();
+  const fmt = n => n>=1000 ? n.toLocaleString('fr-FR') : String(n);
+  const tick = now => {
+    const p = Math.min((now-t0)/dur, 1);
+    el.textContent = fmt(Math.floor((1-Math.pow(1-p,3))*tgt));
+    if (p<1) requestAnimationFrame(tick);
+  };
+  requestAnimationFrame(tick);
+}
+
+/* ── Intersection Observer ─────────────────────────────── */
+const io = new IntersectionObserver(entries => {
+  entries.forEach(e => {
+    if (!e.isIntersecting) return;
+    e.target.classList.add('vis');
+    e.target.querySelectorAll('[data-target]').forEach(el => animCount(el, +el.dataset.target));
+  });
+}, { threshold:.08 });
+document.querySelectorAll('.fade-up').forEach(el => io.observe(el));
+
+/* ── Active sidebar ────────────────────────────────────── */
+const secs = document.querySelectorAll('.section[id]');
+const links = document.querySelectorAll('.sidebar a');
+window.addEventListener('scroll', () => {
+  let cur='';
+  secs.forEach(s => { if (window.scrollY >= s.offsetTop-120) cur=s.id; });
+  links.forEach(l => l.classList.toggle('active', l.getAttribute('href')==='#'+cur));
+}, {passive:true});
+
+/* ── Lifecycle animation ───────────────────────────────── */
+const lcSteps = document.querySelectorAll('#lc-grid .lc-step');
+const lcBar   = document.getElementById('lc-bar');
+let lcT = null, lcI = -1;
+
+function resetLC() {
+  clearInterval(lcT);
+  lcSteps.forEach(s => { s.classList.remove('lit'); s.style.opacity='.35'; });
+  lcBar.style.transition='none'; lcBar.style.width='0';
+}
+
+function playLC() {
+  resetLC(); lcI=-1;
+  const S=750, N=lcSteps.length;
+  setTimeout(() => { lcBar.style.transition=`width ${N*S}ms linear`; lcBar.style.width='100%'; }, 80);
+  lcT = setInterval(() => {
+    lcI++;
+    if (lcI>=N) { clearInterval(lcT); return; }
+    lcSteps[lcI].classList.add('lit');
+    lcSteps[lcI].style.opacity='1';
+    if (lcI>0) lcSteps[lcI-1].style.opacity='.65';
+  }, S);
+  document.getElementById('btn-play').textContent='↺ Rejouer';
+}
+
+const lcObs = new IntersectionObserver(e => {
+  if (e[0].isIntersecting) { setTimeout(playLC,600); lcObs.disconnect(); }
+},{threshold:.2});
+const lcSec = document.getElementById('s3');
+if (lcSec) lcObs.observe(lcSec);
+resetLC();
+
+/* ── Chart.js ──────────────────────────────────────────── */
+Chart.defaults.color='#7a9ab8';
+Chart.defaults.font.family="'Segoe UI',system-ui,sans-serif";
+Chart.defaults.font.size=11;
+
+const BG='#060e1c', BORDER='#152030';
+
+function doughnut(id, labels, data, colors) {
+  new Chart(document.getElementById(id), {
+    type:'doughnut',
+    data:{ labels, datasets:[{ data, backgroundColor:colors, borderColor:BG, borderWidth:3, hoverOffset:8 }] },
+    options:{ responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ position:'right', labels:{ boxWidth:11, padding:12 } } },
+      animation:{ animateRotate:true, duration:1100, easing:'easeOutQuart' }
+    }
+  });
+}
+
+function bar(id, labels, dataset, yOpts={}) {
+  new Chart(document.getElementById(id), {
+    type:'bar',
+    data:{ labels, datasets:[dataset] },
+    options:{ responsive:true, maintainAspectRatio:false,
+      plugins:{ legend:{ display:false } },
+      scales:{
+        x:{ grid:{ color:BORDER }, ticks:{ color:'#7a9ab8', maxRotation:35, font:{size:9} } },
+        y:{ grid:{ color:BORDER }, ticks:{ color:'#7a9ab8' }, beginAtZero:true, ...yOpts }
+      },
+      animation:{ duration:1000, easing:'easeOutQuart' }
+    }
+  });
+}
+
+doughnut('ch1',
+  ['Front Office','Middle Office','Back Office','Système'],
+  [3,3,2,2],
+  ['#4ade80','#fca5a5','#93c5fd','#64748b']
+);
+
+doughnut('ch2',
+  ['Dimensions','Faits marché','Faits compta','Config/Log','Staging'],
+  [4,4,4,5,2],
+  ['#e8a020','#4ade80','#60a5fa','#a78bfa','#fb923c']
+);
+
+bar('ch3',
+  ['PRE\nCHECK','ORDER','BROKER\nSENT','BROKER\nACK','EXECUTED','CONFIRMED','PENDING','SETTLED','ACCTG','RECON'],
+  { label:'Minutes', data:[0,1,1.5,3,5,35,36,1476,1481,1560],
+    backgroundColor:['#4ade80','#4ade80','#fbbf24','#fbbf24','#fbbf24','#93c5fd','#93c5fd','#60a5fa','#a78bfa','#4ade80'],
+    borderRadius:3, borderSkipped:false },
+  { type:'logarithmic' }
+);
+
+bar('ch4',
+  ['TRADER','ASSET\nMGR','QUANT','RISK\nANALYST','ALM\nOFFICER','COMPTABLE','DATA\nANALYST','ADMIN'],
+  { label:'Modules', data:[4,5,4,6,4,3,6,11],
+    backgroundColor:['#4ade80','#4ade80','#a78bfa','#fca5a5','#34d399','#93c5fd','#93c5fd','#e8a020'],
+    borderRadius:3, borderSkipped:false }
+);
+</script>
+</body>
+</html>

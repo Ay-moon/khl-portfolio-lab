@@ -1,0 +1,364 @@
+{% extends "base.html" %}
+{% block title %}Wizard — Étape 2 : Univers investissable{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-icon" style="background:#1a3a5c;"><i class="bi bi-globe2"></i></div>
+  <div>
+    <h1>Univers Investissable — Étape 2/6</h1>
+    <nav aria-label="breadcrumb"><ol class="breadcrumb mb-0">
+      <li class="breadcrumb-item"><a href="{{ url_for('portfolio.index') }}">Portefeuilles</a></li>
+      <li class="breadcrumb-item active">Wizard — Étape 2</li>
+    </ol></nav>
+  </div>
+</div>
+
+<!-- Progression -->
+<div class="wizard-steps">
+  {% for i in range(1, 7) %}
+  <div class="wizard-step {{ 'active' if i == step else ('completed' if i < step else '') }}">
+    <div class="step-circle">{% if i < step %}<i class="bi bi-check"></i>{% else %}{{ i }}{% endif %}</div>
+    <div class="step-label">{{ ['Identité','Univers','Stratégie','Contraintes','Exécution','Résumé'][i-1] }}</div>
+  </div>
+  {% endfor %}
+</div>
+
+{% set is_retail = 'Retail' in draft.get('client_type','') %}
+{% set nav = draft.get('initial_nav', '1000000') | float %}
+
+{% if is_retail %}
+<!-- Mode débutant -->
+<div class="alert border-0 mb-3" style="background:linear-gradient(135deg,#e8f4fd,#d1e8f5);border-left:4px solid #0d6efd!important;">
+  <div class="d-flex align-items-start gap-3">
+    <i class="bi bi-mortarboard-fill text-primary fs-4 mt-1"></i>
+    <div style="flex:1">
+      <strong>Mode Investisseur Débutant — Univers recommandé</strong>
+      <p class="mb-2 mt-1" style="font-size:0.85rem;">
+        Pour un capital de <strong>{{ "{:,.0f}".format(nav) }} €</strong>, voici ce qui est recommandé :
+      </p>
+      <div class="row g-2" style="font-size:0.82rem;">
+        <div class="col-md-4">
+          <div class="p-2 rounded border border-success bg-white">
+            <i class="bi bi-check-circle-fill text-success me-1"></i><strong>Recommandé</strong><br>
+            <span class="text-success">ETF Indices (trackers)</span> — diversification maximale, frais faibles (0,1–0,5% p.a.)<br>
+            <em>Ex : SPY (S&P 500), QQQ (Nasdaq), IWDA (MSCI World)</em>
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="p-2 rounded border border-warning bg-white">
+            <i class="bi bi-exclamation-triangle-fill text-warning me-1"></i><strong>À doser</strong><br>
+            <span class="text-warning">Actions US solides</span> — AAPL, MSFT, AMZN : à limiter à 1-2 lignes max avec petit capital
+          </div>
+        </div>
+        <div class="col-md-4">
+          <div class="p-2 rounded border border-danger bg-white">
+            <i class="bi bi-x-circle-fill text-danger me-1"></i><strong>Déconseillé débutant</strong><br>
+            <span class="text-danger">Forex / SRD / Obligations complexes</span> — effets de levier, risque de change, complexité élevée
+          </div>
+        </div>
+      </div>
+      {% if nav < 3000 %}
+      <div class="mt-2 p-2 rounded" style="background:#fff3cd;font-size:0.8rem;">
+        <i class="bi bi-calculator me-1"></i>
+        <strong>Conseil taille de position :</strong> Avec {{ "{:,.0f}".format(nav) }} €, visez
+        <strong>{{ [2, (nav // 500)|int]|min }} à {{ [3, (nav // 300)|int]|min }} lignes maximum</strong>
+        ({{ "{:,.0f}".format(nav / 3) }}–{{ "{:,.0f}".format(nav / 2) }} € par position).
+        Trop de lignes = frais de courtage qui dévorent le rendement.
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% else %}
+<div class="story-block mb-4">
+  <div class="story-title"><i class="bi bi-lightbulb me-2"></i>Étape 2 — Définition de l'univers d'investissement</div>
+  <p>
+    L'univers investissable définit la liste des instruments sur lesquels vous pouvez investir.
+    Il est basé sur vos <strong>données réelles</strong> : 60 000+ instruments disponibles
+    depuis la base Boursorama/STOOQ (actions US, indices, forex, obligations).
+    Sélectionnez les classes d'actifs autorisées et les instruments cibles.
+  </p>
+</div>
+{% endif %}
+
+<form method="POST" id="wizard-form">
+  <div class="row g-3">
+    <!-- Filtres + recherche -->
+    <div class="col-lg-4">
+      <div class="khl-card">
+        <div class="card-title"><i class="bi bi-funnel me-1"></i>Classes d'actifs autorisées</div>
+
+        {% set retail_default = ['us_stocks','indices'] %}
+        {% set pro_default    = ['us_stocks','indices'] %}
+        {% set default_classes = draft.get('asset_classes') or (retail_default if is_retail else pro_default) %}
+
+        {% for cls, label, icon, retail_ok in [
+          ('us_stocks','Actions US','graph-up', True),
+          ('indices','Indices (ETF trackers)','bar-chart', True),
+          ('forex','Forex & Matières premières','currency-exchange', False),
+          ('bonds','Obligations','receipt', False),
+          ('fr_stocks','Actions françaises SRD','flag', False),
+        ] %}
+        <div class="form-check mb-2">
+          <input class="form-check-input" type="checkbox" name="asset_classes"
+                 value="{{ cls }}" id="cls_{{ cls }}"
+                 {{ 'checked' if cls in default_classes else '' }}
+                 onchange="filterByClass()">
+          <label class="form-check-label" for="cls_{{ cls }}" style="font-size:0.85rem;">
+            <i class="bi bi-{{ icon }} me-2"></i>{{ label }}
+            {% if is_retail and not retail_ok %}
+            <span class="badge ms-1" style="background:#ffc107;color:#000;font-size:0.6rem;">Avancé</span>
+            {% endif %}
+            {% if is_retail and retail_ok %}
+            <span class="badge ms-1 bg-success" style="font-size:0.6rem;">Recommandé</span>
+            {% endif %}
+          </label>
+        </div>
+        {% endfor %}
+
+        <hr>
+        <div class="form-section-title">Recherche libre</div>
+        <div class="input-group mb-2">
+          <span class="input-group-text"><i class="bi bi-search"></i></span>
+          <input type="text" id="search-input" class="form-control"
+                 placeholder="Ticker, nom..." style="font-size:0.82rem;">
+        </div>
+        <button type="button" class="btn btn-sm btn-outline-primary w-100"
+                onclick="searchInstruments()">
+          <i class="bi bi-search me-1"></i>Rechercher
+        </button>
+      </div>
+
+      <!-- Panier sélectionné -->
+      <div class="khl-card">
+        <div class="card-title">
+          <i class="bi bi-basket me-1"></i>Instruments sélectionnés
+          <span class="badge bg-primary ms-1" id="basket-count">0</span>
+        </div>
+        <div id="basket" style="max-height:200px;overflow-y:auto;">
+          <p class="text-muted" style="font-size:0.78rem;">Cliquez sur + pour ajouter des instruments</p>
+        </div>
+        <input type="hidden" name="selected_tickers" id="selected_tickers"
+               value="{{ draft.get('selected_tickers','') }}">
+      </div>
+    </div>
+
+    <!-- Tableau des instruments disponibles -->
+    <div class="col-lg-8">
+      <div class="khl-card">
+        <div class="card-title">
+          <i class="bi bi-list-ul me-1"></i>Instruments disponibles
+          <span class="text-muted ms-2" style="font-size:0.75rem;" id="results-count"></span>
+        </div>
+
+        {% if is_retail %}
+        <!-- Suggestions ETF pour débutants -->
+        <div class="alert alert-success py-2 px-3 mb-2" style="font-size:0.82rem;">
+          <i class="bi bi-stars me-1"></i><strong>Starter kit débutant</strong> — Ces 5 ETF couvrent le monde entier avec des frais ultra-faibles.
+          Cliquez <i class="bi bi-plus"></i> pour les ajouter à votre sélection.
+        </div>
+        <table class="table table-sm khl-table mb-3">
+          <thead><tr>
+            <th>Ticker</th><th>Description</th><th class="text-end">Exposition</th><th></th>
+          </tr></thead>
+          <tbody>
+            {% for ticker, desc, expo in [
+              ('SPY',  'SPDR S&P 500 ETF — Top 500 entreprises US',         'Actions US large cap'),
+              ('QQQ',  'Invesco Nasdaq-100 — Tech & Innovation',             'Actions tech US'),
+              ('IWDA.AS', 'iShares MSCI World — 1 500 entreprises mondiales','Actions monde entier'),
+              ('EEM',  'iShares MSCI Emerging Markets — marchés émergents',  'Actions émergents'),
+              ('^GSPC','S&P 500 Index — référence marché américain',         'Indice de référence'),
+            ] %}
+            <tr>
+              <td class="mono"><strong>{{ ticker }}</strong></td>
+              <td style="font-size:0.8rem;">{{ desc }}</td>
+              <td class="text-end"><span class="badge bg-success" style="font-size:0.65rem;">{{ expo }}</span></td>
+              <td>
+                <button type="button" class="btn btn-sm btn-outline-success"
+                        style="font-size:0.72rem;padding:1px 8px;"
+                        onclick="addToBasket('{{ ticker }}', '{{ expo }}')">
+                  <i class="bi bi-plus"></i>
+                </button>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+        <hr class="my-2">
+        <div class="card-title" style="font-size:0.8rem;color:#6c757d;">
+          <i class="bi bi-list-ul me-1"></i>Autres instruments disponibles (recherche libre ci-contre)
+        </div>
+        {% endif %}
+
+        <!-- Top US Stocks -->
+        <div id="instruments-table">
+          <table class="table table-sm khl-table mb-2">
+            <thead>
+              <tr>
+                <th>Ticker</th><th>Classe</th>
+                <th class="text-end">Cotations</th>
+                <th class="text-end">Dernier prix</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="instruments-body">
+              {% for ins in top_us %}
+              <tr data-ticker="{{ ins.ticker }}">
+                <td class="mono"><strong>{{ ins.ticker }}</strong></td>
+                <td><span class="badge bg-light text-dark" style="font-size:0.65rem;">Action US</span></td>
+                <td class="text-end mono">{{ "{:,}".format(ins.nb_cot) }}</td>
+                <td class="text-end mono">{% if ins.last_price %}{{ ins.last_price }}{% else %}—{% endif %}</td>
+                <td>
+                  <button type="button" class="btn btn-sm btn-outline-success"
+                          style="font-size:0.72rem;padding:1px 8px;"
+                          onclick="addToBasket('{{ ins.ticker }}', 'Action US')">
+                    <i class="bi bi-plus"></i>
+                  </button>
+                </td>
+              </tr>
+              {% endfor %}
+              {% for ins in top_indices %}
+              <tr data-ticker="{{ ins.ticker }}">
+                <td class="mono"><strong>{{ ins.ticker }}</strong></td>
+                <td><span class="badge bg-light text-dark" style="font-size:0.65rem;">Indice</span></td>
+                <td class="text-end mono">{{ "{:,}".format(ins.nb_cot) }}</td>
+                <td class="text-end mono">{% if ins.last_price %}{{ ins.last_price }}{% else %}—{% endif %}</td>
+                <td>
+                  <button type="button" class="btn btn-sm btn-outline-success"
+                          style="font-size:0.72rem;padding:1px 8px;"
+                          onclick="addToBasket('{{ ins.ticker }}', 'Indice')">
+                    <i class="bi bi-plus"></i>
+                  </button>
+                </td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+          <p class="text-muted text-center" style="font-size:0.75rem;" id="load-more-hint">
+            Utilisez la recherche pour explorer les 60 000+ instruments disponibles
+          </p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="d-flex justify-content-between mt-2">
+    <a href="{{ url_for('portfolio.wizard_step', step=1) }}" class="btn btn-outline-secondary">
+      <i class="bi bi-arrow-left me-2"></i>Précédent
+    </a>
+    <button type="submit" class="btn btn-primary" style="background:#1a3a5c;border-color:#1a3a5c;">
+      Suivant — Stratégie <i class="bi bi-arrow-right ms-2"></i>
+    </button>
+  </div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let basket = {};
+let _searchTimer = null;
+
+// ── Restaurer le panier depuis le draft ───────────────────────
+const savedTickers = document.getElementById('selected_tickers').value;
+if (savedTickers) {
+  savedTickers.split(',').filter(t => t.trim()).forEach(t => addToBasket(t.trim(), ''));
+}
+
+// ── Panier ────────────────────────────────────────────────────
+function addToBasket(ticker, cls) {
+  if (basket[ticker]) return;
+  basket[ticker] = cls;
+  updateBasketUI();
+}
+function removeFromBasket(ticker) {
+  delete basket[ticker];
+  updateBasketUI();
+}
+function updateBasketUI() {
+  const count = Object.keys(basket).length;
+  document.getElementById('basket-count').textContent = count;
+  document.getElementById('selected_tickers').value = Object.keys(basket).join(',');
+  const div = document.getElementById('basket');
+  if (count === 0) {
+    div.innerHTML = '<p class="text-muted" style="font-size:0.78rem;">Cliquez sur + pour ajouter des instruments</p>';
+    return;
+  }
+  div.innerHTML = Object.entries(basket).map(([t, c]) =>
+    `<div class="d-flex justify-content-between align-items-center mb-1">
+      <span class="mono" style="font-size:0.8rem;">${t}</span>
+      <button type="button" class="btn btn-sm btn-outline-danger" style="padding:1px 6px;font-size:0.68rem;"
+              onclick="removeFromBasket('${t}')"><i class="bi bi-x"></i></button>
+    </div>`).join('');
+}
+
+// ── Recherche avec debounce 400 ms + minimum 2 chars ─────────
+function searchInstruments() {
+  const q = document.getElementById('search-input').value.trim();
+  const checkboxes = document.querySelectorAll('[name=asset_classes]:checked');
+  const classes    = Array.from(checkboxes).map(c => c.value);
+  const cls        = classes.length === 1 ? classes[0] : '';
+  const tbody      = document.getElementById('instruments-body');
+
+  // Garde minimum 2 caractères si recherche textuelle
+  if (q.length > 0 && q.length < 2) {
+    document.getElementById('results-count').textContent = 'Tapez au moins 2 caractères';
+    return;
+  }
+  // Sans texte et sans classe unique : ne rien faire (évite full scan)
+  if (!q && !cls) {
+    document.getElementById('results-count').textContent = '';
+    return;
+  }
+
+  tbody.innerHTML = '<tr><td colspan="5" class="text-center py-3">' +
+    '<div class="spinner-border spinner-border-sm me-2"></div>Recherche en cours…</td></tr>';
+  document.getElementById('results-count').textContent = '';
+
+  fetch(`/portfolio/api/securities?q=${encodeURIComponent(q)}&class=${encodeURIComponent(cls)}&limit=50`)
+    .then(r => r.json())
+    .then(data => {
+      if (data.error) {
+        tbody.innerHTML = `<tr><td colspan="5" class="text-danger p-3">Erreur : ${data.error}</td></tr>`;
+        return;
+      }
+      document.getElementById('results-count').textContent = `${data.length} résultat${data.length > 1 ? 's' : ''}`;
+      tbody.innerHTML = data.length === 0
+        ? '<tr><td colspan="5" class="text-center text-muted py-3">Aucun résultat — essayez un autre terme</td></tr>'
+        : data.map(ins =>
+            `<tr>
+              <td class="mono"><strong>${ins.ticker}</strong></td>
+              <td><span class="badge bg-light text-dark" style="font-size:0.65rem;">${ins.asset_class}</span></td>
+              <td class="text-end mono">${(ins.nb_cot||0).toLocaleString()}</td>
+              <td class="text-end mono">${ins.last_price != null ? ins.last_price : '—'}</td>
+              <td>
+                <button type="button" class="btn btn-sm btn-outline-success"
+                        style="font-size:0.72rem;padding:1px 8px;"
+                        onclick="addToBasket('${ins.ticker}','${ins.asset_class}')">
+                  <i class="bi bi-plus"></i>
+                </button>
+              </td>
+            </tr>`).join('');
+    })
+    .catch(() => {
+      tbody.innerHTML = '<tr><td colspan="5" class="text-danger p-3">Erreur réseau — réessayez</td></tr>';
+    });
+}
+
+// Debounce frappe clavier → 400 ms avant de lancer la requête
+document.getElementById('search-input').addEventListener('input', () => {
+  clearTimeout(_searchTimer);
+  _searchTimer = setTimeout(searchInstruments, 400);
+});
+
+// Touche Entrée → immédiat (pas de debounce)
+document.getElementById('search-input').addEventListener('keydown', e => {
+  if (e.key === 'Enter') { e.preventDefault(); clearTimeout(_searchTimer); searchInstruments(); }
+});
+
+// Checkbox classe → recherche immédiate si texte déjà saisi, sinon filtre par classe seule
+function filterByClass() {
+  clearTimeout(_searchTimer);
+  _searchTimer = setTimeout(searchInstruments, 200);
+}
+</script>
+{% endblock %}

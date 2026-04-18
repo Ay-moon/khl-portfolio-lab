@@ -1,0 +1,68 @@
+/// Daily closing prices per security
+table FactPrice
+	lineageTag: 0020d837-9f13-4ed0-b3fd-e3fe388491ff
+
+	column FactPriceId
+		dataType: int64
+		isHidden
+		lineageTag: ac0a53b6-e10d-45e1-83c0-fd3feec247c8
+		summarizeBy: count
+		sourceColumn: FactPriceId
+
+		annotation SummarizationSetBy = Automatic
+
+	column DateKey
+		dataType: int64
+		isHidden
+		lineageTag: 6be5db8d-4589-4cda-8693-43cb7553eee0
+		summarizeBy: none
+		sourceColumn: DateKey
+
+	column SecurityKey
+		dataType: int64
+		isHidden
+		lineageTag: 1ee3d59b-8151-4f14-99c5-f4dec07aabe0
+		summarizeBy: count
+		sourceColumn: SecurityKey
+
+		annotation SummarizationSetBy = Automatic
+
+	column ClosePrice
+		dataType: decimal
+		formatString: #,##0.000000
+		lineageTag: 6805ae76-e585-4adf-aaeb-65636ddec856
+		summarizeBy: sum
+		sourceColumn: ClosePrice
+
+		annotation SummarizationSetBy = Automatic
+
+	column Volume
+		dataType: int64
+		lineageTag: a4b5065a-5042-492f-acc4-ceacb3dc4d87
+		summarizeBy: sum
+		sourceColumn: Volume
+
+		annotation SummarizationSetBy = Automatic
+
+	column SourceSystem
+		dataType: string
+		isHidden
+		lineageTag: 24297f69-1d71-4d31-baa9-f870a01c410d
+		summarizeBy: none
+		sourceColumn: SourceSystem
+
+	column LoadDts
+		dataType: dateTime
+		isHidden
+		lineageTag: 6fa6db33-77ec-4871-854a-0364ad79b794
+		summarizeBy: none
+		sourceColumn: LoadDts
+
+	partition FactPrice_Import = m
+		mode: directQuery
+		source =
+				let
+				    Source = Sql.Database("PERSO-AJE-DELL\BFASERVER01", "SmartAssetAdvicedb"),
+				    result = Value.NativeQuery(Source, "SELECT * FROM [dbo].[FactPrice]", null, [EnableFolding=true])
+				in  result
+

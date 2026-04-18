@@ -1,0 +1,219 @@
+{% extends "base.html" %}
+{% block title %}Workflow Création Portefeuille{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="page-icon" style="background:#1a3a5c;"><i class="bi bi-pie-chart"></i></div>
+  <div class="flex-grow-1">
+    <h1>Workflow — Création de Portefeuille</h1>
+    <nav aria-label="breadcrumb"><ol class="breadcrumb mb-0">
+      <li class="breadcrumb-item"><a href="{{ url_for('home') }}">Accueil</a></li>
+      <li class="breadcrumb-item"><a href="{{ url_for('docs.index') }}">Documentation</a></li>
+      <li class="breadcrumb-item active">Workflow Portefeuille</li>
+    </ol></nav>
+  </div>
+  <a href="{{ url_for('portfolio.wizard_start') }}" class="btn btn-primary"
+     style="background:#1a3a5c;border-color:#1a3a5c;">
+    <i class="bi bi-plus-lg me-2"></i>Créer un portefeuille
+  </a>
+</div>
+
+<div class="story-block mb-4">
+  <div class="story-title"><i class="bi bi-person-workspace me-2"></i>Rôles concernés</div>
+  <p>
+    <strong>ASSET_MANAGER</strong>, <strong>QUANT</strong>, <strong>ADMIN</strong> peuvent créer des portefeuilles.
+    Le wizard guide l'utilisateur en <strong>6 étapes</strong> avant l'instanciation en base de données.
+  </p>
+</div>
+
+<!-- Étapes du wizard -->
+<div class="khl-card mb-3">
+  <div class="card-title"><i class="bi bi-list-ol me-1"></i>Les 6 Étapes du Wizard</div>
+  <div class="table-responsive">
+    <table class="table khl-table">
+      <thead>
+        <tr><th>#</th><th>Étape</th><th>Données saisies</th><th>Validation</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><span class="badge" style="background:#1a3a5c;color:white;">1</span></td>
+          <td><strong>Identité</strong></td>
+          <td>Code portefeuille (ex: <code>PF001</code>), Nom, Devise (EUR/USD/GBP)</td>
+          <td>Code unique dans <code>DimPortfolio</code></td>
+        </tr>
+        <tr>
+          <td><span class="badge" style="background:#1a3a5c;color:white;">2</span></td>
+          <td><strong>Univers investissable</strong></td>
+          <td>Sélection des instruments STOOQ (actions, indices, ETF, FX)</td>
+          <td>Instruments présents dans <code>stg_bourso_price_history</code></td>
+        </tr>
+        <tr>
+          <td><span class="badge" style="background:#1a3a5c;color:white;">3</span></td>
+          <td><strong>Profil risque</strong></td>
+          <td>CONSERVATIVE / BALANCED / AGGRESSIVE</td>
+          <td>Stocké en session jusqu'à confirmation</td>
+        </tr>
+        <tr>
+          <td><span class="badge" style="background:#1a3a5c;color:white;">4</span></td>
+          <td><strong>Stratégie d'allocation</strong></td>
+          <td>Equal-weight / Risk-parity / Momentum / Personnalisé</td>
+          <td>Détermine l'algorithme de simulation</td>
+        </tr>
+        <tr>
+          <td><span class="badge" style="background:#1a3a5c;color:white;">5</span></td>
+          <td><strong>Paramètres de simulation</strong></td>
+          <td>Capital initial, Frais (bps), Date de départ</td>
+          <td>Utilisés par le moteur <code>run_mvp.py</code></td>
+        </tr>
+        <tr>
+          <td><span class="badge" style="background:#1a3a5c;color:white;">6</span></td>
+          <td><strong>Contraintes réglementaires</strong></td>
+          <td>Limites VaR, concentration max par actif, tracking error</td>
+          <td>Contrôlées par le module Risk</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Ce qui est créé en SQL -->
+<div class="khl-card mb-3">
+  <div class="card-title"><i class="bi bi-database me-1"></i>Ce qui est créé en base SQL à la confirmation</div>
+
+  <div class="story-block mb-3">
+    <div class="story-title"><i class="bi bi-arrow-right-circle me-2"></i>Déclencheur</div>
+    <p>
+      À l'étape de confirmation (bouton <strong>Créer le portefeuille</strong>),
+      la fonction <code>_create_portfolio()</code> dans <code>portfolio/routes.py</code> est appelée.
+    </p>
+  </div>
+
+  <table class="table khl-table">
+    <thead>
+      <tr><th>Table SQL</th><th>Colonne(s) insérée(s)</th><th>Valeur</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><code>dbo.DimPortfolio</code></td>
+        <td><code>PortfolioCode</code></td>
+        <td>Code saisi à l'étape 1 (ex: <code>PF001</code>)</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td><code>PortfolioName</code></td>
+        <td>Nom descriptif saisi</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td><code>BaseCurrency</code></td>
+        <td>EUR / USD / GBP</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td><code>RiskProfile</code></td>
+        <td>CONSERVATIVE / BALANCED / AGGRESSIVE</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td><code>InceptionDate</code></td>
+        <td>Date de départ de la simulation</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td><code>IsActive</code></td>
+        <td><code>1</code> (par défaut)</td>
+      </tr>
+      <tr>
+        <td><code>dbo.AppLog</code></td>
+        <td>Module <code>portfolio</code></td>
+        <td>Action <code>CREATE PORTFOLIO PF001</code> — traçabilité de la création</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- Simulation associée -->
+<div class="khl-card mb-3">
+  <div class="card-title"><i class="bi bi-gear me-1"></i>Simulation associée — ce qui se passe après</div>
+  <div class="row g-3">
+    <div class="col-md-6">
+      <div class="p-3 border rounded">
+        <div style="font-weight:700;font-size:0.85rem;margin-bottom:0.5rem;">
+          <i class="bi bi-1-circle-fill text-primary me-2"></i>Lancement du moteur de simulation
+        </div>
+        <p style="font-size:0.82rem;color:#495057;margin:0;">
+          Script <code>trading-sim/engine/run_mvp.py</code> lancé depuis le Monitoring.
+          Il génère des trades simulés sur les instruments sélectionnés.
+        </p>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="p-3 border rounded">
+        <div style="font-weight:700;font-size:0.85rem;margin-bottom:0.5rem;">
+          <i class="bi bi-2-circle-fill text-success me-2"></i>Insertion dans FactTrades
+        </div>
+        <p style="font-size:0.82rem;color:#495057;margin:0;">
+          Chaque ordre simulé (BUY/SELL) est enregistré dans <code>dbo.FactTrades</code>
+          avec prix, quantité, frais et slippage.
+        </p>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="p-3 border rounded">
+        <div style="font-weight:700;font-size:0.85rem;margin-bottom:0.5rem;">
+          <i class="bi bi-3-circle-fill text-warning me-2"></i>Calcul des positions journalières
+        </div>
+        <p style="font-size:0.82rem;color:#495057;margin:0;">
+          <code>dbo.PortfolioPositionsDaily</code> — positions nettes, valeur de marché,
+          PnL latent, poids par actif.
+        </p>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="p-3 border rounded">
+        <div style="font-weight:700;font-size:0.85rem;margin-bottom:0.5rem;">
+          <i class="bi bi-4-circle-fill text-danger me-2"></i>Calcul Performance & Risk
+        </div>
+        <p style="font-size:0.82rem;color:#495057;margin:0;">
+          Script <code>analytics/performance_risk_mvp.py</code> :
+          calcule NAV, PnL cumulé, VaR 95%, Sharpe ratio, drawdown.
+          Stocké dans <code>PortfolioPnLDaily</code> et <code>RiskMetricsDaily</code>.
+        </p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Schéma SQL -->
+<div class="khl-card">
+  <div class="card-title"><i class="bi bi-diagram-3 me-1"></i>Schéma SQL impliqué</div>
+  <div class="log-terminal">
+DimPortfolio (créé à la confirmation du wizard)
+  └── PortfolioKey (PK, IDENTITY)
+  └── PortfolioCode : "PF001"
+  └── PortfolioName : "Mon portefeuille CIB"
+  └── BaseCurrency  : "EUR"
+  └── RiskProfile   : "BALANCED"
+  └── InceptionDate : 2026-01-05
+  └── IsActive      : 1
+
+        │
+        ├── FactTrades (trades simulés par run_mvp.py)
+        │     └── TradeDateKey → DimDate.DateKey
+        │     └── PortfolioKey → DimPortfolio.PortfolioKey
+        │     └── SecurityKey  → DimSecurity.SecurityKey
+        │     └── Side         : "BUY" | "SELL"
+        │     └── Quantity, Price, FeeAmount, SlippageAmount
+        │
+        ├── PortfolioPositionsDaily (snapshot quotidien)
+        │     └── Quantity, AvgCost, MarketValue
+        │     └── UnrealizedPnL, WeightPct
+        │
+        ├── PortfolioPnLDaily (performance)
+        │     └── Nav, DailyPnL, CumPnL, ReturnPct
+        │
+        └── RiskMetricsDaily (risque)
+              └── Volatility20d, MaxDrawdown, VaR95, SharpeRatio, Beta
+  </div>
+</div>
+
+{% endblock %}

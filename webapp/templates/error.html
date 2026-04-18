@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% block title %}Erreur {{ code }}{% endblock %}
+{% block content %}
+<div class="text-center py-5">
+  <div style="font-size:4rem;font-weight:800;color:#dee2e6;">{{ code }}</div>
+  <h3 class="mt-2 text-muted">{{ msg }}</h3>
+  <a href="{{ url_for('home') }}" class="btn btn-primary mt-3"
+     style="background:#1a3a5c;border-color:#1a3a5c;">
+    <i class="bi bi-house me-2"></i>Retour à l'accueil
+  </a>
+</div>
+{% endblock %}

@@ -1,0 +1,201 @@
+{% extends "base.html" %}
+{% block title %}{{ portfolio.code }} — {{ portfolio.name }}{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-icon" style="background:#1a3a5c;"><i class="bi bi-pie-chart-fill"></i></div>
+  <div class="flex-grow-1">
+    <h1><span class="mono">{{ portfolio.code }}</span> — {{ portfolio.name }}</h1>
+    <nav aria-label="breadcrumb"><ol class="breadcrumb mb-0">
+      <li class="breadcrumb-item"><a href="{{ url_for('portfolio.index') }}">Portefeuilles</a></li>
+      <li class="breadcrumb-item active">{{ portfolio.code }}</li>
+    </ol></nav>
+  </div>
+  <div class="d-flex gap-2">
+    <span class="badge" style="font-size:0.8rem;background:#1a3a5c;color:white;">{{ portfolio.currency }}</span>
+    <span class="badge" style="font-size:0.8rem;background:#e8a020;color:#0d1b2a;">{{ portfolio.risk }}</span>
+  </div>
+</div>
+
+<!-- KPIs -->
+{% if positions %}
+{% set total_mv = positions|sum(attribute='market_value') %}
+{% set total_pnl = positions|sum(attribute='unrealized_pnl') %}
+<div class="row g-3 mb-3">
+
+  <div class="col-6 col-md-3">
+    <div class="metric-card blue"
+         data-bs-toggle="tooltip" data-bs-html="true" data-bs-placement="bottom"
+         data-bs-title="<b>Market Value — Valeur de marché</b><br>Somme de la valeur actuelle de toutes les positions :<br><em>Market Value = Quantité × Prix actuel du marché</em><br>C'est la NAV brute, avant déduction des liquidités.">
+      <div class="metric-label">Market Value</div>
+      <div class="metric-value">{{ "{:,.0f}".format(total_mv) }}</div>
+      <div class="metric-delta text-muted">{{ portfolio.currency }}</div>
+    </div>
+  </div>
+
+  <div class="col-6 col-md-3">
+    <div class="metric-card {{ 'green' if total_pnl >= 0 else 'red' }}"
+         data-bs-toggle="tooltip" data-bs-html="true" data-bs-placement="bottom"
+         data-bs-title="<b>Unrealized PnL — Profit & Loss latent</b><br>Gain ou perte non encore encaissé(e) sur les positions ouvertes :<br><em>PnL = (Prix actuel − Prix d'achat moyen) × Quantité</em><br>Devient réalisé uniquement lors de la vente.">
+      <div class="metric-label">
+        Unrealized PnL
+        <i class="bi bi-{{ 'arrow-up' if total_pnl >= 0 else 'arrow-down' }}" style="font-size:0.7rem;"></i>
+      </div>
+      <div class="metric-value" style="color:{{ '#0d6e3b' if total_pnl >= 0 else '#8b1a1a' }};">
+        {{ "{:+,.0f}".format(total_pnl) }}
+      </div>
+    </div>
+  </div>
+
+  <div class="col-6 col-md-3">
+    <div class="metric-card"
+         data-bs-toggle="tooltip" data-bs-html="true" data-bs-placement="bottom"
+         data-bs-title="<b>Nombre de positions ouvertes</b><br>Chaque position = un actif détenu en portefeuille (quantité &gt; 0).<br>La diversification recommande entre 15 et 30 positions pour un fonds actions.">
+      <div class="metric-label">Positions</div>
+      <div class="metric-value">{{ positions|length }}</div>
+    </div>
+  </div>
+
+  <div class="col-6 col-md-3">
+    <div class="metric-card"
+         data-bs-toggle="tooltip" data-bs-html="true" data-bs-placement="bottom"
+         data-bs-title="<b>Date d'inception — Lancement du fonds</b><br>Point de départ de toutes les mesures de performance.<br>Le rendement total = (NAV actuelle / NAV initiale) − 1.">
+      <div class="metric-label">Inception</div>
+      <div class="metric-value" style="font-size:1rem;">{{ portfolio.inception }}</div>
+    </div>
+  </div>
+
+</div>
+{% endif %}
+
+<div class="row g-3">
+  <!-- Positions -->
+  <div class="col-lg-7">
+    <div class="khl-card">
+      <div class="card-title"><i class="bi bi-list-columns me-1"></i>Positions actuelles</div>
+      {% if positions %}
+      <div class="table-responsive">
+        <table class="table khl-table mb-0">
+          <thead>
+            <tr>
+              <th>Ticker</th>
+              <th class="text-end"
+                  data-bs-toggle="tooltip" data-bs-html="true"
+                  data-bs-title="<b>Quantité</b><br>Nombre de titres détenus.<br>Quantité nette = achats cumulés − ventes cumulées.">
+                Qté <i class="bi bi-info-circle text-muted" style="font-size:0.7rem;"></i>
+              </th>
+              <th class="text-end"
+                  data-bs-toggle="tooltip" data-bs-html="true"
+                  data-bs-title="<b>Coût moyen d'acquisition</b><br>Prix moyen pondéré de toutes les transactions d'achat.<br><em>Coût moy = (Σ Prix × Qté + Frais) / Qté totale</em><br>Inclut les frais de courtage.">
+                Coût moy. <i class="bi bi-info-circle text-muted" style="font-size:0.7rem;"></i>
+              </th>
+              <th class="text-end"
+                  data-bs-toggle="tooltip" data-bs-html="true"
+                  data-bs-title="<b>Market Value — Valeur de marché</b><br><em>Market Value = Quantité × Dernier prix coté</em><br>Valorisation au prix du marché de ce jour.">
+                M. Value <i class="bi bi-info-circle text-muted" style="font-size:0.7rem;"></i>
+              </th>
+              <th class="text-end"
+                  data-bs-toggle="tooltip" data-bs-html="true"
+                  data-bs-title="<b>Plus/Moins-Value latente</b><br><em>PnL = (Prix actuel − Coût moyen) × Quantité</em><br>Vert = en gain. Rouge = en perte.<br>Non encaissé tant que la position n'est pas clôturée.">
+                Unreal. PnL <i class="bi bi-info-circle text-muted" style="font-size:0.7rem;"></i>
+              </th>
+              <th class="text-end"
+                  data-bs-toggle="tooltip" data-bs-html="true"
+                  data-bs-title="<b>Poids dans le portefeuille</b><br><em>Poids = Market Value actif / Market Value total</em><br>La barre bleue visualise la concentration. Un poids &gt;25% déclenche une alerte de concentration.">
+                Poids <i class="bi bi-info-circle text-muted" style="font-size:0.7rem;"></i>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for p in positions %}
+            <tr>
+              <td class="mono"><strong>{{ p.ticker }}</strong></td>
+              <td class="text-end mono">{{ "{:,.0f}".format(p.qty) }}</td>
+              <td class="text-end mono">{{ "{:,.2f}".format(p.avg_cost) }}</td>
+              <td class="text-end mono">{{ "{:,.0f}".format(p.market_value) }}</td>
+              <td class="text-end mono" style="color:{{ '#0d6e3b' if p.unrealized_pnl >= 0 else '#8b1a1a' }};">
+                {{ "{:+,.0f}".format(p.unrealized_pnl) }}
+              </td>
+              <td class="text-end">
+                <div class="d-flex align-items-center gap-1 justify-content-end">
+                  <div style="width:50px;height:6px;background:#f0f2f5;border-radius:3px;">
+                    <div style="width:{{ [p.weight_pct,100]|min }}%;height:100%;background:#1a3a5c;border-radius:3px;"></div>
+                  </div>
+                  <span class="mono" style="font-size:0.78rem;">{{ "%.1f"|format(p.weight_pct) }}%</span>
+                </div>
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}
+      <p class="text-muted text-center py-3">Aucune position — lancez une simulation depuis le Monitoring.</p>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Graphique NAV -->
+  <div class="col-lg-5">
+    <div class="khl-card">
+      <div class="card-title"><i class="bi bi-graph-up me-1"></i>Évolution NAV</div>
+      {% if pnl_history %}
+      <canvas id="navChart" height="200"></canvas>
+      {% else %}
+      <p class="text-muted text-center py-4">Aucune donnée de performance disponible.</p>
+      {% endif %}
+    </div>
+    <!-- Répartition -->
+    {% if positions %}
+    <div class="khl-card">
+      <div class="card-title"><i class="bi bi-pie-chart me-1"></i>Allocation</div>
+      <canvas id="allocChart" height="180"></canvas>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{% if pnl_history %}
+<script>
+const navData = {{ pnl_history|tojson }};
+new Chart(document.getElementById('navChart'), {
+  type: 'line',
+  data: {
+    labels: navData.map(d => d.date),
+    datasets: [{
+      label: 'NAV',
+      data: navData.map(d => d.nav),
+      borderColor: '#1a3a5c', backgroundColor: 'rgba(26,58,92,0.08)',
+      fill: true, tension: 0.3, pointRadius: 2
+    }]
+  },
+  options: {
+    responsive: true, plugins: { legend: { display: false } },
+    scales: { y: { grid: { color: '#f0f2f5' } }, x: { grid: { display: false } } }
+  }
+});
+</script>
+{% endif %}
+{% if positions %}
+<script>
+const posData = {{ positions|tojson }};
+const top8 = posData.slice(0, 8);
+new Chart(document.getElementById('allocChart'), {
+  type: 'doughnut',
+  data: {
+    labels: top8.map(p => p.ticker),
+    datasets: [{
+      data: top8.map(p => p.weight_pct),
+      backgroundColor: ['#1a3a5c','#e8a020','#0d6e3b','#8b1a1a','#4a1a7a','#1a5c5c','#5c3a1a','#2c2c2c']
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: { legend: { position: 'right', labels: { font: { size: 10 } } } }
+  }
+});
+</script>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,1294 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>KHL Bank CIB — Architecture Technique Complète</title>
+<style>
+/* ── RESET & BASE ─────────────────────────────────────── */
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:#0d1b2a;color:#e2e8f0;line-height:1.6;font-size:14px}
+a{color:#e8a020;text-decoration:none}
+a:hover{text-decoration:underline;color:#fbbf24}
+code,pre{font-family:'Cascadia Code','Consolas',monospace;font-size:12px}
+pre{background:#0a1628;border-left:3px solid #e8a020;padding:12px 16px;border-radius:0 6px 6px 0;overflow-x:auto;color:#a8d8a8;margin:0.5rem 0}
+
+/* ── LAYOUT ──────────────────────────────────────────── */
+.layout{display:flex;min-height:100vh}
+.sidebar{width:260px;min-width:260px;background:#051020;position:sticky;top:0;height:100vh;overflow-y:auto;flex-shrink:0;border-right:1px solid #1a3a5c}
+.main{flex:1;overflow-x:hidden}
+
+/* ── SIDEBAR ─────────────────────────────────────────── */
+.sidebar-logo{padding:20px 18px 12px;border-bottom:1px solid #1a3a5c}
+.sidebar-logo .khl{font-size:1.4rem;font-weight:800;color:#e8a020;letter-spacing:1px}
+.sidebar-logo .sub{font-size:0.65rem;color:#64748b;text-transform:uppercase;letter-spacing:2px}
+.sidebar-section{padding:14px 18px 4px;font-size:0.58rem;font-weight:700;color:#4a6080;text-transform:uppercase;letter-spacing:2px}
+.sidebar a{display:block;padding:7px 18px;color:#94a3b8;font-size:0.8rem;border-left:3px solid transparent;transition:all 0.15s}
+.sidebar a:hover{color:#e8a020;border-left-color:#e8a020;background:rgba(232,160,32,0.06);text-decoration:none}
+.sidebar a.active{color:#e8a020;border-left-color:#e8a020;background:rgba(232,160,32,0.08)}
+
+/* ── HERO ────────────────────────────────────────────── */
+.hero{background:linear-gradient(135deg,#051020 0%,#0d1b2a 50%,#1a3a5c 100%);padding:60px 60px 48px;border-bottom:2px solid #e8a020}
+.hero h1{font-size:2.2rem;font-weight:800;color:#fff;line-height:1.2;margin-bottom:0.5rem}
+.hero h1 span{color:#e8a020}
+.hero .sub{font-size:0.95rem;color:#94a3b8;max-width:700px;margin-top:0.75rem}
+.hero .tags{display:flex;gap:8px;flex-wrap:wrap;margin-top:1.2rem}
+.tag{font-size:0.68rem;font-weight:700;padding:3px 10px;border-radius:3px;text-transform:uppercase;letter-spacing:0.5px}
+.tag-python{background:#1a5c3a;color:#4ade80}
+.tag-flask{background:#2c1a5c;color:#a78bfa}
+.tag-sql{background:#1a3a5c;color:#60a5fa}
+.tag-bs5{background:#5c2c1a;color:#fb923c}
+.tag-vba{background:#3a1a5c;color:#e879f9}
+
+/* ── CONTENT ─────────────────────────────────────────── */
+.content{padding:48px 60px;max-width:1100px}
+
+/* ── SECTIONS ────────────────────────────────────────── */
+.section{margin-bottom:60px}
+.section-title{font-size:1.3rem;font-weight:800;color:#fff;margin-bottom:0.3rem;display:flex;align-items:center;gap:10px}
+.section-title::before{content:'';display:inline-block;width:4px;height:22px;background:#e8a020;border-radius:2px;flex-shrink:0}
+.section-desc{color:#64748b;font-size:0.82rem;margin-bottom:1.5rem}
+.divider{border:none;border-top:1px solid #1a3a5c;margin:48px 0}
+
+/* ── CARDS ───────────────────────────────────────────── */
+.card{background:#111f30;border:1px solid #1a3a5c;border-radius:10px;padding:20px;margin-bottom:16px}
+.card-title{font-size:0.75rem;font-weight:700;color:#e8a020;text-transform:uppercase;letter-spacing:0.8px;margin-bottom:0.6rem;display:flex;align-items:center;gap:8px}
+.card-title .dot{width:8px;height:8px;border-radius:50%;background:#e8a020;flex-shrink:0}
+.card p{color:#94a3b8;font-size:0.82rem;line-height:1.6}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
+
+/* ── ARCHITECTURE DIAGRAM ────────────────────────────── */
+.arch-diagram{background:#0a1628;border:1px solid #1a3a5c;border-radius:12px;padding:32px;overflow-x:auto}
+.arch-layer{margin-bottom:20px}
+.arch-layer-label{font-size:0.6rem;font-weight:700;color:#4a6080;text-transform:uppercase;letter-spacing:2px;margin-bottom:8px}
+.arch-boxes{display:flex;gap:10px;flex-wrap:wrap}
+.arch-box{padding:10px 16px;border-radius:8px;font-size:0.75rem;font-weight:600;text-align:center;border:1px solid;min-width:110px}
+.arch-box.browser{background:#0d2a3a;border-color:#0e7490;color:#22d3ee}
+.arch-box.flask{background:#1a0d3a;border-color:#7c3aed;color:#a78bfa}
+.arch-box.auth{background:#2a1a0d;border-color:#ea580c;color:#fb923c}
+.arch-box.module{background:#0d1a3a;border-color:#1d4ed8;color:#60a5fa}
+.arch-box.db{background:#0d2a1a;border-color:#15803d;color:#4ade80}
+.arch-box.external{background:#1a0d2a;border-color:#9333ea;color:#d946ef}
+.arch-box.vba{background:#2a1a0d;border-color:#d97706;color:#fbbf24}
+.arch-box.config{background:#2a2a0d;border-color:#ca8a04;color:#facc15}
+
+/* ── MODULE TABLE ────────────────────────────────────── */
+.module-table{width:100%;border-collapse:collapse;font-size:0.8rem}
+.module-table th{background:#0a1628;color:#64748b;font-weight:700;font-size:0.65rem;text-transform:uppercase;letter-spacing:0.8px;padding:10px 14px;border-bottom:2px solid #1a3a5c;text-align:left}
+.module-table td{padding:10px 14px;border-bottom:1px solid #1a3a5c;vertical-align:top;color:#94a3b8}
+.module-table tr:last-child td{border-bottom:none}
+.module-table tr:hover td{background:rgba(255,255,255,0.02)}
+.module-table td:first-child{color:#e2e8f0;font-weight:600}
+
+/* ── OFFICE BADGES ───────────────────────────────────── */
+.badge{display:inline-block;font-size:0.6rem;font-weight:700;padding:2px 7px;border-radius:3px;text-transform:uppercase;letter-spacing:0.5px}
+.badge-front{background:#0d4a2a;color:#4ade80}
+.badge-middle{background:#4a0d0d;color:#fca5a5}
+.badge-back{background:#0d1a4a;color:#93c5fd}
+.badge-admin{background:#2a2a2a;color:#d1d5db}
+.badge-ok{background:#0d4a2a;color:#4ade80}
+.badge-liability{background:#4a1a0d;color:#fca5a5}
+.badge-expense{background:#2a0d2a;color:#d946ef}
+.badge-income{background:#0d2a4a;color:#60a5fa}
+
+/* ── ROLE MATRIX ─────────────────────────────────────── */
+.role-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px}
+.role-card{background:#111f30;border-radius:10px;padding:16px;border-left:4px solid}
+.role-front{border-color:#4ade80}
+.role-middle{border-color:#fca5a5}
+.role-back{border-color:#93c5fd}
+.role-admin{border-color:#e8a020}
+.role-name{font-size:0.75rem;font-weight:700;color:#fff;margin-bottom:4px}
+.role-office{font-size:0.6rem;font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-bottom:8px}
+.role-can{font-size:0.75rem;color:#4ade80;margin-bottom:4px}
+.role-cannot{font-size:0.75rem;color:#fca5a5}
+.role-modules{font-size:0.7rem;color:#64748b;margin-top:6px}
+.role-modules span{display:inline-block;background:#1a3a5c;color:#93c5fd;border-radius:3px;padding:1px 6px;margin:2px 2px 0 0;font-size:0.62rem}
+
+/* ── DB TABLES ───────────────────────────────────────── */
+.db-category{margin-bottom:24px}
+.db-category-title{font-size:0.7rem;font-weight:700;color:#e8a020;text-transform:uppercase;letter-spacing:1.5px;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid #1a3a5c}
+.table-card{display:inline-flex;flex-direction:column;background:#0a1628;border:1px solid #1a3a5c;border-radius:8px;padding:12px 16px;margin:0 10px 10px 0;vertical-align:top;min-width:200px}
+.table-name{font-size:0.78rem;font-weight:700;color:#fff;margin-bottom:4px}
+.table-col{font-size:0.7rem;color:#4a6080;line-height:1.7}
+.table-col .pk{color:#e8a020;font-weight:700}
+.table-col .fk{color:#60a5fa}
+.table-col .computed{color:#4ade80;font-style:italic}
+
+/* ── FLOW DIAGRAM ────────────────────────────────────── */
+.flow{display:flex;align-items:center;flex-wrap:wrap;gap:0;background:#0a1628;border-radius:10px;padding:20px;overflow-x:auto}
+.flow-step{background:#111f30;border:1px solid #1a3a5c;border-radius:8px;padding:12px 16px;font-size:0.75rem;text-align:center;min-width:110px;flex-shrink:0}
+.flow-step .step-title{font-weight:700;color:#fff;margin-bottom:2px}
+.flow-step .step-who{font-size:0.65rem;color:#64748b}
+.flow-arrow{color:#e8a020;font-size:1.3rem;padding:0 8px;flex-shrink:0}
+.flow-step.front{border-color:#4ade8066}
+.flow-step.middle{border-color:#fca5a566}
+.flow-step.back{border-color:#93c5fd66}
+
+/* ── FILE TREE ───────────────────────────────────────── */
+.tree{background:#0a1628;border-radius:8px;padding:20px;font-family:'Cascadia Code','Consolas',monospace;font-size:0.75rem;color:#94a3b8;line-height:2}
+.tree .dir{color:#e8a020;font-weight:700}
+.tree .highlight{color:#4ade80}
+.tree .comment{color:#4a6080;font-style:italic}
+
+/* ── PIPELINE ────────────────────────────────────────── */
+.pipeline{display:grid;gap:2px}
+.pipe-step{display:flex;align-items:flex-start;gap:12px;padding:10px 16px;background:#111f30;border-radius:6px}
+.pipe-num{width:24px;height:24px;border-radius:50%;background:#1a3a5c;color:#60a5fa;font-size:0.7rem;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px}
+.pipe-label{font-size:0.8rem;font-weight:600;color:#e2e8f0}
+.pipe-detail{font-size:0.72rem;color:#64748b}
+
+/* ── INLINE CODE ─────────────────────────────────────── */
+.ic{display:inline;background:#0a1628;color:#a78bfa;padding:1px 6px;border-radius:3px;font-family:monospace;font-size:0.82em}
+
+/* ── INFO BOX ────────────────────────────────────────── */
+.infobox{border-radius:8px;padding:16px 20px;margin-bottom:16px;display:flex;gap:14px}
+.infobox.blue{background:#0d1a3a;border:1px solid #1d4ed844}
+.infobox.gold{background:#2a1a0d;border:1px solid #d9770644}
+.infobox.green{background:#0d2a1a;border:1px solid #15803d44}
+.infobox .icon{font-size:1.3rem;flex-shrink:0;margin-top:2px}
+.infobox .text{font-size:0.8rem;color:#94a3b8;line-height:1.6}
+.infobox .text strong{color:#e2e8f0}
+</style>
+</head>
+<body>
+
+<div class="layout">
+
+<!-- SIDEBAR -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <div class="khl">KHL Bank</div>
+    <div class="sub">CIB Platform · Architecture</div>
+  </div>
+  <div class="sidebar-section">Vues graphiques</div>
+  <a href="graphical_arch.html" style="color:#e8a020;font-weight:700">🎯 Architecture Dynamique</a>
+  <div class="sidebar-section">Vue d'ensemble</div>
+  <a href="#overview">01 — Vue d'ensemble</a>
+  <a href="#stack">02 — Stack technique</a>
+  <a href="#structure">03 — Structure des fichiers</a>
+  <div class="sidebar-section">Application Web</div>
+  <a href="#flask">04 — Flask &amp; Blueprints</a>
+  <a href="#modules">05 — Modules métier</a>
+  <a href="#auth">06 — Authentification &amp; Rôles</a>
+  <a href="#templates">07 — Templates &amp; UI</a>
+  <div class="sidebar-section">Données</div>
+  <a href="#database">08 — Base de données SQL Server</a>
+  <a href="#tables">09 — Catalogue des tables</a>
+  <a href="#accounting">10 — Plan de comptes CIB</a>
+  <div class="sidebar-section">Flux métier</div>
+  <a href="#trade-flow">11 — Cycle de vie d'un trade</a>
+  <a href="#cloisonnement">12 — Cloisonnement Front/Mid/Back</a>
+  <div class="sidebar-section">Composants externes</div>
+  <a href="#commando">13 — CommandoQuant (VBA)</a>
+  <a href="#analytics">14 — Analytics Engine</a>
+  <a href="#scripts">15 — Scripts d'exploitation</a>
+</aside>
+
+<div class="main">
+
+<!-- HERO -->
+<div class="hero">
+  <h1>KHL Bank <span>CIB Platform</span><br>Architecture Technique Complète</h1>
+  <p class="sub">Plateforme de simulation bancaire CIB — gestion de portefeuilles, trading, comptabilité en partie double, risk management, ALM et reporting. Architecture Flask modulaire, base SQL Server, cloisonnement Front/Middle/Back Office.</p>
+  <div class="tags">
+    <span class="tag tag-python">Python 3.12</span>
+    <span class="tag tag-flask">Flask 3</span>
+    <span class="tag tag-sql">SQL Server 2019</span>
+    <span class="tag tag-bs5">Bootstrap 5</span>
+    <span class="tag tag-vba">Excel VBA</span>
+  </div>
+</div>
+
+<div class="content">
+
+<!-- 01 -->
+<div class="section" id="overview">
+  <div class="section-title">01 — Vue d'ensemble</div>
+  <p class="section-desc">Ce que fait la plateforme, pour qui, et pourquoi elle est construite ainsi.</p>
+
+  <div class="infobox blue">
+    <div class="icon">🏦</div>
+    <div class="text">
+      <strong>KHL Bank CIB Platform</strong> est une plateforme de formation et de démonstration simulant l'environnement d'une banque d'investissement (CIB). Elle reproduit les flux réels : décision d'allocation → exécution d'ordres → comptabilisation → contrôle du risque → reporting. Le cloisonnement des tâches (Front / Middle / Back Office) y est appliqué avec la même rigueur qu'en production.
+    </div>
+  </div>
+
+  <div class="arch-diagram">
+    <div style="font-size:0.65rem;color:#4a6080;text-transform:uppercase;letter-spacing:2px;margin-bottom:20px">Vue macro — 4 couches</div>
+    <div class="arch-layer">
+      <div class="arch-layer-label">Couche Présentation — Navigateur (HTML / CSS / JS)</div>
+      <div class="arch-boxes">
+        <div class="arch-box browser">Tableau de bord</div>
+        <div class="arch-box browser">Modules métier</div>
+        <div class="arch-box browser">Formulaires &amp; KPIs</div>
+        <div class="arch-box browser">Power BI iframe</div>
+        <div class="arch-box browser">Wiki interne</div>
+      </div>
+    </div>
+    <div style="text-align:center;color:#e8a020;margin:6px 0;font-size:1.1rem">HTTP / Flask Jinja2 ↕</div>
+    <div class="arch-layer">
+      <div class="arch-layer-label">Couche Application — Flask (Python)</div>
+      <div class="arch-boxes">
+        <div class="arch-box auth">Auth Blueprint</div>
+        <div class="arch-box flask">app.py (point d'entrée)</div>
+        <div class="arch-box config">config.py</div>
+        <div class="arch-box module">9 Blueprints modules</div>
+        <div class="arch-box flask">db.py (couche accès)</div>
+      </div>
+    </div>
+    <div style="text-align:center;color:#e8a020;margin:6px 0;font-size:1.1rem">pyodbc / Windows Auth ↕</div>
+    <div class="arch-layer">
+      <div class="arch-layer-label">Couche Données — SQL Server (Windows Auth)</div>
+      <div class="arch-boxes">
+        <div class="arch-box db">SmartAssetAdvicedb (Gold)</div>
+        <div class="arch-box db">KHLWorldInvest (Staging)</div>
+        <div class="arch-box db">CommandoQuant (Dérivés)</div>
+      </div>
+    </div>
+    <div style="text-align:center;color:#4a6080;margin:6px 0;font-size:1.1rem">↑ lectures / données externes</div>
+    <div class="arch-layer">
+      <div class="arch-layer-label">Couche Externe — Données &amp; Outils</div>
+      <div class="arch-boxes">
+        <div class="arch-box external">STOOQ API (cotations)</div>
+        <div class="arch-box vba">CommandoQuant.xlsm (VBA)</div>
+        <div class="arch-box external">Power BI Desktop</div>
+        <div class="arch-box external">Moteur simulation Python</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- 02 -->
+<div class="section" id="stack">
+  <div class="section-title">02 — Stack technique</div>
+  <p class="section-desc">Choix technologiques et raison de chaque choix.</p>
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title"><span class="dot"></span>Backend</div>
+      <table class="module-table">
+        <tr><td>Runtime</td><td>Python 3.12</td></tr>
+        <tr><td>Framework</td><td>Flask 3 — blueprints modulaires</td></tr>
+        <tr><td>SQL</td><td>pyodbc — Windows Auth Trusted_Connection</td></tr>
+        <tr><td>Hachage</td><td>SHA-256 + salt (hashlib + secrets)</td></tr>
+        <tr><td>Session</td><td>Flask session cookie signé (secret_key aléatoire)</td></tr>
+        <tr><td>Démarrage</td><td><span class="ic">python webapp/app.py</span></td></tr>
+      </table>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="dot"></span>Frontend</div>
+      <table class="module-table">
+        <tr><td>CSS</td><td>Bootstrap 5.3 CDN</td></tr>
+        <tr><td>Icônes</td><td>Bootstrap Icons 1.11 CDN</td></tr>
+        <tr><td>Graphiques</td><td>Chart.js 4 CDN</td></tr>
+        <tr><td>Polices</td><td>Inter (UI) + JetBrains Mono (chiffres)</td></tr>
+        <tr><td>JS</td><td>Vanilla JS — pas de React/Vue/Angular</td></tr>
+        <tr><td>Tooltips</td><td>Bootstrap 5 natif — init globale dans base.html</td></tr>
+      </table>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="dot"></span>Base de données</div>
+      <table class="module-table">
+        <tr><td>SGBD</td><td>SQL Server 2019</td></tr>
+        <tr><td>Serveur</td><td><span class="ic">PERSO-AJE-DELL\BFASERVER01</span></td></tr>
+        <tr><td>Auth</td><td>Windows Integrated (Trusted_Connection — pas de login/mdp)</td></tr>
+        <tr><td>Driver</td><td>ODBC Driver 17 for SQL Server</td></tr>
+        <tr><td>Gold DB</td><td>SmartAssetAdvicedb (tables Gold + App)</td></tr>
+        <tr><td>Staging DB</td><td>KHLWorldInvest (cotations Boursorama/STOOQ)</td></tr>
+        <tr><td>Dérivés DB</td><td>CommandoQuant (tbl_Greeks VBA)</td></tr>
+      </table>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="dot"></span>Outils externes</div>
+      <table class="module-table">
+        <tr><td>Reporting</td><td>Power BI Desktop — connexion directe SQL Server</td></tr>
+        <tr><td>VBA/Excel</td><td>CommandoQuant.xlsm — pricing options, VaR</td></tr>
+        <tr><td>Simulation</td><td>trading-sim/engine/ — modèles Python purs</td></tr>
+        <tr><td>Analytics</td><td>analytics/performance_risk_mvp.py</td></tr>
+        <tr><td>Lancement</td><td><span class="ic">START_WEBAPP.bat</span> ou python direct</td></tr>
+      </table>
+    </div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- 03 -->
+<div class="section" id="structure">
+  <div class="section-title">03 — Structure des fichiers</div>
+  <p class="section-desc">Rôle de chaque répertoire et fichier clé du projet.</p>
+
+  <!-- Racine du projet -->
+  <div class="infobox gold" style="margin-bottom:20px;">
+    <div class="icon">📁</div>
+    <div class="text">
+      <strong>Racine :</strong> <span class="ic">khl-portfolio-lab/</span> — contient
+      <span class="ic">webapp/</span> (app Flask),
+      <span class="ic">scripts/</span> (exploitation),
+      <span class="ic">data-platform/</span> (DDL SQL),
+      <span class="ic">trading-sim/</span> (moteur sim),
+      <span class="ic">commando-quant/</span> (VBA dérivés),
+      <span class="ic">analytics/</span> (perf &amp; risque),
+      <span class="ic">docs/</span> (documentation),
+      <span class="ic">CLAUDE.md</span> (conventions LLM).
+    </div>
+  </div>
+
+  <!-- Layout 2 colonnes : cartes gauche + arbre Windows à droite -->
+  <div style="display:grid;grid-template-columns:1fr 280px;gap:20px;align-items:start;">
+
+  <!-- ══ COLONNE DROITE : Arbre Windows Explorer ══════════════════ -->
+  <div style="order:2;position:sticky;top:20px;">
+    <div class="card" style="border-top:3px solid #e8a020;">
+      <div class="card-title"><span class="dot"></span>Explorateur de projet</div>
+      <div style="font-family:'Cascadia Code','Consolas',monospace;font-size:0.73rem;line-height:1.85;color:#94a3b8;user-select:text;">
+
+        <!-- Racine -->
+        <div style="color:#e8a020;font-weight:700;margin-bottom:2px;">
+          📁 khl-portfolio-lab/
+        </div>
+
+        <!-- webapp/ -->
+        <div style="padding-left:14px;border-left:2px solid #2a4060;">
+          <div style="color:#e8a020;font-weight:600;">📁 webapp/</div>
+          <div style="padding-left:14px;border-left:2px solid #2a4060;">
+            <div style="color:#4ade80;">🐍 app.py</div>
+            <div style="color:#4ade80;">🐍 config.py</div>
+            <div style="color:#4ade80;">🐍 db.py</div>
+            <div style="color:#e8a020;">📁 auth/</div>
+            <div style="padding-left:14px;border-left:2px solid #2a4060;">
+              <div style="color:#a78bfa;">🐍 routes.py</div>
+            </div>
+            <div style="color:#e8a020;">📁 modules/</div>
+            <div style="padding-left:14px;border-left:2px solid #2a4060;">
+              <div style="color:#4ade80;">📁 portfolio/</div>
+              <div style="color:#4ade80;">📁 trading/</div>
+              <div style="color:#fca5a5;">📁 accounting/</div>
+              <div style="color:#fca5a5;">📁 risk/</div>
+              <div style="color:#fca5a5;">📁 performance/</div>
+              <div style="color:#fca5a5;">📁 alm/</div>
+              <div style="color:#93c5fd;">📁 monitoring/</div>
+              <div style="color:#4ade80;">📁 quant/</div>
+              <div style="color:#d1d5db;">📁 docs/</div>
+            </div>
+            <div style="color:#e8a020;">📁 templates/</div>
+            <div style="padding-left:14px;border-left:2px solid #2a4060;">
+              <div>🌐 base.html</div>
+              <div>🌐 home.html</div>
+              <div style="color:#fca5a5;">🌐 access_denied.html</div>
+              <div style="color:#a78bfa;">📁 auth/</div>
+              <div style="color:#60a5fa;">📁 modules/</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- scripts/ -->
+        <div style="padding-left:14px;border-left:2px solid #2a4060;">
+          <div style="color:#4ade80;font-weight:600;">📁 scripts/</div>
+          <div style="padding-left:14px;border-left:2px solid #2a4060;">
+            <div>🐍 create_demo_users.py</div>
+            <div>🐍 build_ticker_lookup.py</div>
+            <div>🐍 seed_demo_data.py</div>
+            <div>🐍 load_factprice_from_stg.py</div>
+            <div>🐍 create_admin.py</div>
+            <div>🐍 patch_vba_*.py</div>
+          </div>
+        </div>
+
+        <!-- data-platform/ -->
+        <div style="padding-left:14px;border-left:2px solid #2a4060;">
+          <div style="color:#60a5fa;font-weight:600;">📁 data-platform/</div>
+          <div style="padding-left:14px;border-left:2px solid #2a4060;">
+            <div style="color:#60a5fa;">📁 sql/ddl/</div>
+            <div style="padding-left:14px;border-left:2px solid #2a4060;">
+              <div>📄 001_create_gold_tables.sql</div>
+              <div>📄 002_create_gold_views.sql</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- trading-sim/ -->
+        <div style="padding-left:14px;border-left:2px solid #2a4060;">
+          <div style="color:#fb923c;font-weight:600;">📁 trading-sim/</div>
+          <div style="padding-left:14px;border-left:2px solid #2a4060;">
+            <div style="color:#fb923c;">📁 engine/</div>
+            <div style="padding-left:14px;border-left:2px solid #2a4060;">
+              <div>🐍 models.py</div>
+              <div>🐍 simulator.py</div>
+              <div>🐍 pricing.py</div>
+              <div>🐍 run_mvp.py</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- commando-quant/ -->
+        <div style="padding-left:14px;border-left:2px solid #2a4060;">
+          <div style="color:#d946ef;font-weight:600;">📁 commando-quant/</div>
+          <div style="padding-left:14px;border-left:2px solid #2a4060;">
+            <div>📊 CommandoQuant.xlsm</div>
+            <div>🐍 var_engine.py</div>
+          </div>
+        </div>
+
+        <!-- analytics / ai-assistant -->
+        <div style="padding-left:14px;border-left:2px solid #2a4060;">
+          <div style="color:#20c997;">📁 analytics/</div>
+          <div style="color:#20c997;">📁 ai-assistant/</div>
+          <div style="color:#fbbf24;">📁 docs/</div>
+          <div style="color:#fbbf24;">📁 powerbi/</div>
+          <div style="color:#fbbf24;font-weight:700;">📄 CLAUDE.md</div>
+        </div>
+
+      </div>
+
+      <!-- Légende -->
+      <div style="margin-top:12px;padding-top:10px;border-top:1px solid #1a3a5c;font-size:0.63rem;color:#4a6080;line-height:2;">
+        <span style="color:#4ade80;">■</span> Front &nbsp;
+        <span style="color:#fca5a5;">■</span> Middle &nbsp;
+        <span style="color:#93c5fd;">■</span> Back &nbsp;
+        <span style="color:#e8a020;">■</span> Dossier &nbsp;
+        <span style="color:#fbbf24;">■</span> Config
+      </div>
+    </div>
+  </div><!-- col droite arbre -->
+
+  <!-- ══ COLONNE GAUCHE : Cartes descriptives ══════════════════════ -->
+  <div style="order:1;">
+  <!-- ══ Cartes descriptives (pleine largeur) ══════════════════════ -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+
+    <!-- webapp/ -->
+    <div class="card" style="border-top:3px solid #e8a020;grid-column:1/-1;">
+      <div class="card-title"><span class="dot"></span>webapp/ — Application Flask (point d'entrée unique)</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">
+
+        <div style="background:#0a1628;border-radius:6px;padding:12px;">
+          <div style="font-size:0.65rem;font-weight:700;color:#e8a020;text-transform:uppercase;margin-bottom:8px;">Fichiers racine</div>
+          <div style="font-size:0.78rem;line-height:2;">
+            <span class="ic">app.py</span><br>
+            <span style="color:#4a6080;font-size:0.7rem;">Point d'entrée Flask. Enregistre les 10 blueprints, appelle <code>init_db()</code> au démarrage.</span><br><br>
+            <span class="ic">config.py</span><br>
+            <span style="color:#4a6080;font-size:0.7rem;">Connexion SQL Server, ROLES, MODULES, OFFICE_META, ROLE_HIERARCHY, MODULE_ROLES.</span><br><br>
+            <span class="ic">db.py</span><br>
+            <span style="color:#4a6080;font-size:0.7rem;"><code>db_cursor()</code>, <code>app_log()</code>, <code>get_setting()</code>, <code>init_db()</code>, <code>create_trade_lifecycle()</code>. Toutes les tables DDL ici.</span>
+          </div>
+        </div>
+
+        <div style="background:#0a1628;border-radius:6px;padding:12px;">
+          <div style="font-size:0.65rem;font-weight:700;color:#a78bfa;text-transform:uppercase;margin-bottom:8px;">auth/routes.py</div>
+          <div style="font-size:0.72rem;color:#64748b;line-height:1.8;">
+            Login · Logout · Register · Forgot password · Reset password<br>
+            Décorateurs : <span class="ic" style="font-size:0.68rem;">@login_required</span> <span class="ic" style="font-size:0.68rem;">@role_required</span><br>
+            Gestion admin utilisateurs (<code>/auth/admin-users</code>)<br>
+            Hashage SHA-256 + salt — table <code>dbo.AppUsers</code>
+          </div>
+          <div style="margin-top:10px;font-size:0.65rem;font-weight:700;color:#a78bfa;text-transform:uppercase;margin-bottom:6px;">templates/</div>
+          <div style="font-size:0.72rem;color:#64748b;line-height:1.8;">
+            <span class="ic" style="font-size:0.68rem;">base.html</span> — Layout, sidebar FRONT/MID/BACK, tooltips<br>
+            <span class="ic" style="font-size:0.68rem;">home.html</span> — Dashboard adaptatif par rôle<br>
+            <span class="ic" style="font-size:0.68rem;">access_denied.html</span> — Page 403 CIB<br>
+            <span style="color:#4a6080;">auth/ · modules/ (1 dossier par module)</span>
+          </div>
+        </div>
+
+        <div style="background:#0a1628;border-radius:6px;padding:12px;">
+          <div style="font-size:0.65rem;font-weight:700;color:#60a5fa;text-transform:uppercase;margin-bottom:8px;">modules/ — 9 blueprints métier</div>
+          <table style="width:100%;font-size:0.72rem;border-collapse:collapse;">
+            <tr style="border-bottom:1px solid #1a3a5c;">
+              <td style="padding:3px 0;color:#4ade80;">portfolio/</td>
+              <td style="color:#64748b;padding:3px 0 3px 8px;">Wizard 6 étapes, recherche tickers</td>
+            </tr>
+            <tr style="border-bottom:1px solid #1a3a5c;">
+              <td style="padding:3px 0;color:#4ade80;">trading/</td>
+              <td style="color:#64748b;padding:3px 0 3px 8px;">Ordres BUY/SELL, cycle de vie, SWIFT simulé</td>
+            </tr>
+            <tr style="border-bottom:1px solid #1a3a5c;">
+              <td style="padding:3px 0;color:#fca5a5;">accounting/</td>
+              <td style="color:#64748b;padding:3px 0 3px 8px;">Journal partie double, plan CIB 25 comptes</td>
+            </tr>
+            <tr style="border-bottom:1px solid #1a3a5c;">
+              <td style="padding:3px 0;color:#fca5a5;">risk/</td>
+              <td style="color:#64748b;padding:3px 0 3px 8px;">VaR 95%, volatilité, drawdown, alertes</td>
+            </tr>
+            <tr style="border-bottom:1px solid #1a3a5c;">
+              <td style="padding:3px 0;color:#fca5a5;">performance/</td>
+              <td style="color:#64748b;padding:3px 0 3px 8px;">NAV, PnL cumulé, Power BI iframe</td>
+            </tr>
+            <tr style="border-bottom:1px solid #1a3a5c;">
+              <td style="padding:3px 0;color:#fca5a5;">alm/</td>
+              <td style="color:#64748b;padding:3px 0 3px 8px;">Gap liquidité, duration, LCR/NSFR</td>
+            </tr>
+            <tr style="border-bottom:1px solid #1a3a5c;">
+              <td style="padding:3px 0;color:#93c5fd;">monitoring/</td>
+              <td style="color:#64748b;padding:3px 0 3px 8px;">Logs, stats tables, jobs Python</td>
+            </tr>
+            <tr style="border-bottom:1px solid #1a3a5c;">
+              <td style="padding:3px 0;color:#4ade80;">quant/</td>
+              <td style="color:#64748b;padding:3px 0 3px 8px;">Explorateur STOOQ 60k+, backtest</td>
+            </tr>
+            <tr>
+              <td style="padding:3px 0;color:#d1d5db;">docs/</td>
+              <td style="color:#64748b;padding:3px 0 3px 8px;">Wiki, CHANGELOG, matrice rôles</td>
+            </tr>
+          </table>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- scripts/ -->
+    <div class="card" style="border-top:3px solid #4ade80;">
+      <div class="card-title"><span class="dot" style="background:#4ade80;"></span>scripts/ — Exploitation &amp; maintenance</div>
+      <table style="width:100%;font-size:0.75rem;border-collapse:collapse;">
+        <tr style="border-bottom:1px solid #1a3a5c;">
+          <td style="padding:5px 0;"><span class="ic">create_demo_users.py</span></td>
+          <td style="color:#64748b;padding:5px 0 5px 10px;">Crée / reset les 7 comptes de démo</td>
+        </tr>
+        <tr style="border-bottom:1px solid #1a3a5c;">
+          <td style="padding:5px 0;"><span class="ic">build_ticker_lookup.py</span></td>
+          <td style="color:#64748b;padding:5px 0 5px 10px;">Pré-agrège 60k tickers → <code>stg_ticker_lookup</code></td>
+        </tr>
+        <tr style="border-bottom:1px solid #1a3a5c;">
+          <td style="padding:5px 0;"><span class="ic">seed_demo_data.py</span></td>
+          <td style="color:#64748b;padding:5px 0 5px 10px;">Peuple les tables Gold avec données démo</td>
+        </tr>
+        <tr style="border-bottom:1px solid #1a3a5c;">
+          <td style="padding:5px 0;"><span class="ic">load_factprice_from_stg.py</span></td>
+          <td style="color:#64748b;padding:5px 0 5px 10px;">Staging → DimDate, DimSecurity, FactPrice</td>
+        </tr>
+        <tr style="border-bottom:1px solid #1a3a5c;">
+          <td style="padding:5px 0;"><span class="ic">create_admin.py</span></td>
+          <td style="color:#64748b;padding:5px 0 5px 10px;">Crée / reset le compte ADMIN seul</td>
+        </tr>
+        <tr>
+          <td style="padding:5px 0;"><span class="ic">patch_vba_*.py</span></td>
+          <td style="color:#64748b;padding:5px 0 5px 10px;">Patch chemins VBA, migration Access → SQL Server</td>
+        </tr>
+      </table>
+    </div>
+
+    <!-- data-platform/ -->
+    <div class="card" style="border-top:3px solid #60a5fa;">
+      <div class="card-title"><span class="dot" style="background:#60a5fa;"></span>data-platform/ — DDL SQL Server (source de vérité)</div>
+      <table style="width:100%;font-size:0.75rem;border-collapse:collapse;">
+        <tr style="border-bottom:1px solid #1a3a5c;">
+          <td style="padding:5px 0;"><span class="ic">sql/ddl/001_create_gold_tables.sql</span></td>
+          <td style="color:#64748b;padding:5px 0 5px 10px;">DimPortfolio, DimSecurity, DimBroker, FactTrades, FactPrice, FactTradeLifecycle…</td>
+        </tr>
+        <tr style="border-bottom:1px solid #1a3a5c;">
+          <td style="padding:5px 0;"><span class="ic">sql/ddl/002_create_gold_views.sql</span></td>
+          <td style="color:#64748b;padding:5px 0 5px 10px;">Vues analytiques : positions, PnL, performance</td>
+        </tr>
+        <tr>
+          <td colspan="2" style="padding:8px 0 0;font-size:0.7rem;color:#4a6080;">
+            ⚠️ Source de vérité — toujours vérifier les noms de colonnes ici avant de modifier <code>db.py</code>
+          </td>
+        </tr>
+      </table>
+    </div>
+
+    <!-- trading-sim/ -->
+    <div class="card" style="border-top:3px solid #fb923c;">
+      <div class="card-title"><span class="dot" style="background:#fb923c;"></span>trading-sim/engine/ — Moteur de simulation EOD</div>
+      <table style="width:100%;font-size:0.75rem;border-collapse:collapse;">
+        <tr style="border-bottom:1px solid #1a3a5c;">
+          <td style="padding:5px 0;width:140px;"><span class="ic">models.py</span></td>
+          <td style="color:#64748b;padding:5px 0 5px 10px;">Dataclasses : Portfolio, Trade, Position</td>
+        </tr>
+        <tr style="border-bottom:1px solid #1a3a5c;">
+          <td style="padding:5px 0;"><span class="ic">simulator.py</span></td>
+          <td style="color:#64748b;padding:5px 0 5px 10px;">Moteur EOD : calcul positions, P&amp;L latent, métriques</td>
+        </tr>
+        <tr style="border-bottom:1px solid #1a3a5c;">
+          <td style="padding:5px 0;"><span class="ic">pricing.py</span></td>
+          <td style="color:#64748b;padding:5px 0 5px 10px;">Black-Scholes, valorisation mark-to-market</td>
+        </tr>
+        <tr>
+          <td style="padding:5px 0;"><span class="ic">run_mvp.py</span></td>
+          <td style="color:#64748b;padding:5px 0 5px 10px;">Lancé depuis Monitoring — <code>--portfolio-code MAIN</code></td>
+        </tr>
+      </table>
+    </div>
+
+    <!-- commando-quant/ -->
+    <div class="card" style="border-top:3px solid #d946ef;">
+      <div class="card-title"><span class="dot" style="background:#d946ef;"></span>commando-quant/ — Outil VBA dérivés couplé SQL Server</div>
+      <table style="width:100%;font-size:0.75rem;border-collapse:collapse;">
+        <tr style="border-bottom:1px solid #1a3a5c;">
+          <td style="padding:5px 0;width:160px;"><span class="ic">CommandoQuant.xlsm</span></td>
+          <td style="color:#64748b;padding:5px 0 5px 10px;">Classeur VBA — pricing Black-Scholes, Grecques (Δ Γ ν θ ρ), blotter options. Connexion SQLOLEDB → <code>CommandoQuant</code> DB.</td>
+        </tr>
+        <tr style="border-bottom:1px solid #1a3a5c;">
+          <td style="padding:5px 0;"><span class="ic">var_engine.py</span></td>
+          <td style="color:#64748b;padding:5px 0 5px 10px;">Moteur VaR Python (3 méthodes : Paramétrique, Monte Carlo, Historique) → <code>var_results.xlsx</code></td>
+        </tr>
+        <tr>
+          <td colspan="2" style="padding:8px 0 0;font-size:0.7rem;color:#4a6080;">
+            Ouverture depuis Trading Desk via <code>os.startfile()</code> — chemins VBA portables (<code>ThisWorkbook.Path</code>)
+          </td>
+        </tr>
+      </table>
+    </div>
+
+    <!-- analytics/ + ai-assistant/ -->
+    <div class="card" style="border-top:3px solid #20c997;">
+      <div class="card-title"><span class="dot" style="background:#20c997;"></span>analytics/ &amp; ai-assistant/ — Calculs Python autonomes</div>
+      <table style="width:100%;font-size:0.75rem;border-collapse:collapse;">
+        <tr style="border-bottom:1px solid #1a3a5c;">
+          <td style="padding:5px 0;width:200px;"><span class="ic">analytics/performance_risk_mvp.py</span></td>
+          <td style="color:#64748b;padding:5px 0 5px 10px;">Calcule PnL, VaR, Sharpe, Drawdown → <code>PortfolioPnLDaily</code> + <code>RiskMetricsDaily</code></td>
+        </tr>
+        <tr style="border-bottom:1px solid #1a3a5c;">
+          <td style="padding:5px 0;"><span class="ic">ai-assistant/daily_briefing.py</span></td>
+          <td style="color:#64748b;padding:5px 0 5px 10px;">Génère un briefing quotidien IA → <code>AI_DailyBriefing</code></td>
+        </tr>
+        <tr>
+          <td style="padding:5px 0;"><span class="ic">ai-assistant/recommendations.py</span></td>
+          <td style="color:#64748b;padding:5px 0 5px 10px;">Recommandations automatiques → <code>AI_Recommendations</code></td>
+        </tr>
+      </table>
+    </div>
+
+    <!-- CLAUDE.md + docs/ + powerbi/ -->
+    <div class="card" style="border-top:3px solid #fbbf24;">
+      <div class="card-title"><span class="dot" style="background:#fbbf24;"></span>Fichiers de configuration &amp; documentation</div>
+      <table style="width:100%;font-size:0.75rem;border-collapse:collapse;">
+        <tr style="border-bottom:1px solid #1a3a5c;">
+          <td style="padding:5px 0;width:140px;"><span class="ic">CLAUDE.md</span></td>
+          <td style="color:#64748b;padding:5px 0 5px 10px;">Guide absolu pour sessions LLM : conventions, DDL, patterns SQL, checklist feature. À lire en premier.</td>
+        </tr>
+        <tr style="border-bottom:1px solid #1a3a5c;">
+          <td style="padding:5px 0;"><span class="ic">docs/index.html</span></td>
+          <td style="color:#64748b;padding:5px 0 5px 10px;">Ce fichier — architecture technique complète</td>
+        </tr>
+        <tr style="border-bottom:1px solid #1a3a5c;">
+          <td style="padding:5px 0;"><span class="ic">powerbi/*.pbix</span></td>
+          <td style="color:#64748b;padding:5px 0 5px 10px;">Rapport Power BI + thème KHL Bank JSON</td>
+        </tr>
+        <tr>
+          <td style="padding:5px 0;"><span class="ic">docker/</span></td>
+          <td style="color:#64748b;padding:5px 0 5px 10px;">Dockerfile + compose pour déploiement conteneurisé (optionnel)</td>
+        </tr>
+      </table>
+    </div>
+
+  </div><!-- grid cartes -->
+  </div><!-- col gauche -->
+
+  </div><!-- layout 2 colonnes -->
+
+  <!--
+    <div class="card-title"><span class="dot"></span>Arborescence du projet — <span style="color:#94a3b8;font-weight:400;">khl-portfolio-lab/</span></div>
+
+    <!-- Ligne racine -->
+    <div style="display:flex;align-items:flex-start;gap:0;font-family:'Cascadia Code','Consolas',monospace;font-size:0.72rem;min-width:max-content;">
+
+      <!-- ─── Chaque colonne = 1 dossier racine ──────────────────── -->
+
+      <!-- webapp/ -->
+      <div style="display:flex;flex-direction:column;align-items:center;margin-right:0;">
+        <!-- Connecteur horizontal haut -->
+        <div style="width:100%;height:18px;border-bottom:2px solid #e8a020;border-left:2px solid #e8a020;border-radius:0 0 0 6px;margin-left:50%;"></div>
+        <!-- Header dossier -->
+        <div style="background:#1a3a5c;border:2px solid #e8a020;border-radius:8px;padding:6px 14px;font-weight:700;color:#e8a020;white-space:nowrap;margin-bottom:8px;">webapp/</div>
+        <!-- Fichiers -->
+        <div style="background:#0a1628;border:1px solid #1a3a5c;border-radius:6px;padding:10px 14px;min-width:160px;">
+          <div style="color:#4ade80;line-height:2.0;font-size:0.7rem;">
+            app.py<br>config.py<br>db.py
+          </div>
+          <div style="border-top:1px solid #1a3a5c;margin:4px 0;"></div>
+          <div style="color:#e8a020;font-size:0.68rem;margin-bottom:2px;">auth/</div>
+          <div style="color:#a78bfa;font-size:0.68rem;padding-left:10px;line-height:1.9;">routes.py</div>
+          <div style="border-top:1px solid #1a3a5c;margin:4px 0;"></div>
+          <div style="color:#e8a020;font-size:0.68rem;margin-bottom:2px;">modules/</div>
+          <div style="padding-left:10px;font-size:0.67rem;line-height:1.9;">
+            <span style="color:#4ade80;">portfolio/</span><br>
+            <span style="color:#4ade80;">trading/</span><br>
+            <span style="color:#fca5a5;">accounting/</span><br>
+            <span style="color:#fca5a5;">risk/</span><br>
+            <span style="color:#fca5a5;">performance/</span><br>
+            <span style="color:#fca5a5;">alm/</span><br>
+            <span style="color:#93c5fd;">monitoring/</span><br>
+            <span style="color:#4ade80;">quant/</span><br>
+            <span style="color:#d1d5db;">docs/</span>
+          </div>
+          <div style="border-top:1px solid #1a3a5c;margin:4px 0;"></div>
+          <div style="color:#e8a020;font-size:0.68rem;margin-bottom:2px;">templates/</div>
+          <div style="padding-left:10px;font-size:0.67rem;line-height:1.9;color:#64748b;">
+            base.html<br>home.html<br>access_denied.html<br>auth/ · modules/
+          </div>
+        </div>
+      </div>
+
+      <!-- Séparateur -->
+      <div style="width:24px;flex-shrink:0;"></div>
+
+      <!-- scripts/ -->
+      <div style="display:flex;flex-direction:column;align-items:center;">
+        <div style="width:100%;height:18px;border-bottom:2px solid #4ade80;border-left:2px solid #4ade80;border-radius:0 0 0 6px;margin-left:50%;"></div>
+        <div style="background:#0d2a1a;border:2px solid #4ade80;border-radius:8px;padding:6px 14px;font-weight:700;color:#4ade80;white-space:nowrap;margin-bottom:8px;">scripts/</div>
+        <div style="background:#0a1628;border:1px solid #1a3a5c;border-radius:6px;padding:10px 14px;min-width:190px;">
+          <div style="color:#64748b;font-size:0.68rem;line-height:2.1;">
+            create_demo_users.py<br>
+            build_ticker_lookup.py<br>
+            seed_demo_data.py<br>
+            load_factprice_from_stg.py<br>
+            create_admin.py<br>
+            patch_vba_*.py
+          </div>
+        </div>
+      </div>
+
+      <div style="width:24px;flex-shrink:0;"></div>
+
+      <!-- data-platform/ -->
+      <div style="display:flex;flex-direction:column;align-items:center;">
+        <div style="width:100%;height:18px;border-bottom:2px solid #60a5fa;border-left:2px solid #60a5fa;border-radius:0 0 0 6px;margin-left:50%;"></div>
+        <div style="background:#0d1a3a;border:2px solid #60a5fa;border-radius:8px;padding:6px 14px;font-weight:700;color:#60a5fa;white-space:nowrap;margin-bottom:8px;">data-platform/</div>
+        <div style="background:#0a1628;border:1px solid #1a3a5c;border-radius:6px;padding:10px 14px;min-width:210px;">
+          <div style="color:#60a5fa;font-size:0.68rem;margin-bottom:4px;">sql/ddl/</div>
+          <div style="padding-left:10px;color:#64748b;font-size:0.68rem;line-height:2.1;">
+            001_create_gold_tables.sql<br>
+            002_create_gold_views.sql
+          </div>
+        </div>
+      </div>
+
+      <div style="width:24px;flex-shrink:0;"></div>
+
+      <!-- trading-sim/ -->
+      <div style="display:flex;flex-direction:column;align-items:center;">
+        <div style="width:100%;height:18px;border-bottom:2px solid #fb923c;border-left:2px solid #fb923c;border-radius:0 0 0 6px;margin-left:50%;"></div>
+        <div style="background:#2a1a0d;border:2px solid #fb923c;border-radius:8px;padding:6px 14px;font-weight:700;color:#fb923c;white-space:nowrap;margin-bottom:8px;">trading-sim/</div>
+        <div style="background:#0a1628;border:1px solid #1a3a5c;border-radius:6px;padding:10px 14px;min-width:145px;">
+          <div style="color:#64748b;font-size:0.68rem;margin-bottom:4px;">engine/</div>
+          <div style="padding-left:10px;color:#64748b;font-size:0.68rem;line-height:2.1;">
+            models.py<br>simulator.py<br>pricing.py<br>run_mvp.py
+          </div>
+        </div>
+      </div>
+
+      <div style="width:24px;flex-shrink:0;"></div>
+
+      <!-- commando-quant/ -->
+      <div style="display:flex;flex-direction:column;align-items:center;">
+        <div style="width:100%;height:18px;border-bottom:2px solid #d946ef;border-left:2px solid #d946ef;border-radius:0 0 0 6px;margin-left:50%;"></div>
+        <div style="background:#1a0d2a;border:2px solid #d946ef;border-radius:8px;padding:6px 14px;font-weight:700;color:#d946ef;white-space:nowrap;margin-bottom:8px;">commando-quant/</div>
+        <div style="background:#0a1628;border:1px solid #1a3a5c;border-radius:6px;padding:10px 14px;min-width:175px;">
+          <div style="color:#64748b;font-size:0.68rem;line-height:2.1;">
+            CommandoQuant.xlsm<br>var_engine.py
+          </div>
+        </div>
+      </div>
+
+      <div style="width:24px;flex-shrink:0;"></div>
+
+      <!-- analytics + ai-assistant + docs + powerbi + CLAUDE.md -->
+      <div style="display:flex;flex-direction:column;align-items:center;">
+        <div style="width:100%;height:18px;border-bottom:2px solid #fbbf24;border-left:2px solid #fbbf24;border-radius:0 0 0 6px;margin-left:50%;"></div>
+        <div style="background:#2a1a0d;border:2px solid #fbbf24;border-radius:8px;padding:6px 14px;font-weight:700;color:#fbbf24;white-space:nowrap;margin-bottom:8px;">Autres</div>
+        <div style="background:#0a1628;border:1px solid #1a3a5c;border-radius:6px;padding:10px 14px;min-width:145px;">
+          <div style="color:#64748b;font-size:0.68rem;line-height:2.1;">
+            <span style="color:#20c997;">analytics/</span><br>
+            <span style="color:#20c997;">ai-assistant/</span><br>
+            <span style="color:#fbbf24;">docs/</span><br>
+            <span style="color:#fbbf24;">powerbi/</span><br>
+            <span style="color:#fbbf24;font-weight:700;">CLAUDE.md</span>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- flex horizontale -->
+
+    <!-- Légende -->
+    <div style="margin-top:14px;padding-top:10px;border-top:1px solid #1a3a5c;font-size:0.65rem;color:#4a6080;display:flex;flex-wrap:wrap;gap:14px;">
+      <span><span style="color:#4ade80;">■</span> Front Office</span>
+      <span><span style="color:#fca5a5;">■</span> Middle Office</span>
+      <span><span style="color:#93c5fd;">■</span> Back Office</span>
+      <span><span style="color:#e8a020;">■</span> Répertoire</span>
+      <span><span style="color:#a78bfa;">■</span> Auth / config</span>
+      <span><span style="color:#fbbf24;">■</span> Config / Docs</span>
+    </div>
+  arborescence horizontale supprimée -->
+
+</div><!-- section structure -->
+
+<hr class="divider">
+
+<!-- 04 -->
+<div class="section" id="flask">
+  <div class="section-title">04 — Flask &amp; Blueprints</div>
+  <p class="section-desc">Comment l'application est assemblée au démarrage et comment les requêtes sont routées.</p>
+
+  <div class="infobox gold">
+    <div class="icon">⚡</div>
+    <div class="text">
+      <strong>Démarrage :</strong> <span class="ic">python webapp/app.py</span> → <span class="ic">init_db()</span> (crée les tables si absentes) → enregistrement des 10 blueprints → serveur Flask sur <span class="ic">http://localhost:5000</span>. Un seul process, pas de build step, pas de webpack.
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span class="dot"></span>Cycle d'une requête HTTP</div>
+    <div class="pipeline">
+      <div class="pipe-step"><div class="pipe-num">1</div><div><div class="pipe-label">Requête HTTP</div><div class="pipe-detail">GET /trading/ ou POST /trading/order/new</div></div></div>
+      <div class="pipe-step"><div class="pipe-num">2</div><div><div class="pipe-label">before_request</div><div class="pipe-detail">load_user() → g.user depuis session Flask</div></div></div>
+      <div class="pipe-step"><div class="pipe-num">3</div><div><div class="pipe-label">Décorateurs</div><div class="pipe-detail">@login_required → vérifie session["user_id"] · @role_required → vérifie session["role"]</div></div></div>
+      <div class="pipe-step"><div class="pipe-num">4</div><div><div class="pipe-label">Route handler</div><div class="pipe-detail">Logique métier + requêtes SQL via with db.db_cursor() as cur:</div></div></div>
+      <div class="pipe-step"><div class="pipe-num">5</div><div><div class="pipe-label">render_template</div><div class="pipe-detail">Jinja2 → HTML avec variables + context_processor global (roles, modules)</div></div></div>
+      <div class="pipe-step"><div class="pipe-num">6</div><div><div class="pipe-label">Réponse</div><div class="pipe-detail">200 OK / 302 Redirect / 403 access_denied.html</div></div></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title"><span class="dot"></span>Blueprints enregistrés (app.py)</div>
+    <table class="module-table">
+      <thead><tr><th>Blueprint</th><th>Préfixe</th><th>Rôles requis</th></tr></thead>
+      <tbody>
+        <tr><td>auth_bp</td><td>/auth/*</td><td>Public (login/register) + @login_required sur routes protégées</td></tr>
+        <tr><td>portfolio_bp</td><td>/portfolio/*</td><td>ASSET_MANAGER, QUANT, ADMIN</td></tr>
+        <tr><td>trading_bp</td><td>/trading/*</td><td>TRADER, QUANT, ADMIN (order/new → TRADER, ADMIN uniquement)</td></tr>
+        <tr><td>accounting_bp</td><td>/accounting/*</td><td>COMPTABLE, DATA_ANALYST, ADMIN</td></tr>
+        <tr><td>performance_bp</td><td>/performance/*</td><td>ASSET_MANAGER, RISK_ANALYST, DATA_ANALYST, ADMIN</td></tr>
+        <tr><td>risk_bp</td><td>/risk/*</td><td>TRADER, RISK_ANALYST, QUANT, ADMIN</td></tr>
+        <tr><td>alm_bp</td><td>/alm/*</td><td>ALM_OFFICER, RISK_ANALYST, ADMIN</td></tr>
+        <tr><td>quant_bp</td><td>/quant/*</td><td>QUANT, TRADER, DATA_ANALYST, ADMIN</td></tr>
+        <tr><td>monitoring_bp</td><td>/monitoring/*</td><td>DATA_ANALYST, COMPTABLE, ADMIN</td></tr>
+        <tr><td>docs_bp</td><td>/docs/*</td><td>Tous les connectés (@login_required)</td></tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- 05 -->
+<div class="section" id="modules">
+  <div class="section-title">05 — Modules métier</div>
+  <p class="section-desc">Ce que fait chaque module, ses tables SQL, ses routes principales.</p>
+  <table class="module-table">
+    <thead><tr><th>Module</th><th>Office</th><th>URL</th><th>Fonctionnalités</th><th>Tables SQL principales</th></tr></thead>
+    <tbody>
+      <tr><td>Portfolio</td><td><span class="badge badge-front">FRONT</span></td><td>/portfolio/</td><td>Wizard 6 étapes : stratégie, allocation, backtesting, risque, finalisation. Vue détail positions.</td><td>DimPortfolio, PortfolioPositionsDaily, PortfolioPnLDaily</td></tr>
+      <tr><td>Trading Desk</td><td><span class="badge badge-front">FRONT</span></td><td>/trading/</td><td>Carnet des trades, saisie ordres BUY/SELL, pré-trade risk check, ouverture CommandoQuant.xlsm</td><td>FactTrades, Orders, DimSecurity, DimDate, FactAccountingEvent, FactSettlementMovement</td></tr>
+      <tr><td>Quant / Data Lab</td><td><span class="badge badge-front">FRONT</span></td><td>/quant/</td><td>Explorateur STOOQ (60k+ instruments), backtesting stratégies, analyse technique</td><td>stg_bourso_price_history (KHLWorldInvest), FactPrice</td></tr>
+      <tr><td>Risk Management</td><td><span class="badge badge-middle">MIDDLE</span></td><td>/risk/</td><td>VaR 95%, volatilité 20j, drawdown max, Sharpe, bêta, alertes dépassement limites</td><td>RiskMetricsDaily, RiskLimits, PortfolioPositionsDaily, FactPrice</td></tr>
+      <tr><td>Performance</td><td><span class="badge badge-middle">MIDDLE</span></td><td>/performance/</td><td>NAV, rendement cumulé, attribution PnL, courbe performance, iframe Power BI</td><td>PortfolioPnLDaily, PortfolioPositionsDaily, AppSettings (powerbi.service_url)</td></tr>
+      <tr><td>ALM</td><td><span class="badge badge-middle">MIDDLE</span></td><td>/alm/</td><td>Gap de liquidité, duration modified, BPV, ratios LCR/NSFR, stress tests taux</td><td>PortfolioPositionsDaily, FactPrice</td></tr>
+      <tr><td>Comptabilité</td><td><span class="badge badge-back">BACK</span></td><td>/accounting/</td><td>Journal FactAccountingMovement (plan CIB), balance 25 comptes, suivi settlement J+2, contrôles EOD</td><td>FactAccountingMovement, FactAccountingEvent, DimAccountInternal, FactSettlementMovement, FactReconciliationControl</td></tr>
+      <tr><td>Monitoring</td><td><span class="badge badge-back">BACK</span></td><td>/monitoring/</td><td>Logs AppLog, stats tables (nb lignes), lancement jobs (EOD reco, VaR, simulation EOD)</td><td>AppLog, toutes les tables (SELECT COUNT)</td></tr>
+      <tr><td>Documentation</td><td><span class="badge badge-admin">ALL</span></td><td>/docs/</td><td>Wiki interne : workflows, matrice rôles, changelog auto, cycle de vie transaction</td><td>AppLog (recent logs dans changelog)</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<hr class="divider">
+
+<!-- 06 -->
+<div class="section" id="auth">
+  <div class="section-title">06 — Authentification &amp; Rôles</div>
+  <p class="section-desc">Système RBAC complet avec hiérarchie Front / Middle / Back Office.</p>
+
+  <div class="infobox green">
+    <div class="icon">🔐</div>
+    <div class="text">
+      <strong>Hachage :</strong> SHA-256 + salt unique 32 hex par utilisateur.<br>
+      <strong>Session Flask :</strong> cookie signé côté serveur (secret_key <span class="ic">os.urandom(32)</span> à chaque démarrage).<br>
+      <strong>Accès refusé :</strong> <span class="ic">@role_required</span> rend <span class="ic">access_denied.html</span> HTTP 403 avec l'identité de l'utilisateur, le module tenté et les rôles autorisés — pas un simple redirect.
+    </div>
+  </div>
+
+  <div style="font-size:0.75rem;color:#e8a020;font-weight:700;margin:0 0 12px;text-transform:uppercase;letter-spacing:0.8px">Hiérarchie des accès</div>
+  <div class="flow" style="margin-bottom:20px">
+    <div class="flow-step" style="border-color:#e8a020;background:#1a0d00"><div class="step-title" style="color:#e8a020">ADMIN</div><div class="step-who">Niveau 1 — accès total</div></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step back"><div class="step-title">DATA_ANALYST</div><div class="step-who">Niveau 2 — Back Office cross</div></div>
+    <div class="flow-step back" style="margin-left:4px"><div class="step-title">COMPTABLE</div><div class="step-who">Niveau 2 — Back Office</div></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step front"><div class="step-title">TRADER</div><div class="step-who">Niveau 3 — Front</div></div>
+    <div class="flow-step front" style="margin-left:4px"><div class="step-title">ASSET_MANAGER</div><div class="step-who">Niveau 3 — Front</div></div>
+    <div class="flow-step front" style="margin-left:4px"><div class="step-title">QUANT</div><div class="step-who">Niveau 3 — Front</div></div>
+    <div class="flow-step middle" style="margin-left:4px"><div class="step-title">RISK_ANALYST</div><div class="step-who">Niveau 3 — Middle</div></div>
+    <div class="flow-step middle" style="margin-left:4px"><div class="step-title">ALM_OFFICER</div><div class="step-who">Niveau 3 — Middle</div></div>
+  </div>
+
+  <div class="role-grid">
+    <div class="role-card role-front"><div class="role-name">TRADER / Sales</div><div class="role-office" style="color:#4ade80">Front Office</div><div class="role-can">✔ Exécuter ordres BUY/SELL, Risk, Quant/VBA</div><div class="role-cannot">✘ Comptabilité, Gestion portefeuilles</div><div class="role-modules"><span>trading</span><span>risk</span><span>quant</span></div></div>
+    <div class="role-card role-front"><div class="role-name">ASSET_MANAGER</div><div class="role-office" style="color:#4ade80">Front Office</div><div class="role-can">✔ Portefeuilles, Performance, Risk, Power BI</div><div class="role-cannot">✘ Passer des ordres, Comptabilité</div><div class="role-modules"><span>portfolio</span><span>performance</span><span>risk</span><span>powerbi</span></div></div>
+    <div class="role-card role-front"><div class="role-name">QUANT / IT Quant</div><div class="role-office" style="color:#4ade80">Front Office</div><div class="role-can">✔ Data Lab, Backtesting, Portfolio (simulation)</div><div class="role-cannot">✘ Ordres réels, Comptabilité</div><div class="role-modules"><span>quant</span><span>portfolio</span><span>risk</span></div></div>
+    <div class="role-card role-middle"><div class="role-name">RISK_ANALYST</div><div class="role-office" style="color:#fca5a5">Middle Office</div><div class="role-can">✔ Risk, Performance, ALM, Power BI</div><div class="role-cannot">✘ Ordres, Comptabilité</div><div class="role-modules"><span>risk</span><span>performance</span><span>alm</span><span>powerbi</span></div></div>
+    <div class="role-card role-middle"><div class="role-name">ALM_OFFICER</div><div class="role-office" style="color:#fca5a5">Middle Office</div><div class="role-can">✔ ALM, Risk, Performance</div><div class="role-cannot">✘ Ordres, Comptabilité, Front Office</div><div class="role-modules"><span>alm</span><span>risk</span><span>performance</span></div></div>
+    <div class="role-card role-back"><div class="role-name">COMPTABLE</div><div class="role-office" style="color:#93c5fd">Back Office</div><div class="role-can">✔ Comptabilité, Monitoring, Performance</div><div class="role-cannot">✘ Ordres, Portefeuilles Front</div><div class="role-modules"><span>accounting</span><span>monitoring</span><span>performance</span></div></div>
+    <div class="role-card role-back"><div class="role-name">DATA_ANALYST</div><div class="role-office" style="color:#93c5fd">Back Office</div><div class="role-can">✔ Comptabilité, Monitoring, Performance, Power BI, Quant</div><div class="role-cannot">✘ Ordres, Portefeuilles Front</div><div class="role-modules"><span>accounting</span><span>monitoring</span><span>performance</span><span>powerbi</span><span>quant</span></div></div>
+    <div class="role-card role-admin"><div class="role-name">ADMIN</div><div class="role-office" style="color:#e8a020">Système</div><div class="role-can">✔ Tous les modules, gestion utilisateurs</div><div class="role-cannot">—</div><div class="role-modules"><span>tous</span></div></div>
+  </div>
+
+  <div class="card" style="margin-top:16px">
+    <div class="card-title"><span class="dot"></span>Décorateurs (auth/routes.py)</div>
+    <pre>@login_required            # session["user_id"] présent ? sinon redirect /auth/login
+@role_required("TRADER")   # session["role"] in roles ou == "ADMIN" ?
+                           # si refus → render_template("access_denied.html") HTTP 403
+                           # contexte passé : user_role_info, module_info, allowed_roles, office_meta</pre>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- 07 -->
+<div class="section" id="templates">
+  <div class="section-title">07 — Templates &amp; UI System</div>
+  <p class="section-desc">Design system KHL — conventions CSS, tooltips, story blocks.</p>
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title"><span class="dot"></span>base.html — Layout commun</div>
+      <table class="module-table">
+        <tr><td>Header fixe</td><td>Logo KHL, badge FORMATION, user chip + dropdown profil/logout</td></tr>
+        <tr><td>Sidebar</td><td>3 sections colorées : FRONT (vert #0d6e3b), MIDDLE (rouge #8b1a1a), BACK (bleu #1a3a5c). Badge office + rôle de l'utilisateur connecté. Seuls les modules autorisés sont affichés.</td></tr>
+        <tr><td>Flash messages</td><td>success / warning / danger / info — auto-dismissible Bootstrap</td></tr>
+        <tr><td>Tooltips</td><td>Init globale — tous les <span class="ic">data-bs-toggle="tooltip"</span> activés automatiquement au DOMContentLoaded</td></tr>
+        <tr><td>Chart.js</td><td>Chargé globalement — disponible dans tous les templates</td></tr>
+      </table>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="dot"></span>Design System CSS</div>
+      <pre>--khl-navy   : #0d1b2a  (fond sombre)
+--khl-blue   : #1a3a5c  (sidebar)
+--khl-accent : #e8a020  (or — CTA, actif)
+--khl-green  : #0d6e3b  (FRONT badge)
+--khl-red    : #8b1a1a  (MIDDLE badge)
+--khl-border : #dee2e6</pre>
+      <br>
+      <p>Composants : <span class="ic">.khl-card</span> <span class="ic">.metric-card</span> <span class="ic">.khl-table</span> <span class="ic">.story-block</span> <span class="ic">.wizard-steps</span> <span class="ic">.log-terminal</span></p>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="dot"></span>Système Tooltips</div>
+      <pre>&lt;!-- Simple --&gt;
+&lt;span data-bs-toggle="tooltip" data-bs-title="..."&gt;texte&lt;/span&gt;
+
+&lt;!-- HTML riche --&gt;
+&lt;span data-bs-toggle="tooltip" data-bs-html="true"
+      data-bs-title="&lt;b&gt;Terme&lt;/b&gt;&lt;br&gt;Formule"&gt;
+
+&lt;!-- Icône aide standard --&gt;
+&lt;span class="khl-tip" data-bs-toggle="tooltip"
+      data-bs-title="Définition"&gt;?&lt;/span&gt;</pre>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="dot"></span>Story blocks</div>
+      <pre>&lt;div class="story-block mb-4"&gt;
+  &lt;div class="story-title"&gt;
+    &lt;i class="bi bi-person-workspace me-2"&gt;&lt;/i&gt;
+    Contexte métier — Trader
+  &lt;/div&gt;
+  &lt;p&gt;En tant que Trader chez KHL Bank CIB...&lt;/p&gt;
+&lt;/div&gt;</pre>
+      <p style="margin-top:8px">Chaque module commence par un story-block qui explique le contexte métier réel du rôle concerné.</p>
+    </div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- 08 -->
+<div class="section" id="database">
+  <div class="section-title">08 — Base de données SQL Server</div>
+  <p class="section-desc">3 bases distinctes sur le même serveur. Authentification Windows uniquement — aucun mot de passe SQL.</p>
+  <div class="grid-3">
+    <div class="card"><div class="card-title"><span class="dot"></span>SmartAssetAdvicedb (Gold)</div><p>Base principale. Tables Gold (DimPortfolio, FactTrades...), tables applicatives (AppUsers, AppLog, AppSettings) et tables CIB (comptabilité, settlement, réconciliation). Toutes créées par init_db() au démarrage.</p></div>
+    <div class="card"><div class="card-title"><span class="dot"></span>KHLWorldInvest (Staging)</div><p>Cotations historiques Boursorama/STOOQ. Table <span class="ic">stg.stg_bourso_price_history</span>. Alimente <span class="ic">FactPrice</span> via le script <span class="ic">load_factprice_from_stg.py</span>.</p></div>
+    <div class="card"><div class="card-title"><span class="dot"></span>CommandoQuant (Dérivés)</div><p>Dédiée au pricing options. Contient <span class="ic">tbl_Greeks</span>. Alimentée par le VBA Excel. Lue par <span class="ic">var_engine.py</span> via computed columns <span class="ic">ImpliedVol</span> / <span class="ic">Price</span>.</p></div>
+  </div>
+  <div class="card">
+    <div class="card-title"><span class="dot"></span>db.py — couche accès unifiée</div>
+    <pre>with db.db_cursor() as cur:           # context manager : commit/rollback auto
+    cur.execute("SELECT ... WHERE Col = ?", param)   # paramétré (pas de f-string SQL)
+    rows = cur.fetchall()
+
+db.app_log("module", "ACTION", detail="...", correlation_id="...", username="...")
+db.get_setting("powerbi.service_url", default="")
+db.set_setting("cle", "valeur", "description", username)</pre>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- 09 -->
+<div class="section" id="tables">
+  <div class="section-title">09 — Catalogue des tables</div>
+  <p class="section-desc">Toutes les tables avec leurs colonnes clés. Source de vérité : <span class="ic">data-platform/sql/ddl/001_create_gold_tables.sql</span></p>
+
+  <div class="db-category">
+    <div class="db-category-title">Dimensions</div>
+    <div style="display:flex;flex-wrap:wrap">
+      <div class="table-card"><div class="table-name">DimPortfolio</div><div class="table-col"><span class="pk">PortfolioKey</span> PK<br>PortfolioCode, PortfolioName<br>BaseCurrency, StrategyType<br>InceptionDate, IsActive</div></div>
+      <div class="table-card"><div class="table-name">DimSecurity</div><div class="table-col"><span class="pk">SecurityKey</span> PK<br>Ticker, SecurityName<br>AssetClass, CurrencyCode<br>IsActive, CreatedAt</div></div>
+      <div class="table-card"><div class="table-name">DimDate</div><div class="table-col"><span class="pk">DateKey</span> PK (YYYYMMDD)<br>FullDate, CalendarYear<br>CalendarMonth, CalendarDay<br>MonthName, QuarterNumber<br>WeekOfYear, IsMonthEnd</div></div>
+      <div class="table-card"><div class="table-name">DimAccountInternal</div><div class="table-col"><span class="pk">AccountKey</span> PK<br>AccountCode (ex: 120100)<br>AccountLabel, AccountType<br>ASSET/LIABILITY/EXPENSE/INCOME</div></div>
+    </div>
+  </div>
+
+  <div class="db-category">
+    <div class="db-category-title">Facts — Trading &amp; Positions</div>
+    <div style="display:flex;flex-wrap:wrap">
+      <div class="table-card"><div class="table-name">FactTrades</div><div class="table-col"><span class="pk">TradeKey</span> PK<br><span class="fk">TradeDateKey, SettleDateKey</span><br><span class="fk">PortfolioKey, SecurityKey</span><br>Side (BUY|SELL), Quantity, Price<br>FeeAmount, SlippageAmount<br>CurrencyCode, OrderType, ExecutionTs</div></div>
+      <div class="table-card"><div class="table-name">FactPrice</div><div class="table-col"><span class="pk">PriceKey</span> PK<br><span class="fk">DateKey, SecurityKey</span><br>OpenPrice, ClosePrice<br>HighPrice, LowPrice<br>Volume, AdjClosePrice</div></div>
+      <div class="table-card"><div class="table-name">PortfolioPositionsDaily</div><div class="table-col"><span class="pk">PositionKey</span> PK<br><span class="fk">DateKey, PortfolioKey, SecurityKey</span><br>NetQty, AvgCostPrice<br>MarketValue, UnrealizedPnL</div></div>
+      <div class="table-card"><div class="table-name">PortfolioPnLDaily</div><div class="table-col"><span class="pk">PnLKey</span> PK<br><span class="fk">DateKey, PortfolioKey</span><br>NAV, DailyPnL, CumulPnL<br>DailyReturn, CumulReturn</div></div>
+      <div class="table-card"><div class="table-name">RiskMetricsDaily</div><div class="table-col"><span class="pk">RiskKey</span> PK<br><span class="fk">DateKey, PortfolioKey</span><br>Volatility20d, VaR95, VaR99<br>MaxDrawdown, Sharpe, Beta</div></div>
+    </div>
+  </div>
+
+  <div class="db-category">
+    <div class="db-category-title">Facts — Comptabilité CIB</div>
+    <div style="display:flex;flex-wrap:wrap">
+      <div class="table-card"><div class="table-name">FactAccountingEvent</div><div class="table-col"><span class="pk">AccountingEventKey</span> PK<br>EventTs, EventType (TRADE/FEE)<br>SourceSystem, <span class="fk">PortfolioKey</span><br><span class="fk">TradeKey, OrderKey</span><br>Status (POSTED/REVERSED)<br>CorrelationId, CreatedBy</div></div>
+      <div class="table-card"><div class="table-name">FactAccountingMovement</div><div class="table-col"><span class="pk">AccountingMovementKey</span> PK<br><span class="fk">AccountingEventKey, AccountKey</span><br>PostingDateKey, ValueDateKey<br>DebitAmount, CreditAmount<br><span class="computed">AmountSigned AS (Debit-Credit)</span><br>Narrative, ReferenceId</div></div>
+      <div class="table-card"><div class="table-name">FactSettlementMovement</div><div class="table-col"><span class="pk">SettlementMovementKey</span> PK<br><span class="fk">TradeKey, PortfolioKey, SecurityKey</span><br>TradeDateKey, SettleDateKey<br>Side, ExpectedQty<br>ExpectedCashAmount<br>SettlementStatus (PENDING/SETTLED)</div></div>
+      <div class="table-card"><div class="table-name">FactReconciliationControl</div><div class="table-col"><span class="pk">RecoKey</span> PK<br>DateKey, ControlName<br>ControlStatus (OK/BREAK)<br>DifferenceAmount, Comment<br>CheckedBy, CheckedAt</div></div>
+    </div>
+  </div>
+
+  <div class="db-category">
+    <div class="db-category-title">Tables applicatives</div>
+    <div style="display:flex;flex-wrap:wrap">
+      <div class="table-card"><div class="table-name">AppUsers</div><div class="table-col"><span class="pk">user_id</span> PK<br>username, email<br>password_hash, password_salt<br>role, full_name, department<br>is_active, created_at, last_login</div></div>
+      <div class="table-card"><div class="table-name">AppLog</div><div class="table-col"><span class="pk">log_id</span> PK<br>log_ts, level (INFO/WARN/ERROR)<br>module, action, detail<br>username, duration_ms<br>correlation_id<br>before_payload, after_payload</div></div>
+      <div class="table-card"><div class="table-name">AppSettings</div><div class="table-col"><span class="pk">SettingKey</span> PK<br>SettingValue (MAX)<br>Description, UpdatedAt, UpdatedBy<br><br>Clés : powerbi.service_url<br>powerbi.service_name</div></div>
+      <div class="table-card"><div class="table-name">Orders</div><div class="table-col"><span class="pk">OrderKey</span> PK<br><span class="fk">PortfolioKey</span>, Ticker, Side<br>OrderQty, OrderPrice, OrderType<br>Status (EXECUTED/BLOCKED)<br>ExecutedQty, ExecutedPrice, ExecutedAt<br>FeeAmount, Notes</div></div>
+      <div class="table-card"><div class="table-name">RiskLimits</div><div class="table-col"><span class="pk">LimitKey</span> PK<br><span class="fk">PortfolioKey</span> (NULL = global)<br>LimitName (vol20d, var95...)<br>WarnLevel, BreachLevel<br>Description</div></div>
+    </div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- 10 -->
+<div class="section" id="accounting">
+  <div class="section-title">10 — Plan de comptes CIB</div>
+  <p class="section-desc">25 comptes normés dans DimAccountInternal, inspirés du plan comptable bancaire CIB. Alimentés automatiquement à chaque ordre via trading/routes.py.</p>
+
+  <table class="module-table">
+    <thead><tr><th>Code</th><th>Libellé</th><th>Type</th><th>Utilisé pour</th></tr></thead>
+    <tbody>
+      <tr><td>110100</td><td>Cash EUR Nostro</td><td><span class="badge badge-ok">ASSET</span></td><td>Règlement cash</td></tr>
+      <tr><td>120100</td><td>Titres de transaction — Actions</td><td><span class="badge badge-ok">ASSET</span></td><td>BUY : débit · SELL : crédit</td></tr>
+      <tr><td>120200</td><td>Titres de transaction — Obligations</td><td><span class="badge badge-ok">ASSET</span></td><td>Obligations</td></tr>
+      <tr><td>130100</td><td>Dérivés actifs à la juste valeur</td><td><span class="badge badge-ok">ASSET</span></td><td>Options/Futures positifs</td></tr>
+      <tr><td>130200</td><td>Dérivés passifs à la juste valeur</td><td><span class="badge badge-liability">LIABILITY</span></td><td>Options/Futures négatifs</td></tr>
+      <tr><td>140100</td><td>Créances brokers</td><td><span class="badge badge-ok">ASSET</span></td><td>SELL : débit</td></tr>
+      <tr><td>140200</td><td>Dettes brokers</td><td><span class="badge badge-liability">LIABILITY</span></td><td>BUY : crédit</td></tr>
+      <tr><td>150100</td><td>Frais à payer — exécution</td><td><span class="badge badge-liability">LIABILITY</span></td><td>Frais courtage : crédit</td></tr>
+      <tr><td>160100</td><td>Suspens cash</td><td><span class="badge badge-ok">ASSET</span></td><td>Réconciliation</td></tr>
+      <tr><td>210100</td><td>Capital / fonds propres internes</td><td><span class="badge badge-back">EQUITY</span></td><td>Fonds propres</td></tr>
+      <tr><td>310100</td><td>Engagements hors bilan — achats</td><td><span class="badge badge-admin">OFFBAL</span></td><td>Hors bilan</td></tr>
+      <tr><td>410100</td><td>PnL réalisé — trading</td><td><span class="badge badge-income">INCOME</span></td><td>Gain/perte à la vente</td></tr>
+      <tr><td>510100</td><td>Charges de courtage</td><td><span class="badge badge-expense">EXPENSE</span></td><td>Frais courtage : débit</td></tr>
+      <tr><td>510200</td><td>Charges de slippage</td><td><span class="badge badge-expense">EXPENSE</span></td><td>Coût impact marché</td></tr>
+      <tr><td>610100</td><td>Produits dividendes</td><td><span class="badge badge-income">INCOME</span></td><td>Dividendes reçus</td></tr>
+    </tbody>
+  </table>
+
+  <div class="card" style="margin-top:16px">
+    <div class="card-title"><span class="dot"></span>Écritures générées automatiquement — ordre BUY 1000 AAPL @ 180€</div>
+    <pre>Event TRADE (FactAccountingEvent, EventType='TRADE', CorrelationId='xyz') :
+  Débit  120100  Titres transaction - Actions    180 000 EUR
+  Crédit 140200  Dettes brokers                 180 000 EUR
+
+Event FEE (FactAccountingEvent, EventType='FEE', CorrelationId='xyz') :
+  Débit  510100  Charges de courtage              180 EUR  (10 bps)
+  Crédit 150100  Frais à payer - exécution         180 EUR
+
+Settlement J+2 (FactSettlementMovement) :
+  Status = PENDING  SettleDateKey = trade_date + 2 jours</pre>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- 11 -->
+<div class="section" id="trade-flow">
+  <div class="section-title">11 — Cycle de vie d'un trade</div>
+  <p class="section-desc">Pipeline complet de l'instruction d'allocation jusqu'au contrôle EOD.</p>
+
+  <div class="flow">
+    <div class="flow-step front"><div class="step-title">1. Décision</div><div class="step-who">Asset Manager<br>Portfolio Module</div></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step front"><div class="step-title">2. Pré-trade Risk</div><div class="step-who">Trader<br>RiskLimits check</div></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step front"><div class="step-title">3. Ordre</div><div class="step-who">Trader<br>dbo.Orders</div></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step front"><div class="step-title">4. Exécution</div><div class="step-who">Trader<br>dbo.FactTrades</div></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step back"><div class="step-title">5. Comptabilisation</div><div class="step-who">Auto<br>FactAccountingEvent + Movement</div></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step back"><div class="step-title">6. Settlement J+2</div><div class="step-who">Back Office<br>FactSettlementMovement PENDING</div></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step middle"><div class="step-title">7. Risk EOD</div><div class="step-who">Risk Analyst<br>RiskMetricsDaily</div></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step back"><div class="step-title">8. Réconciliation</div><div class="step-who">COMPTABLE<br>FactReconciliationControl</div></div>
+  </div>
+
+  <div class="card" style="margin-top:16px">
+    <div class="card-title"><span class="dot"></span>CorrelationId — traçabilité bout en bout</div>
+    <p>Chaque ordre génère un <span class="ic">correlation_id = str(uuid4())[:16]</span> propagé dans <span class="ic">AppLog</span> et <span class="ic">FactAccountingEvent.CorrelationId</span>. Permet de retrouver toutes les écritures d'un trade dans les logs de monitoring.</p>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- 12 -->
+<div class="section" id="cloisonnement">
+  <div class="section-title">12 — Cloisonnement Front / Middle / Back</div>
+  <p class="section-desc">Règle fondamentale de la banque d'investissement : séparation des tâches.</p>
+
+  <div class="infobox gold">
+    <div class="icon">⚖️</div>
+    <div class="text">
+      <strong>Principe CIB :</strong> «&nbsp;Qui décide n'exécute pas. Qui exécute ne comptabilise pas. Qui comptabilise ne décide pas.&nbsp;»<br>
+      Implémenté via <span class="ic">@role_required()</span> sur chaque route sensible. Violation → <span class="ic">access_denied.html</span> HTTP 403 avec explication pédagogique complète.
+    </div>
+  </div>
+
+  <table class="module-table">
+    <thead><tr><th>Office</th><th>Couleur sidebar</th><th>Rôles</th><th>Peut faire</th><th>Ne peut PAS faire</th></tr></thead>
+    <tbody>
+      <tr><td><span class="badge badge-front">FRONT</span></td><td>Vert #0d6e3b</td><td>TRADER, ASSET_MANAGER, QUANT</td><td>Décider, exécuter, analyser les marchés</td><td>Comptabiliser, voir les livres comptables</td></tr>
+      <tr><td><span class="badge badge-middle">MIDDLE</span></td><td>Rouge #8b1a1a</td><td>RISK_ANALYST, ALM_OFFICER</td><td>Contrôler le risque, performance, ALM</td><td>Passer des ordres, comptabiliser</td></tr>
+      <tr><td><span class="badge badge-back">BACK</span></td><td>Bleu #1a3a5c</td><td>COMPTABLE, DATA_ANALYST</td><td>Comptabiliser, monitoring, reporting</td><td>Passer des ordres, modifier des portefeuilles</td></tr>
+    </tbody>
+  </table>
+
+  <div class="card" style="margin-top:16px">
+    <div class="card-title"><span class="dot"></span>access_denied.html — contenu de la page 403</div>
+    <div class="pipeline">
+      <div class="pipe-step"><div class="pipe-num">1</div><div><div class="pipe-label">Bannière identité</div><div class="pipe-detail">Nom, rôle, office avec badge coloré de l'utilisateur connecté</div></div></div>
+      <div class="pipe-step"><div class="pipe-num">2</div><div><div class="pipe-label">Module tenté</div><div class="pipe-detail">Nom du module, office auquel il appartient, explication du cloisonnement CIB</div></div></div>
+      <div class="pipe-step"><div class="pipe-num">3</div><div><div class="pipe-label">Qui peut accéder</div><div class="pipe-detail">Cards avec badge office pour chaque rôle autorisé sur ce module</div></div></div>
+      <div class="pipe-step"><div class="pipe-num">4</div><div><div class="pipe-label">Mes modules</div><div class="pipe-detail">Liens cliquables vers tous les modules accessibles pour le rôle de l'utilisateur</div></div></div>
+      <div class="pipe-step"><div class="pipe-num">5</div><div><div class="pipe-label">Actions</div><div class="pipe-detail">Retour tableau de bord · Page précédente · Matrice des rôles</div></div></div>
+    </div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- 13 -->
+<div class="section" id="commando">
+  <div class="section-title">13 — CommandoQuant (VBA + Python)</div>
+  <p class="section-desc">Outil de pricing options et calcul VaR dérivés — couplé SQL Server.</p>
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title"><span class="dot"></span>CommandoQuant.xlsm (VBA)</div>
+      <table class="module-table">
+        <tr><td>Fichier</td><td>commando-quant/CommandoQuant.xlsm</td></tr>
+        <tr><td>Ouverture</td><td>Trading Desk → bouton → os.startfile() (ouvre Excel local)</td></tr>
+        <tr><td>Connexion SQL</td><td>SQLOLEDB Windows Auth → CommandoQuant DB</td></tr>
+        <tr><td>Table cible</td><td>tbl_Greeks (insère via Vol / Prix)</td></tr>
+        <tr><td>Computed aliases</td><td>ImpliedVol AS (Vol) · Price AS (Prix)</td></tr>
+        <tr><td>Chemins VBA</td><td>ThisWorkbook.Path — portables (patchés win32com)</td></tr>
+        <tr><td>Accès</td><td>TRADER, QUANT, ADMIN</td></tr>
+      </table>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="dot"></span>var_engine.py (Python)</div>
+      <table class="module-table">
+        <tr><td>Fichier</td><td>commando-quant/var_engine.py</td></tr>
+        <tr><td>Lit</td><td>tbl_Greeks via ImpliedVol / Price</td></tr>
+        <tr><td>Calcule</td><td>VaR paramétrique · historique · Monte Carlo</td></tr>
+        <tr><td>Output</td><td>var_results.xlsx (chemin relatif os.path.dirname)</td></tr>
+        <tr><td>Lancé depuis</td><td>Monitoring → Job "VaR Dérivés"</td></tr>
+        <tr><td>SET DATEFORMAT</td><td>ymd après conn.Open (compat. locale française)</td></tr>
+      </table>
+    </div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- 14 -->
+<div class="section" id="analytics">
+  <div class="section-title">14 — Analytics Engine (Python pur)</div>
+  <p class="section-desc">Moteurs de calcul performance et risque — indépendants de Flask.</p>
+  <div class="grid-2">
+    <div class="card">
+      <div class="card-title"><span class="dot"></span>analytics/performance_risk_mvp.py</div>
+      <table class="module-table">
+        <tr><td>NAV</td><td>Valeur liquidative totale du portefeuille</td></tr>
+        <tr><td>Rendement cumulé</td><td>(NAV_t - NAV_0) / NAV_0</td></tr>
+        <tr><td>Sharpe Ratio</td><td>(R_p - R_f) / σ_p annualisé</td></tr>
+        <tr><td>Drawdown max</td><td>Max(Peak - Trough) / Peak sur la fenêtre</td></tr>
+        <tr><td>VaR 95%</td><td>Percentile 5% des rendements historiques</td></tr>
+        <tr><td>Beta</td><td>cov(R_p, R_m) / var(R_m) vs indice référence</td></tr>
+      </table>
+    </div>
+    <div class="card">
+      <div class="card-title"><span class="dot"></span>trading-sim/engine/</div>
+      <table class="module-table">
+        <tr><td>models.py</td><td>Dataclasses : Portfolio, Trade, Position, DailySnapshot</td></tr>
+        <tr><td>simulator.py</td><td>Moteur EOD : calcule positions, PnL, métriques jour par jour</td></tr>
+        <tr><td>pricing.py</td><td>Valorisation Black-Scholes, mark-to-market</td></tr>
+        <tr><td>run_mvp.py</td><td>Script standalone : charge données Gold → calcule → écrit résultats</td></tr>
+        <tr><td>strategies/</td><td>rotation_strategy.py — momentum sectoriel</td></tr>
+      </table>
+    </div>
+  </div>
+</div>
+
+<hr class="divider">
+
+<!-- 15 -->
+<div class="section" id="scripts">
+  <div class="section-title">15 — Scripts d'exploitation</div>
+  <p class="section-desc">Scripts Python à exécuter manuellement pour initialisation et maintenance.</p>
+  <table class="module-table">
+    <thead><tr><th>Script</th><th>Usage</th><th>Fréquence</th></tr></thead>
+    <tbody>
+      <tr><td>scripts/create_admin.py</td><td>Crée ou recrée le compte ADMIN (login: admin / Admin2026!). Exclut ADMIN du formulaire /auth/register.</td><td>Setup initial + reset admin</td></tr>
+      <tr><td>scripts/seed_demo_data.py</td><td>Injecte des portefeuilles, titres et trades de démonstration dans la DB Gold.</td><td>Initialisation environnement démo</td></tr>
+      <tr><td>scripts/load_factprice_from_stg.py</td><td>Pipeline : lit stg.stg_bourso_price_history (KHLWorldInvest) → normalise → écrit FactPrice (Gold).</td><td>Quotidien (après ingestion cotations)</td></tr>
+      <tr><td>scripts/patch_vba_commando.py</td><td>Utilise win32com pour remplacer les chemins hardcodés VBA par ThisWorkbook.Path. Rend le classeur portable.</td><td>Une fois après clone</td></tr>
+      <tr><td>scripts/patch_vba_sql_server.py</td><td>Migre les connexions VBA de Access (.accdb) vers SQL Server (SQLOLEDB, Trusted_Connection).</td><td>Migration unique</td></tr>
+      <tr><td>scripts/patch_vba_dateformat.py</td><td>Ajoute SET DATEFORMAT ymd après conn.Open dans le VBA — compatibilité locale française SQL Server.</td><td>Une fois si problèmes de dates</td></tr>
+      <tr><td>scripts/validate_sql.py</td><td>Valide la syntaxe des fichiers DDL SQL avant exécution.</td><td>CI / validation avant déploiement</td></tr>
+    </tbody>
+  </table>
+
+  <div class="infobox blue" style="margin-top:16px">
+    <div class="icon">💡</div>
+    <div class="text">
+      <strong>Démarrage rapide :</strong><br>
+      1. <span class="ic">.venv/Scripts/python.exe scripts/create_admin.py</span><br>
+      2. <span class="ic">.venv/Scripts/python.exe scripts/seed_demo_data.py</span><br>
+      3. <span class="ic">.venv/Scripts/python.exe webapp/app.py</span> → <a href="http://localhost:5000">http://localhost:5000</a><br>
+      4. Login : <strong>admin</strong> / <strong>Admin2026!</strong>
+    </div>
+  </div>
+</div>
+
+<hr class="divider">
+<div style="text-align:center;color:#4a6080;font-size:0.75rem;padding-bottom:40px">
+  KHL Bank CIB Platform · Architecture v2.7 · 2026-04-15<br>
+  Généré par Claude Code — <span class="ic">docs/index.html</span>
+</div>
+
+</div><!-- /content -->
+</div><!-- /main -->
+</div><!-- /layout -->
+
+<script>
+const sidebarLinks = document.querySelectorAll('.sidebar a');
+window.addEventListener('scroll', () => {
+  let current = '';
+  document.querySelectorAll('[id]').forEach(s => {
+    if (window.scrollY >= s.offsetTop - 80) current = s.id;
+  });
+  sidebarLinks.forEach(a => {
+    a.classList.toggle('active', a.getAttribute('href') === '#' + current);
+  });
+});
+</script>
+</body>
+</html>

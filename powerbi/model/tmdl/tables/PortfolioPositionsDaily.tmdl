@@ -1,0 +1,89 @@
+/// Daily position snapshot per portfolio/security
+table PortfolioPositionsDaily
+	lineageTag: 6c4b4df8-39df-4699-8f88-28c57facf1ce
+
+	column PositionKey
+		dataType: int64
+		isHidden
+		lineageTag: 20e5b2df-41f3-4581-a37c-e036012ee954
+		summarizeBy: count
+		sourceColumn: PositionKey
+
+		annotation SummarizationSetBy = Automatic
+
+	column DateKey
+		dataType: int64
+		isHidden
+		lineageTag: fbfa6d1e-fd3e-440f-95a5-f49e383efb43
+		summarizeBy: none
+		sourceColumn: DateKey
+
+	column PortfolioKey
+		dataType: int64
+		isHidden
+		lineageTag: 9a076c94-83b4-427a-b824-d0d7b3bb2ad9
+		summarizeBy: none
+		sourceColumn: PortfolioKey
+
+	column SecurityKey
+		dataType: int64
+		isHidden
+		lineageTag: e70d8d35-f052-404a-a780-3b015b1b420a
+		summarizeBy: count
+		sourceColumn: SecurityKey
+
+		annotation SummarizationSetBy = Automatic
+
+	column Quantity
+		dataType: decimal
+		formatString: #,##0.000000
+		lineageTag: 8e392a5f-3451-4959-b726-8243941f3b93
+		summarizeBy: sum
+		sourceColumn: Quantity
+
+		annotation SummarizationSetBy = Automatic
+
+	column AvgCost
+		dataType: decimal
+		formatString: #,##0.000000
+		lineageTag: 8fb420dd-09b8-4395-abd8-92279e35923c
+		summarizeBy: sum
+		sourceColumn: AvgCost
+
+		annotation SummarizationSetBy = Automatic
+
+	column MarketValue
+		dataType: decimal
+		formatString: #,##0.00
+		lineageTag: 11a8f98a-81b5-4eb4-ba20-430364f28500
+		summarizeBy: sum
+		sourceColumn: MarketValue
+
+		annotation SummarizationSetBy = Automatic
+
+	column UnrealizedPnL
+		dataType: decimal
+		formatString: #,##0.00
+		lineageTag: a044cc9e-681b-4632-8827-a832bb9b8e93
+		summarizeBy: sum
+		sourceColumn: UnrealizedPnL
+
+		annotation SummarizationSetBy = Automatic
+
+	column WeightPct
+		dataType: decimal
+		formatString: 0.00%
+		lineageTag: ddac422f-e183-4347-bae5-1d3abc1ad9a0
+		summarizeBy: sum
+		sourceColumn: WeightPct
+
+		annotation SummarizationSetBy = Automatic
+
+	partition Positions_Import = m
+		mode: directQuery
+		source =
+				let
+				    Source = Sql.Database("PERSO-AJE-DELL\BFASERVER01", "SmartAssetAdvicedb"),
+				    result = Value.NativeQuery(Source, "SELECT * FROM [dbo].[PortfolioPositionsDaily]", null, [EnableFolding=true])
+				in  result
+

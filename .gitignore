@@ -1,0 +1,56 @@
+# ── Python ───────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.venv/
+venv/
+*.egg-info/
+
+# ── Notebooks ────────────────────────────────────────────────────
+.ipynb_checkpoints/
+
+# ── Secrets / Env ────────────────────────────────────────────────
+.env
+*.env
+*.key
+*.pem
+secrets*.json
+
+# ── Claude / AI tooling (ne pas versionner) ──────────────────────
+.claude/
+CLAUDE.md
+.mcp.json
+
+# ── OS / IDE ─────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+desktop.ini
+
+# ── Build / test ─────────────────────────────────────────────────
+.pytest_cache/
+.mypy_cache/
+dist/
+build/
+htmlcov/
+.coverage
+
+# ── Data artifacts (trop lourds / sensibles) ─────────────────────
+*.pbix
+*.csv
+*.parquet
+*.xlsx
+*.xls
+*.xlsm
+*.db
+*.sqlite
+
+# ── Rapports generes localement ──────────────────────────────────
+docs/_recette_*.html
+scripts/_recette_*.py
+
+# ── Logs ─────────────────────────────────────────────────────────
+*.log
+logs/

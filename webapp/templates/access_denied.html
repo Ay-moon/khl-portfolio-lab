@@ -1,0 +1,159 @@
+{% extends "base.html" %}
+{% block title %}Accès restreint{% endblock %}
+{% block content %}
+
+{% set user_office  = user_role_info.get('office', 'Inconnu') %}
+{% set user_color   = user_role_info.get('color', '#666') %}
+{% set user_label   = user_role_info.get('label', user_role) %}
+{% set user_icon    = user_role_info.get('icon', 'person') %}
+{% set mod_office   = module_info.get('office', '') %}
+{% set mod_label    = module_info.get('label', 'cette fonctionnalité') %}
+{% set mod_icon     = module_info.get('icon', 'lock') %}
+{% set om           = office_meta.get(user_office, {}) %}
+{% set mod_om       = office_meta.get(mod_office, {}) %}
+
+<!-- ── Bannière d'identité ──────────────────────────────────── -->
+<div style="background:{{ user_color }}18; border-left:5px solid {{ user_color }};
+            border-radius:12px; padding:1.5rem 2rem; margin-bottom:1.5rem;">
+  <div class="d-flex align-items-center gap-3 flex-wrap">
+    <div style="width:56px;height:56px;background:{{ user_color }};border-radius:12px;
+                display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+      <i class="bi bi-{{ user_icon }}" style="font-size:1.6rem;color:white;"></i>
+    </div>
+    <div>
+      <div style="font-size:0.7rem;font-weight:700;letter-spacing:1.5px;
+                  color:{{ user_color }};text-transform:uppercase;">
+        {{ user_office }}
+        {% if om.badge %}
+        <span style="background:{{ user_color }};color:white;padding:1px 7px;
+                     border-radius:4px;font-size:0.62rem;margin-left:6px;">{{ om.badge }}</span>
+        {% endif %}
+      </div>
+      <div style="font-size:1.1rem;font-weight:700;color:#0d1b2a;">
+        Vous êtes connecté en tant que <strong>{{ user_label }}</strong>
+      </div>
+      <div style="font-size:0.8rem;color:#6c757d;margin-top:0.2rem;">
+        {{ user_role_info.get('can_do', '') }}
+      </div>
+    </div>
+    <div class="ms-auto">
+      <span style="font-size:2.5rem;">🔒</span>
+    </div>
+  </div>
+</div>
+
+<!-- ── Message principal ─────────────────────────────────────── -->
+<div class="khl-card mb-4" style="border:2px solid #e63946; background:#fff5f5;">
+  <div class="d-flex align-items-start gap-3">
+    <i class="bi bi-slash-circle" style="font-size:2rem;color:#e63946;flex-shrink:0;"></i>
+    <div>
+      <div style="font-size:1rem;font-weight:700;color:#e63946;margin-bottom:0.4rem;">
+        Accès non autorisé — Cloisonnement {{ user_office }}
+      </div>
+      <p style="font-size:0.88rem;margin-bottom:0.5rem;">
+        Vous avez tenté d'accéder à
+        <strong>
+          <i class="bi bi-{{ mod_icon }} me-1"></i>{{ mod_label }}
+        </strong>
+        {% if mod_office %}
+        — un module réservé au
+        <span style="background:{{ mod_om.color or '#666' }}22;color:{{ mod_om.color or '#666' }};
+                     padding:2px 8px;border-radius:4px;font-weight:700;font-size:0.82rem;">
+          {{ mod_office }}
+        </span>.
+        {% endif %}
+      </p>
+      <p style="font-size:0.82rem;color:#6c757d;margin-bottom:0;">
+        En banque CIB, le cloisonnement des tâches est une règle fondamentale :
+        <em>qui décide n'exécute pas, qui exécute ne comptabilise pas</em>.
+        Votre rôle <strong>{{ user_label }}</strong> n'a pas les droits pour cette action.
+      </p>
+    </div>
+  </div>
+</div>
+
+<!-- ── Qui peut accéder ───────────────────────────────────────── -->
+{% if allowed_roles %}
+<div class="khl-card mb-4">
+  <div class="card-title"><i class="bi bi-people me-1"></i>Cet écran est accessible à :</div>
+  <div class="d-flex flex-wrap gap-3">
+    {% for r in allowed_roles %}
+    {% set r_om = office_meta.get(r.office, {}) %}
+    <div style="border:1.5px solid {{ r.color }};border-radius:10px;padding:0.8rem 1.2rem;
+                min-width:180px;background:{{ r.color }}0d;">
+      <div style="font-size:0.6rem;font-weight:700;letter-spacing:1px;
+                  color:{{ r.color }};text-transform:uppercase;margin-bottom:0.3rem;">
+        {{ r.office }}
+        {% if r_om.badge %}
+        <span style="background:{{ r.color }};color:white;padding:1px 6px;
+                     border-radius:3px;font-size:0.58rem;margin-left:4px;">{{ r_om.badge }}</span>
+        {% endif %}
+      </div>
+      <div class="d-flex align-items-center gap-2">
+        <i class="bi bi-{{ r.icon }}" style="color:{{ r.color }};font-size:1rem;"></i>
+        <span style="font-weight:600;font-size:0.85rem;color:#0d1b2a;">{{ r.label }}</span>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+{% endif %}
+
+<!-- ── Ce que VOUS pouvez faire ──────────────────────────────── -->
+<div class="khl-card mb-4" style="border-left:4px solid {{ user_color }};">
+  <div class="card-title" style="color:{{ user_color }};">
+    <i class="bi bi-{{ user_icon }} me-1"></i>Ce que vous pouvez faire en tant que {{ user_label }}
+  </div>
+  <div class="row g-3">
+    <div class="col-md-6">
+      <div style="font-size:0.75rem;font-weight:700;color:#0d6e3b;margin-bottom:0.4rem;">
+        <i class="bi bi-check-circle-fill me-1"></i>Vos accès
+      </div>
+      <p style="font-size:0.82rem;color:#495057;">{{ user_role_info.get('can_do', '—') }}</p>
+    </div>
+    <div class="col-md-6">
+      <div style="font-size:0.75rem;font-weight:700;color:#e63946;margin-bottom:0.4rem;">
+        <i class="bi bi-x-circle-fill me-1"></i>Hors de votre périmètre
+      </div>
+      <p style="font-size:0.82rem;color:#495057;">{{ user_role_info.get('cannot_do', '—') }}</p>
+    </div>
+  </div>
+
+  <!-- Modules accessibles -->
+  {% set user_mods = user_role_info.get('modules', []) %}
+  {% if user_mods %}
+  <div style="font-size:0.75rem;font-weight:700;color:#6c757d;margin-bottom:0.5rem;margin-top:0.5rem;">
+    Vos modules disponibles :
+  </div>
+  <div class="d-flex flex-wrap gap-2">
+    {% for mod_key in user_mods %}
+    {% set m = modules.get(mod_key, {}) %}
+    {% if m %}
+    {% set m_om = office_meta.get(m.get('office',''), {}) %}
+    <a href="{{ url_for(m.route) }}"
+       style="text-decoration:none;background:{{ m_om.color or '#1a3a5c' }}15;
+              border:1px solid {{ m_om.color or '#1a3a5c' }}44;
+              color:{{ m_om.color or '#1a3a5c' }};
+              padding:0.3rem 0.8rem;border-radius:20px;font-size:0.78rem;font-weight:600;">
+      <i class="bi bi-{{ m.icon }} me-1"></i>{{ m.label }}
+    </a>
+    {% endif %}
+    {% endfor %}
+  </div>
+  {% endif %}
+</div>
+
+<!-- ── Actions ───────────────────────────────────────────────── -->
+<div class="d-flex gap-3 flex-wrap">
+  <a href="{{ url_for('home') }}" class="btn btn-primary">
+    <i class="bi bi-house me-1"></i>Retour à mon tableau de bord
+  </a>
+  <a href="javascript:history.back()" class="btn btn-outline-secondary">
+    <i class="bi bi-arrow-left me-1"></i>Page précédente
+  </a>
+  <a href="{{ url_for('docs.roles') }}" class="btn btn-outline-secondary">
+    <i class="bi bi-shield-exclamation me-1"></i>Voir la matrice des rôles
+  </a>
+</div>
+
+{% endblock %}

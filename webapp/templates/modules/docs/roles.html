@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+{% block title %}Matrice des Rôles{% endblock %}
+{% block content %}
+<div class="page-header">
+  <div class="page-icon" style="background:#8b1a1a;"><i class="bi bi-shield-exclamation"></i></div>
+  <div class="flex-grow-1">
+    <h1>Matrice des Rôles — Qui voit quoi ?</h1>
+    <nav aria-label="breadcrumb"><ol class="breadcrumb mb-0">
+      <li class="breadcrumb-item"><a href="{{ url_for('home') }}">Accueil</a></li>
+      <li class="breadcrumb-item"><a href="{{ url_for('docs.index') }}">Documentation</a></li>
+      <li class="breadcrumb-item active">Matrice des rôles</li>
+    </ol></nav>
+  </div>
+</div>
+
+<div class="story-block mb-4">
+  <div class="story-title"><i class="bi bi-info-circle me-2"></i>Principe de gestion des droits</div>
+  <p>
+    Les accès sont contrôlés par le champ <code>role</code> dans <code>dbo.AppUsers</code>.
+    À la connexion, le rôle est mis en session Flask. Chaque page vérifie le rôle via
+    le décorateur <code>@login_required</code> ou <code>@role_required()</code>.
+    Le menu de navigation (sidebar) s'adapte automatiquement au rôle de l'utilisateur connecté.
+  </p>
+</div>
+
+<!-- Tableau des rôles -->
+<div class="khl-card mb-4">
+  <div class="card-title"><i class="bi bi-people me-1"></i>Rôles disponibles</div>
+  <div class="row g-3">
+    {% for role_id, role_data in roles.items() %}
+    <div class="col-md-6">
+      <div class="p-3 border rounded" style="border-left:4px solid {{ role_data.color }} !important;">
+        <div class="d-flex align-items-center gap-2 mb-2">
+          <div style="width:32px;height:32px;background:{{ role_data.color }}22;border-radius:6px;
+                      display:flex;align-items:center;justify-content:center;">
+            <i class="bi bi-{{ role_data.icon }}" style="color:{{ role_data.color }};"></i>
+          </div>
+          <div>
+            <div style="font-weight:700;font-size:0.88rem;">{{ role_data.label }}</div>
+            <div style="font-size:0.65rem;color:#6c757d;font-family:monospace;">{{ role_id }}</div>
+          </div>
+        </div>
+        <p style="font-size:0.8rem;color:#495057;margin-bottom:0.5rem;">{{ role_data.desc }}</p>
+        <div class="d-flex flex-wrap gap-1">
+          {% for mod in role_data.modules %}
+          <span class="badge" style="background:{{ role_data.color }}22;color:{{ role_data.color }};font-size:0.65rem;">
+            {{ mod }}
+          </span>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+</div>
+
+<!-- Matrice accès par module -->
+<div class="khl-card mb-4">
+  <div class="card-title"><i class="bi bi-grid-3x3 me-1"></i>Matrice Rôle × Module</div>
+  <div class="table-responsive">
+    <table class="table khl-table text-center">
+      <thead>
+        <tr>
+          <th class="text-start">Module</th>
+          {% for role_id, role_data in roles.items() %}
+          <th style="font-size:0.65rem;white-space:nowrap;" title="{{ role_data.label }}">
+            <i class="bi bi-{{ role_data.icon }}"></i><br>
+            {{ role_id.replace('_', ' ') }}
+          </th>
+          {% endfor %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for mod_id, mod_data in modules.items() %}
+        <tr>
+          <td class="text-start">
+            <i class="bi bi-{{ mod_data.icon }} me-1" style="color:#1a3a5c;"></i>
+            <strong style="font-size:0.82rem;">{{ mod_data.label }}</strong>
+          </td>
+          {% for role_id, role_data in roles.items() %}
+          <td>
+            {% if mod_id in role_data.modules or role_id == 'ADMIN' %}
+            <i class="bi bi-check-circle-fill text-success"></i>
+            {% else %}
+            <i class="bi bi-x-circle text-muted" style="opacity:0.3;"></i>
+            {% endif %}
+          </td>
+          {% endfor %}
+        </tr>
+        {% endfor %}
+        <!-- Lignes spéciales -->
+        <tr>
+          <td class="text-start">
+            <i class="bi bi-file-earmark-spreadsheet me-1" style="color:#0d6e3b;"></i>
+            <strong style="font-size:0.82rem;">Excel VBA Tools</strong>
+          </td>
+          {% for role_id, role_data in roles.items() %}
+          <td>
+            {% if role_id in ['TRADER', 'QUANT', 'ADMIN'] %}
+            <i class="bi bi-check-circle-fill text-success"></i>
+            {% else %}
+            <i class="bi bi-x-circle text-muted" style="opacity:0.3;"></i>
+            {% endif %}
+          </td>
+          {% endfor %}
+        </tr>
+        <tr>
+          <td class="text-start">
+            <i class="bi bi-gear me-1" style="color:#8b1a1a;"></i>
+            <strong style="font-size:0.82rem;">Config Power BI (admin)</strong>
+          </td>
+          {% for role_id, role_data in roles.items() %}
+          <td>
+            {% if role_id == 'ADMIN' %}
+            <i class="bi bi-check-circle-fill text-success"></i>
+            {% else %}
+            <i class="bi bi-x-circle text-muted" style="opacity:0.3;"></i>
+            {% endif %}
+          </td>
+          {% endfor %}
+        </tr>
+        <tr>
+          <td class="text-start">
+            <i class="bi bi-book me-1" style="color:#4a1a7a;"></i>
+            <strong style="font-size:0.82rem;">Documentation (/docs)</strong>
+          </td>
+          {% for role_id in roles %}
+          <td><i class="bi bi-check-circle-fill text-success"></i></td>
+          {% endfor %}
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Implémentation technique -->
+<div class="khl-card">
+  <div class="card-title"><i class="bi bi-code me-1"></i>Implémentation technique</div>
+  <div class="row g-3">
+    <div class="col-md-6">
+      <div class="p-3 bg-light rounded">
+        <div style="font-weight:700;margin-bottom:0.5rem;">Décorateurs utilisés</div>
+        <div class="log-terminal" style="font-size:0.73rem;">
+# Toute page protégée (utilisateur connecté)
+@login_required
+
+# Page réservée à des rôles spécifiques
+@role_required("TRADER", "QUANT")
+
+# Vérification manuelle dans la route
+if session.get("role") != "ADMIN":
+    flash("Accès refusé", "danger")
+    return redirect(url_for("home"))
+        </div>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <div class="p-3 bg-light rounded">
+        <div style="font-weight:700;margin-bottom:0.5rem;">Contrôle dans les templates</div>
+        <div class="log-terminal" style="font-size:0.73rem;">
+{# Sidebar auto-filtrée par rôle #}
+{% set user_modules = roles
+   .get(session.role, {})
+   .get('modules', []) %}
+
+{% if 'trading' in user_modules %}
+  &lt;!-- bouton visible seulement TRADER/QUANT/ADMIN --&gt;
+{% endif %}
+
+{% if is_admin %}
+  &lt;!-- bouton config PBI visible ADMIN only --&gt;
+{% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% endblock %}

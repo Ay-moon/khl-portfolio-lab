@@ -1,0 +1,308 @@
+/// Container for all explicit DAX measures
+table _Measures
+	lineageTag: aa72237b-4528-456f-95a1-6a2adf18b32b
+
+	/// Portfolio NAV at the last date in context
+	measure 'Last NAV' =
+			CALCULATE(
+			    SUM(PortfolioPnLDaily[Nav]),
+			    LASTDATE(DimDate[FullDate])
+			)
+		formatString: #,##0.00
+		displayFolder: Portfolio Performance
+		lineageTag: 589379a8-d980-4d31-adab-2b0e928f0f07
+
+	/// Sum of daily P&L in context
+	measure 'Daily PnL' = SUM(PortfolioPnLDaily[DailyPnL])
+		formatString: #,##0.00
+		displayFolder: Portfolio Performance
+		lineageTag: f39881f5-4901-4bb9-90ee-5454bee29690
+
+	/// Sum of cumulative P&L in context
+	measure 'Cumulative PnL' = SUM(PortfolioPnLDaily[CumPnL])
+		formatString: #,##0.00
+		displayFolder: Portfolio Performance
+		lineageTag: 713c7031-4f09-4e13-8bbf-4061975b181c
+
+	/// Average daily return rate in context
+	measure 'Daily Return %' = AVERAGE(PortfolioPnLDaily[ReturnPct])
+		formatString: 0.00%
+		displayFolder: Portfolio Performance
+		lineageTag: b0009b8e-e769-41f9-9b61-ff61bbc74258
+
+	/// Month-to-date average daily return
+	measure 'MTD Return %' =
+			CALCULATE(
+			    [Daily Return %],
+			    DATESMTD(DimDate[FullDate])
+			)
+		formatString: 0.00%
+		displayFolder: Portfolio Performance
+		lineageTag: 8534c952-0a8c-45c5-a0ac-d3a77cbeb4a8
+
+	/// Year-to-date average daily return
+	measure 'YTD Return %' =
+			CALCULATE(
+			    [Daily Return %],
+			    DATESYTD(DimDate[FullDate])
+			)
+		formatString: 0.00%
+		displayFolder: Portfolio Performance
+		lineageTag: 6aca7968-16e9-4832-802e-6efac0b7cdd4
+
+	/// Return % at the last date in context
+	measure 'Last Return %' =
+			CALCULATE(
+			    AVERAGE(PortfolioPnLDaily[ReturnPct]),
+			    LASTDATE(DimDate[FullDate])
+			)
+		formatString: 0.00%
+		displayFolder: Portfolio Performance
+		lineageTag: 26d532fd-818c-42c7-960d-7b43970a8b39
+
+	/// Average contribution % in context
+	measure 'Contribution %' = AVERAGE(PortfolioPnLDaily[ContributionPct])
+		formatString: 0.00%
+		displayFolder: Portfolio Performance
+		lineageTag: 17f59236-da73-4d8b-948c-537d8dacd875
+
+	/// Average 20-day rolling volatility in context
+	measure 'Volatility 20d' = AVERAGE(RiskMetricsDaily[Volatility20d])
+		formatString: 0.00%
+		displayFolder: Risk
+		lineageTag: 845a02d1-3fc5-4b04-96cc-0083f58ad06b
+
+	/// 20-day volatility at the last date in context
+	measure 'Last Volatility 20d' =
+			CALCULATE(
+			    AVERAGE(RiskMetricsDaily[Volatility20d]),
+			    LASTDATE(DimDate[FullDate])
+			)
+		formatString: 0.00%
+		displayFolder: Risk
+		lineageTag: 8c5d360b-ee76-4ecc-86f9-6595ebfbdb9a
+
+	/// Worst max drawdown in context
+	measure 'Max Drawdown' = MIN(RiskMetricsDaily[MaxDrawdown])
+		formatString: 0.00%
+		displayFolder: Risk
+		lineageTag: 7ef93621-5b77-48ed-a2aa-c58c9a971c31
+
+	/// Max drawdown at the last date in context
+	measure 'Last Max Drawdown' =
+			CALCULATE(
+			    MIN(RiskMetricsDaily[MaxDrawdown]),
+			    LASTDATE(DimDate[FullDate])
+			)
+		formatString: 0.00%
+		displayFolder: Risk
+		lineageTag: 5def8626-9227-4173-9f43-a09dab0b6010
+
+	/// Average VaR at 95% confidence level
+	measure 'VaR 95%' = AVERAGE(RiskMetricsDaily[VaR95])
+		formatString: #,##0.00
+		displayFolder: Risk
+		lineageTag: 747a88ab-0e1a-4769-bcf3-211539ff9622
+
+	/// VaR 95% at the last date in context
+	measure 'Last VaR 95%' =
+			CALCULATE(
+			    AVERAGE(RiskMetricsDaily[VaR95]),
+			    LASTDATE(DimDate[FullDate])
+			)
+		formatString: #,##0.00
+		displayFolder: Risk
+		lineageTag: 03511c1e-83e8-476a-a874-4aa7b1c5bb3a
+
+	/// Average Sharpe ratio in context
+	measure 'Sharpe Ratio' = AVERAGE(RiskMetricsDaily[SharpeRatio])
+		formatString: 0.00
+		displayFolder: Risk
+		lineageTag: c15c2791-1f15-4a0e-9fa3-a4129982b487
+
+	/// Sharpe ratio at the last date in context
+	measure 'Last Sharpe Ratio' =
+			CALCULATE(
+			    AVERAGE(RiskMetricsDaily[SharpeRatio]),
+			    LASTDATE(DimDate[FullDate])
+			)
+		formatString: 0.00
+		displayFolder: Risk
+		lineageTag: 2c26450f-aee0-4517-bbf5-ce4fe1d7bc76
+
+	/// Average beta in context
+	measure Beta = AVERAGE(RiskMetricsDaily[Beta])
+		formatString: 0.00
+		displayFolder: Risk
+		lineageTag: b9ca75fa-fbe0-4292-b511-dbbc0e9dec11
+
+	/// Beta at the last date in context
+	measure 'Last Beta' =
+			CALCULATE(
+			    AVERAGE(RiskMetricsDaily[Beta]),
+			    LASTDATE(DimDate[FullDate])
+			)
+		formatString: 0.00
+		displayFolder: Risk
+		lineageTag: 6a2cbdc9-fd80-4fc5-8e26-cccc15ee559d
+
+	/// Number of trade legs in context
+	measure 'Trade Count' = COUNTROWS(FactTrades)
+		formatString: #,##0
+		displayFolder: Trading
+		lineageTag: 26e5be30-ad8f-4f67-8a6f-9874825d3fe1
+
+	/// Number of buy trade legs
+	measure 'Buy Count' =
+			CALCULATE(
+			    COUNTROWS(FactTrades),
+			    FactTrades[Side] = "BUY"
+			)
+		formatString: #,##0
+		displayFolder: Trading
+		lineageTag: ed9c1a6a-687c-47de-a820-4a38cc328915
+
+	/// Number of sell trade legs
+	measure 'Sell Count' =
+			CALCULATE(
+			    COUNTROWS(FactTrades),
+			    FactTrades[Side] = "SELL"
+			)
+		formatString: #,##0
+		displayFolder: Trading
+		lineageTag: fa2078be-c23a-4176-a6ad-4599ab63f7b1
+
+	/// Total gross notional (Qty * Price)
+	measure 'Total Gross Amount' =
+			SUMX(
+			    FactTrades,
+			    FactTrades[Quantity] * FactTrades[Price]
+			)
+		formatString: #,##0.00
+		displayFolder: Trading
+		lineageTag: 592dfe41-8238-4581-920e-08bac4b8faec
+
+	/// Total net amount (Qty * Price + Fees + Slippage)
+	measure 'Total Net Amount' =
+			SUMX(
+			    FactTrades,
+			    FactTrades[Quantity] * FactTrades[Price]
+			        + FactTrades[FeeAmount]
+			        + FactTrades[SlippageAmount]
+			)
+		formatString: #,##0.00
+		displayFolder: Trading
+		lineageTag: 887a6de9-e8c7-40e9-9da0-2600f39d596d
+
+	/// Total brokerage fees
+	measure 'Total Fees' = SUM(FactTrades[FeeAmount])
+		formatString: #,##0.00
+		displayFolder: Trading
+		lineageTag: cd99ff4a-8173-4df2-a4cd-7c43f8f391ed
+
+	/// Total slippage costs
+	measure 'Total Slippage' = SUM(FactTrades[SlippageAmount])
+		formatString: #,##0.00
+		displayFolder: Trading
+		lineageTag: ac44121f-5365-4ecb-a1e9-6d47cad13a8a
+
+	/// Combined fees and slippage
+	measure 'Total Transaction Cost' = [Total Fees] + [Total Slippage]
+		formatString: #,##0.00
+		displayFolder: Trading
+		lineageTag: a1ecc11e-7008-41ae-a72e-0ca69bf701a5
+
+	/// Sum of market value across positions in context
+	measure 'Total Market Value' = SUM(PortfolioPositionsDaily[MarketValue])
+		formatString: #,##0.00
+		displayFolder: Positions
+		lineageTag: 34bc24c5-ef62-4e31-85a5-5e4f4b72ecf5
+
+	/// Total market value at the last date in context
+	measure 'Last Market Value' =
+			CALCULATE(
+			    SUM(PortfolioPositionsDaily[MarketValue]),
+			    LASTDATE(DimDate[FullDate])
+			)
+		formatString: #,##0.00
+		displayFolder: Positions
+		lineageTag: 4c8bc879-260f-426b-9be4-57fb49e5f86d
+
+	/// Sum of unrealized P&L across positions
+	measure 'Total Unrealized PnL' = SUM(PortfolioPositionsDaily[UnrealizedPnL])
+		formatString: #,##0.00
+		displayFolder: Positions
+		lineageTag: 02ee0c3f-67d6-4b96-b69d-ca10fec22250
+
+	/// Unrealized P&L at the last date in context
+	measure 'Last Unrealized PnL' =
+			CALCULATE(
+			    SUM(PortfolioPositionsDaily[UnrealizedPnL]),
+			    LASTDATE(DimDate[FullDate])
+			)
+		formatString: #,##0.00
+		displayFolder: Positions
+		lineageTag: bbed8ca6-0a80-4e1f-b543-82c880021a0b
+
+	/// Number of distinct position rows in context
+	measure 'Position Count' = COUNTROWS(PortfolioPositionsDaily)
+		formatString: #,##0
+		displayFolder: Positions
+		lineageTag: 529c037d-8ec8-46dc-90d5-5fad7f30467e
+
+	/// Closing price at the last date in context
+	measure 'Last Close Price' =
+			CALCULATE(
+			    AVERAGE(FactPrice[ClosePrice]),
+			    LASTDATE(DimDate[FullDate])
+			)
+		formatString: #,##0.000000
+		displayFolder: Prices
+		lineageTag: 69e25bc2-0055-491f-9a2e-0b2eeedbf233
+
+	/// Close price change % vs prior period
+	measure 'Price Change %' =
+			VAR curPrice = CALCULATE(AVERAGE(FactPrice[ClosePrice]), LASTDATE(DimDate[FullDate]))
+			VAR priorPrice = CALCULATE(
+			                    AVERAGE(FactPrice[ClosePrice]),
+			                    DATEADD(DimDate[FullDate], -1, DAY)
+			                )
+			RETURN
+			    DIVIDE(curPrice - priorPrice, ABS(priorPrice))
+		formatString: 0.00%
+		displayFolder: Prices
+		lineageTag: 8a82c978-f251-4b52-8597-346a19d0def4
+
+	/// Number of AI recommendations in context
+	measure 'AI Recommendation Count' = COUNTROWS(AI_Recommendations)
+		formatString: #,##0
+		displayFolder: AI Insights
+		lineageTag: c826b41b-cea4-4e38-bb49-811e2f445120
+
+	/// Average AI recommendation confidence
+	measure 'Avg Confidence Score' = AVERAGE(AI_Recommendations[ConfidenceScore])
+		formatString: 0.0%
+		displayFolder: AI Insights
+		lineageTag: a0083006-800a-4a26-aa75-987964b7f8ce
+
+	/// Number of AI daily briefings generated
+	measure 'AI Briefing Count' = COUNTROWS(AI_DailyBriefing)
+		formatString: #,##0
+		displayFolder: AI Insights
+		lineageTag: bf7d4366-5abd-4137-83ae-5b393c30ba58
+
+	/// Number of what-if scenarios in context
+	measure 'WhatIf Scenario Count' = COUNTROWS(AI_WhatIf)
+		formatString: #,##0
+		displayFolder: AI Insights
+		lineageTag: 02ac65ab-7adb-47c3-9523-37d5752b33eb
+
+	column _
+		lineageTag: 77649db5-726a-4cd9-acba-87ed5125f61a
+		isNameInferred
+		sourceColumn: [_]
+
+	partition _Measures = calculated
+		mode: import
+		source = ROW("_", BLANK())
+

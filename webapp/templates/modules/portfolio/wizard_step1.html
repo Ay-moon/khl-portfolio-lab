@@ -1,0 +1,356 @@
+{% extends "base.html" %}
+{% block title %}Wizard — Étape 1 : Identité du portefeuille{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <div class="page-icon" style="background:#1a3a5c;"><i class="bi bi-pie-chart"></i></div>
+  <div>
+    <h1>Nouveau Portefeuille — Étape 1/6</h1>
+    <nav aria-label="breadcrumb"><ol class="breadcrumb mb-0">
+      <li class="breadcrumb-item"><a href="{{ url_for('portfolio.index') }}">Portefeuilles</a></li>
+      <li class="breadcrumb-item active">Wizard</li>
+    </ol></nav>
+  </div>
+</div>
+
+<!-- Barre de progression -->
+<div class="wizard-steps">
+  {% for i in range(1, 7) %}
+  <div class="wizard-step {{ 'active' if i == step else ('completed' if i < step else '') }}">
+    <div class="step-circle">
+      {% if i < step %}<i class="bi bi-check"></i>{% else %}{{ i }}{% endif %}
+    </div>
+    <div class="step-label">
+      {{ ['Identité','Univers','Stratégie','Contraintes','Exécution','Résumé'][i-1] }}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+<div class="story-block mb-4">
+  <div class="story-title"><i class="bi bi-lightbulb me-2"></i>Étape 1 — Définition du mandat</div>
+  <p>
+    Avant tout investissement, on définit le <strong>mandat de gestion</strong> :
+    quel est l'objectif du portefeuille, pour quel type d'investisseur, avec quel horizon de temps ?
+    <strong>Peu importe la taille du capital</strong> — les mêmes principes s'appliquent qu'on gère 1 000 € ou 100 M€.
+    Choisissez <em>Particulier — Investisseur Retail</em> si vous débutez ou gérez votre épargne personnelle.
+  </p>
+</div>
+
+<!-- Bannière mode débutant (visible uniquement si Retail sélectionné) -->
+<div id="retail-banner" class="alert alert-info border-0 mb-3" style="display:none;background:linear-gradient(135deg,#e8f4fd,#d1e8f5);border-left:4px solid #0d6efd!important;">
+  <div class="d-flex align-items-start gap-3">
+    <i class="bi bi-mortarboard-fill text-primary fs-4 mt-1"></i>
+    <div>
+      <strong>Mode Investisseur Débutant activé</strong>
+      <p class="mb-1 mt-1" style="font-size:0.85rem;">
+        Ce mode est adapté aux petits capitaux (500 € – 10 000 €). Les étapes suivantes vous guideront
+        vers les instruments les plus simples et les plus diversifiés : <strong>ETF (fonds indiciels)</strong>
+        et quelques actions solides.
+      </p>
+      <p class="mb-0" style="font-size:0.82rem;color:#555;">
+        <i class="bi bi-info-circle me-1"></i>
+        <strong>Conseil capital limité :</strong> Avec moins de 3 000 €, privilégiez 2-3 ETF diversifiés
+        plutôt que 10 actions individuelles — les frais de courtage mangent la performance sur de petites positions.
+      </p>
+    </div>
+  </div>
+</div>
+
+<form method="POST">
+  <div class="khl-card">
+    <div class="form-section-title"><i class="bi bi-card-text me-2"></i>Identification</div>
+    <div class="row g-3">
+
+      <div class="col-md-4">
+        <label class="form-label">
+          Code portefeuille <span class="text-danger">*</span>
+          <span class="khl-tip" data-bs-toggle="tooltip" data-bs-html="true"
+                data-bs-title="<b>Code court et unique</b><br>Identifiant technique du portefeuille dans toutes les tables SQL (DimPortfolio, FactTrades…).<br><em>Ex : EQUITY01, BOND_EUR, BALANCED_A</em>">?</span>
+        </label>
+        <input type="text" name="portfolio_code" class="form-control"
+               value="{{ draft.get('portfolio_code','') }}"
+               placeholder="ex: EQUITY01, BOND_EUR, BALANCED_A"
+               required maxlength="20" style="text-transform:uppercase;"
+               data-bs-toggle="tooltip"
+               data-bs-title="Max 20 caractères. Lettres, chiffres et _ autorisés. Sera utilisé comme clé dans toutes les requêtes SQL.">
+        <div class="form-hint">Code court unique. Utilisé dans toutes les tables SQL.</div>
+      </div>
+
+      <div class="col-md-8">
+        <label class="form-label">
+          Nom complet du portefeuille <span class="text-danger">*</span>
+          <span class="khl-tip" data-bs-toggle="tooltip" data-bs-html="true"
+                data-bs-title="<b>Nom commercial du fonds</b><br>Affiché dans les rapports, dashboards et Power BI.<br><em>Ex : KHL Actions Européennes — Croissance</em>">?</span>
+        </label>
+        <input type="text" name="portfolio_name" class="form-control"
+               value="{{ draft.get('portfolio_name','') }}"
+               placeholder="ex: KHL Actions Européennes — Croissance" required>
+      </div>
+
+      <div class="col-md-4">
+        <label class="form-label">
+          Devise de référence
+          <span class="khl-tip" data-bs-toggle="tooltip" data-bs-html="true"
+                data-bs-title="<b>Devise de comptabilisation</b><br>Toutes les valorisations (NAV, PnL, Market Value) seront exprimées dans cette devise.<br>Les actifs en devise étrangère subiront un risque de change.">?</span>
+        </label>
+        <select name="base_currency" class="form-select">
+          {% for c in ['EUR','USD','GBP','CHF','JPY'] %}
+          <option value="{{ c }}" {{ 'selected' if draft.get('base_currency') == c else '' }}>{{ c }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-md-4">
+        <label class="form-label">
+          Date d'inception
+          <span class="khl-tip" data-bs-toggle="tooltip" data-bs-html="true"
+                data-bs-title="<b>Date de lancement du fonds</b><br>Point de départ de la simulation et des calculs de performance (NAV, retour cumulé).<br>Les données de prix antérieures à cette date sont ignorées.">?</span>
+        </label>
+        <input type="date" name="inception_date" class="form-control"
+               value="{{ draft.get('inception_date', '2024-01-01') }}">
+      </div>
+
+      <div class="col-md-4">
+        <label class="form-label">
+          Capital initial
+          <span class="khl-tip" data-bs-toggle="tooltip" data-bs-html="true"
+                data-bs-title="<b>NAV initiale — Net Asset Value</b><br>Valeur Nette d'Inventaire au démarrage. C'est la base 100 de votre portefeuille.<br><em>Ex : 1 000 000 € → chaque point de performance = 10 000 €</em>">?</span>
+        </label>
+        <input type="number" name="initial_nav" id="initial_nav_input" class="form-control"
+               value="{{ draft.get('initial_nav', '1000000') }}"
+               min="500" step="100" placeholder="1 000 000">
+        <div class="form-hint" id="nav-hint">NAV initiale (Net Asset Value)</div>
+      </div>
+    </div>
+
+    <div class="form-section-title"><i class="bi bi-people me-2"></i>Mandat & Client</div>
+    <div class="row g-3">
+
+      <div class="col-md-6">
+        <label class="form-label">
+          Type de client
+          <span class="khl-tip" data-bs-toggle="tooltip" data-bs-html="true"
+                data-bs-title="<b>Catégorie d'investisseur</b><br>
+                  <b>Institutionnel</b> : fonds de pension, assurance → contraintes réglementaires strictes (Solvency II)<br>
+                  <b>Family Office</b> : gestion patrimoniale privée → flexibilité maximale<br>
+                  <b>OPCVM/SICAV</b> : fonds collectifs réglementés AMF/UCITS<br>
+                  <b>HNWI</b> : High Net Worth Individual — particulier très fortuné">?</span>
+        </label>
+        <select name="client_type" id="client_type_select" class="form-select" onchange="onClientTypeChange(this.value)">
+          <optgroup label="— Particulier">
+            <option value="Particulier — Investisseur Retail"
+              {{ 'selected' if draft.get('client_type') == 'Particulier — Investisseur Retail' else '' }}>
+              Particulier — Investisseur Retail (débutant / épargne personnelle)
+            </option>
+            <option value="Particulier (HNWI)"
+              {{ 'selected' if draft.get('client_type') == 'Particulier (HNWI)' else '' }}>
+              Particulier (HNWI — patrimoine > 1 M€)
+            </option>
+          </optgroup>
+          <optgroup label="— Institutionnel">
+            {% for ct in ['Institutionnel (fonds de pension)','Compagnie d\'assurance','Family Office','Fonds souverain','OPCVM / FCP','SICAV','Mandat sous gestion'] %}
+            <option value="{{ ct }}" {{ 'selected' if draft.get('client_type') == ct else '' }}>{{ ct }}</option>
+            {% endfor %}
+          </optgroup>
+        </select>
+        <div id="retail-hint" style="display:none;" class="form-hint text-primary">
+          <i class="bi bi-check-circle me-1"></i>Profil adapté : suggestions ETF, capital dès 500 €, conseils débutant à chaque étape
+        </div>
+      </div>
+
+      <div class="col-md-6">
+        <label class="form-label">
+          Horizon d'investissement
+          <span class="khl-tip" data-bs-toggle="tooltip" data-bs-html="true"
+                data-bs-title="<b>Durée de placement cible</b><br>
+                  <b>Court terme (&lt;1 an)</b> : liquidité prioritaire, obligations courtes<br>
+                  <b>Moyen terme (1–3 ans)</b> : mix actions/obligations<br>
+                  <b>Long terme (&gt;7 ans)</b> : actions dominantes, tolérance à la volatilité<br>
+                  Détermine le profil risque recommandé.">?</span>
+        </label>
+        <select name="horizon" class="form-select">
+          {% for h in ['Court terme (< 1 an)','Moyen terme (1–3 ans)','Long terme (3–7 ans)','Très long terme (> 7 ans)'] %}
+          <option value="{{ h }}" {{ 'selected' if draft.get('horizon') == h else '' }}>{{ h }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-md-12">
+        <label class="form-label">
+          Objectif de gestion
+          <span class="khl-tip" data-bs-toggle="tooltip" data-bs-html="true"
+                data-bs-title="<b>Objectif contractuel du mandat</b><br>Décrit précisément la cible de performance, les contraintes et le benchmark.<br><em>Ex : Surperformer le MSCI World de 2% p.a. avec un tracking error &lt; 5%</em>">?</span>
+        </label>
+        <textarea name="objective" class="form-control" rows="2"
+                  placeholder="ex: Maximiser le rendement ajusté du risque sur un portefeuille actions mondiales avec un tracking error < 5% vs MSCI World">{{ draft.get('objective','') }}</textarea>
+      </div>
+    </div>
+
+    <div class="form-section-title"><i class="bi bi-shield me-2"></i>Profil Risque</div>
+    <div class="row g-3">
+      <div class="col-12">
+        <div class="d-flex align-items-center gap-2 mb-2">
+          <span style="font-size:0.82rem;color:#495057;">Sélectionnez le profil qui correspond au niveau de risque accepté par le client :</span>
+          <span class="khl-tip" data-bs-toggle="tooltip" data-bs-html="true"
+                data-bs-title="<b>Profil de risque MiFID II</b><br>
+                  Définit la tolérance aux pertes et la cible de volatilité du portefeuille.<br>
+                  Ce profil est vérifié à chaque rééquilibrage dans le module <b>Risk Management</b>.<br>
+                  <em>Conservateur</em> = vol &lt;5% | <em>Agressif</em> = vol &gt;20%">?</span>
+        </div>
+        <div class="row g-2">
+          {% for rp, label, desc in [
+            ('CONSERVATIVE','Conservateur','Préservation du capital. Vol cible < 5%. Obligations majoritaires.'),
+            ('MODERATE','Modéré','Équilibre rendement/risque. Vol cible 5–10%. Mix actions/obligations.'),
+            ('BALANCED','Équilibré','Croissance long terme. Vol cible 10–15%. Diversifié multi-actifs.'),
+            ('GROWTH','Croissance','Rendement maximal. Vol cible 15–20%. Actions majoritaires.'),
+            ('AGGRESSIVE','Agressif','Haute conviction. Vol > 20%. Concentré, actifs risqués.'),
+          ] %}
+          <div class="col-md">
+            <div class="p-2 border rounded cursor-pointer risk-card text-center
+                        {{ 'border-primary bg-light' if draft.get('risk_profile') == rp else '' }}"
+                 onclick="selectRisk('{{ rp }}')"
+                 data-bs-toggle="tooltip" data-bs-placement="bottom"
+                 data-bs-title="{{ desc }}">
+              <div style="font-size:0.85rem;font-weight:700;">{{ label }}</div>
+              <div style="font-size:0.7rem;color:#6c757d;">{{ desc }}</div>
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        <input type="hidden" name="risk_profile" id="risk_input" value="{{ draft.get('risk_profile','BALANCED') }}">
+      </div>
+
+      <div class="col-md-4">
+        <label class="form-label">
+          Rendement cible annuel (%)
+          <span class="khl-tip" data-bs-toggle="tooltip" data-bs-html="true"
+                data-bs-title="<b>Objectif de performance annuelle</b><br>Rendement visé sur la durée du mandat, avant frais de gestion.<br>Sert de référence pour l'évaluation de la performance.<br><em>Ex : 8% p.a. = doublement du capital en ~9 ans (règle des 72)</em>">?</span>
+        </label>
+        <div class="input-group">
+          <input type="number" name="target_return" class="form-control"
+                 value="{{ draft.get('target_return','8') }}" step="0.5" min="0" max="50">
+          <span class="input-group-text">%</span>
+        </div>
+      </div>
+
+      <div class="col-md-4">
+        <label class="form-label">
+          Volatilité max acceptée (%)
+          <span class="khl-tip" data-bs-toggle="tooltip" data-bs-html="true"
+                data-bs-title="<b>Volatilité annualisée maximale</b><br>Écart-type des rendements quotidiens × √252.<br>Mesure l'amplitude des fluctuations du portefeuille.<br><em>Une vol de 15% signifie que le portefeuille peut varier de ±15% par an dans les scénarios normaux</em>">?</span>
+        </label>
+        <div class="input-group">
+          <input type="number" name="max_volatility" class="form-control"
+                 value="{{ draft.get('max_volatility','15') }}" step="0.5" min="0" max="100">
+          <span class="input-group-text">%</span>
+        </div>
+      </div>
+
+      <div class="col-md-4">
+        <label class="form-label">
+          Drawdown max toléré (%)
+          <span class="khl-tip" data-bs-toggle="tooltip" data-bs-html="true"
+                data-bs-title="<b>Perte maximale depuis un pic</b><br>Baisse maximale acceptée entre le plus haut historique et le plus bas suivant.<br><em>Un drawdown de 20% = si le portefeuille atteint 120, il peut tomber jusqu'à 96 avant déclenchement d'une alerte.</em><br>Déclenche une alerte Risk si dépassé.">?</span>
+        </label>
+        <div class="input-group">
+          <input type="number" name="max_drawdown" class="form-control"
+                 value="{{ draft.get('max_drawdown','20') }}" step="1" min="0" max="100">
+          <span class="input-group-text">%</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="d-flex justify-content-between">
+    <a href="{{ url_for('portfolio.index') }}" class="btn btn-outline-secondary">
+      <i class="bi bi-x-lg me-2"></i>Annuler
+    </a>
+    <button type="submit" class="btn btn-primary" style="background:#1a3a5c;border-color:#1a3a5c;">
+      Suivant — Univers investissable <i class="bi bi-arrow-right ms-2"></i>
+    </button>
+  </div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function selectRisk(v) {
+  document.getElementById('risk_input').value = v;
+  document.querySelectorAll('.risk-card').forEach(c => {
+    c.classList.remove('border-primary','bg-light');
+  });
+  event.currentTarget.classList.add('border-primary','bg-light');
+}
+
+// Majuscules auto pour le code
+document.querySelector('[name=portfolio_code]').addEventListener('input', function() {
+  this.value = this.value.toUpperCase();
+});
+
+function onClientTypeChange(val) {
+  const isRetail = val === 'Particulier — Investisseur Retail';
+  document.getElementById('retail-banner').style.display = isRetail ? '' : 'none';
+  document.getElementById('retail-hint').style.display   = isRetail ? '' : 'none';
+
+  const navInput = document.getElementById('initial_nav_input');
+  const navHint  = document.getElementById('nav-hint');
+
+  if (isRetail) {
+    // Adapter les valeurs par défaut pour un petit portefeuille
+    if (!navInput.value || parseFloat(navInput.value) >= 100000) {
+      navInput.value = '2000';
+    }
+    navInput.step = '100';
+    navHint.innerHTML = '<i class="bi bi-info-circle me-1"></i>Pour débuter, 1 000 – 3 000 € est un capital raisonnable.';
+    navHint.className = 'form-hint text-info';
+
+    // Profil risque conseillé : Modéré pour un débutant
+    selectRiskProgrammatic('MODERATE');
+
+    // Objectifs adaptés
+    const ret = document.querySelector('[name=target_return]');
+    const vol = document.querySelector('[name=max_volatility]');
+    const dd  = document.querySelector('[name=max_drawdown]');
+    if (ret && !ret.dataset.userSet) ret.value = '6';
+    if (vol && !vol.dataset.userSet) vol.value = '12';
+    if (dd  && !dd.dataset.userSet)  dd.value  = '15';
+
+    // Horizon conseillé : long terme
+    const horizon = document.querySelector('[name=horizon]');
+    if (horizon) horizon.value = 'Long terme (3–7 ans)';
+
+  } else {
+    // Remettre les valeurs pro par défaut si le champ était encore vide
+    if (!navInput.value || parseFloat(navInput.value) < 10000) {
+      navInput.value = '1000000';
+    }
+    navInput.step = '10000';
+    navHint.textContent = 'NAV initiale (Net Asset Value)';
+    navHint.className = 'form-hint';
+  }
+}
+
+function selectRiskProgrammatic(v) {
+  document.getElementById('risk_input').value = v;
+  document.querySelectorAll('.risk-card').forEach(c => {
+    c.classList.remove('border-primary','bg-light');
+    if (c.getAttribute('onclick') && c.getAttribute('onclick').includes(v)) {
+      c.classList.add('border-primary','bg-light');
+    }
+  });
+}
+
+// Initialiser si le draft contenait déjà un type de client
+(function() {
+  const sel = document.getElementById('client_type_select');
+  if (sel) onClientTypeChange(sel.value);
+})();
+
+// Empêcher l'écrasement des valeurs manuelles de l'utilisateur
+['target_return','max_volatility','max_drawdown'].forEach(name => {
+  const el = document.querySelector('[name=' + name + ']');
+  if (el) el.addEventListener('change', () => el.dataset.userSet = '1');
+});
+</script>
+{% endblock %}
